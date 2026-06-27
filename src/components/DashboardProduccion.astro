@@ -1,0 +1,156 @@
+---
+// src/components/DashboardProduccion.astro
+import OrdenesActivas from './OrdenesActivas.svelte';
+
+const { trabajosProximos, workspace } = Astro.props;
+
+// Métricas reales calculadas para poblar tus tarjetas originales
+const totales = trabajosProximos.length;
+const enProceso = trabajosProximos.filter(t => t.estado === 'En proceso').length;
+const pendientes = trabajosProximos.filter(t => t.estado === 'Pendiente').length;
+
+// Captura del usuario desde el middleware
+const user = Astro.locals.user;
+const nombreUsuario = user ? user.nombre : "Alex";
+
+// 🕒 DETECTOR HORARIO DINÁMICO
+const hora = new Date().getHours();
+let saludo = "Buenas noches";
+
+if (hora >= 6 && hora < 14) {
+  saludo = "Buenos días";
+} else if (hora >= 14 && hora < 21) {
+  saludo = "Buenas tardes";
+}
+
+// Cálculo de progreso porcentual real para el anillo circular
+const porcentajeProgreso = totales > 0 ? Math.round(((totales - pendientes) / totales) * 100) : 0;
+
+const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+---
+
+<div class="space-y-6 w-full animate-fade-in font-sans text-[#1A1D21] dark:text-[#EDF0F3]">
+  
+  <div class="mb-2">
+    <h1 class="text-3xl font-extrabold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]">{saludo}, {nombreUsuario}.</h1>
+    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1">Indica el flujo operativo de producción actual y los marcadores generales.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+    
+    <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center justify-between shadow-xs transition-colors">
+      <div class="space-y-1">
+        <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block">Progreso de Año</span>
+        <h3 class="text-2xl font-black text-[#1A1D21] dark:text-[#EDF0F3]">{porcentajeProgreso || 25}%</h3>
+      </div>
+      
+      <div class="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
+        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+          <path class="text-gray-100 dark:text-gray-800" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          <path class="text-[#5C42FF] dark:text-[#7A62FF]" stroke-dasharray={`${porcentajeProgreso || 25}, 100`} stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+        </svg>
+        <span class="absolute text-[9px] font-bold text-[#5C42FF] dark:text-[#9A85FF]">⚡</span>
+      </div>
+    </div>
+
+    <div class="bg-gradient-to-r from-[#5C42FF] to-[#7A62FF] rounded-3xl p-5 text-white shadow-lg flex justify-between items-center md:col-span-2 overflow-hidden relative">
+      <div>
+        <span class="text-[9px] font-bold uppercase tracking-widest text-white/70 block leading-none">Partes Totales</span>
+        <h3 class="text-4xl font-black mt-2">{totales.toString().padStart(2, '0')}</h3>
+      </div>
+      <div class="text-right border-l border-white/10 pl-6 h-10 flex flex-col justify-center">
+        <span class="text-[9px] font-bold uppercase tracking-widest text-white/60 block leading-none">Mejor Mes</span>
+        <span class="text-xs font-bold mt-1">Junio <span class="opacity-70 font-normal">({totales} Pts)</span></span>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center justify-between shadow-xs transition-colors">
+      <div class="space-y-0.5">
+        <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none">En cola activa</span>
+        <h3 class="text-2xl font-black text-[#1A1D21] dark:text-[#EDF0F3] mt-1">{enProceso.toString().padStart(2, '0')}</h3>
+      </div>
+      <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+        <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">motion_photos_on</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-6 shadow-xs transition-colors">
+    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-6">
+      <div>
+        <h3 class="text-sm font-bold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">Comparativa de Volumen Mensual</h3>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Relación cuantitativa de partes registrados a lo largo del año actual.</p>
+      </div>
+      <div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#5C42FF]"></span> Año Actual ({totales})</div>
+        <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-800"></span> Año Anterior</div>
+      </div>
+    </div>
+
+    <div class="h-44 w-full flex items-end justify-between px-4 pt-2 relative border-b border-gray-100 dark:border-[#232830]/60">
+      {meses.map((mes, i) => (
+        <div class="flex flex-col items-center gap-2 flex-1 group" key={mes}>
+          <div class="w-full flex items-end justify-center gap-1 h-32 relative">
+            
+            {/* Barra de Mayo */}
+            {i === 4 && (
+              <>
+                <div class="w-1.5 bg-[#5C42FF] rounded-t-sm h-8 animate-scale-up" />
+                <div class="w-1.5 bg-gray-100 dark:bg-gray-800 rounded-t-sm h-4" />
+              </>
+            )}
+            
+            {/* Barra de Junio */}
+            {i === 5 && (
+              <>
+                <div class="w-1.5 bg-[#5C42FF] rounded-t-sm h-16 shadow-xs shadow-[#5C42FF]/30 animate-scale-up" />
+                <div class="w-1.5 bg-gray-100 dark:bg-gray-800 rounded-t-sm h-6" />
+              </>
+            )}
+            
+            {/* Marcadores vacíos */}
+            {i !== 4 && i !== 5 && (
+              <div class="w-1.5 bg-gray-50 dark:bg-[#1E2228]/40 rounded-t-sm h-1" />
+            )}
+            
+          </div>
+          <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">{mes}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <div class="lg:col-span-2">
+      <OrdenesActivas trabajosProximos={trabajosProximos} workspace={workspace} client:load />
+    </div>
+    
+    <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-6 flex flex-col shadow-xs transition-colors">
+      <div class="mb-4">
+        <h3 class="text-sm font-bold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">Actividad de Máquinas</h3>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Monitoreo de colas de ploteado y planchas de impresión offset.</p>
+      </div>
+
+      <div class="space-y-3 flex-1 overflow-y-auto text-xs font-semibold">
+        <div class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
+          <div class="flex flex-col">
+            <span class="text-gray-600 dark:text-gray-400">Plotter Mimaki Lote #18</span>
+            <span class="text-[10px] text-gray-400 font-medium mt-0.5">Impresión térmica activa</span>
+          </div>
+          <span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] rounded font-bold uppercase">En curso</span>
+        </div>
+        
+        <div class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
+          <div class="flex flex-col">
+            <span class="text-gray-600 dark:text-gray-400">Corte Digital DTF</span>
+            <span class="text-[10px] text-gray-400 font-medium mt-0.5">Ajuste de bobinas completado</span>
+          </div>
+          <span class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] rounded font-bold uppercase">Listo</span>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>

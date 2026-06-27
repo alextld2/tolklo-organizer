@@ -1,0 +1,24 @@
+---
+// src/pages/w/[workspace]/nueva-tarea.astro
+import MainLayout from '../../../layouts/MainLayout.astro';
+import NuevaTarea from '../../../components/FormularioTarea.svelte';
+import { db, Trabajo } from 'astro:db';
+
+export async function getStaticPaths() {
+  return [
+    { params: { workspace: 'produccion' } },
+    { params: { workspace: 'escolar' } },
+    { params: { workspace: 'profesional' } },
+  ];
+}
+
+// Capturamos el entorno actual de la URL
+const { workspace } = Astro.params;
+
+const todos = await db.select().from(Trabajo);
+const clientesExistentes = [...new Set(todos.map((t) => t.cliente))];
+---
+
+<MainLayout title="Registrar nuevo parte">
+  <NuevaTarea clientesExistentes={clientesExistentes} workspace={workspace} client:load />
+</MainLayout>

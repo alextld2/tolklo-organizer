@@ -1,0 +1,76 @@
+---
+// src/pages/w/[workspace]/tasks.astro
+
+// 1. DECLARACIÓN DE ENTORNOS PERMITIDOS PARA EL COMPILADOR
+export async function getStaticPaths() {
+  return [
+    { params: { workspace: 'produccion' } },
+    { params: { workspace: 'escolar' } },
+    { params: { workspace: 'profesional' } },
+  ];
+}
+
+import MainLayout from '../../../layouts/MainLayout.astro';
+import ListaTareas from '../../../components/ListaTareas.svelte';
+import { db, Trabajo, DesgloseTrabajo, eq } from 'astro:db';
+
+// 2. CAPTURAMOS EL WORKSPACE DESDE LA URL
+const { workspace } = Astro.params;
+
+if (!workspace) {
+  return Astro.redirect('/w/produccion');
+}
+
+// 3. CONSULTA RELACIONAL FILTRADA: Traemos solo las filas que corresponden a este espacio
+const filasBD = await db
+  .select()
+  .from(Trabajo)
+  .leftJoin(DesgloseTrabajo, eq(Trabajo.numParte, DesgloseTrabajo.numParte))
+  .where(eq(Trabajo.workspaceId, workspace)); // <-- El filtro maestro añadido aquí
+
+// 4. AGRUPACIÓN ESTRUCTURADA 1:N (Manteniendo tu lógica intacta)
+const tareasAgrupadas = new Map();
+
+filasBD.forEach((fila) => {
+  const t = fila.Trabajo;
+  const d = fila.DesgloseTrabajo;
+
+  // Si es la primera vez que vemos este número de parte, creamos el objeto base
+  if (!tareasAgrupadas.has(t.numParte)) {
+    tareasAgrupadas.set(t.numParte, {
+      numParte: t.numParte,
+      cliente: t.cliente,
+      descripcionGeneral: t.descripcionGeneral,
+      comercial: t.comercial,
+      estado: t.estado,
+      fechaSalida: t.fechaSalida,
+      area: t.area,
+      subcontrata: t.subcontrata,
+      desgloses: [] // Inicializamos el array donde meteremos sus productos
+    });
+  }
+
+  // Si la fila de la base de datos contiene un producto válido, lo inyectamos en su tarea
+  if (d && d.descripcionProducto) {
+    tareasAgrupadas.get(t.numParte).desgloses.push({
+      descripcionProducto: d.descripcionProducto,
+      cantidad: d.cantidad
+    });
+  }
+});
+
+// Convertimos el mapa estructurado en un Array limpio y le damos la vuelta (más nuevos primero)
+const trabajosOrdenados = Array.from(tareasAgrupadas.values()).reverse();
+
+// Título dinámico para la pestaña del navegador
+const nombresEspacios = {
+  "produccion": "Producción Industrial",
+  "escolar": "Agendas Escolares",
+  "profesional": "Agendas Profesionales"
+};
+const tituloPagina = nombresEspacios[workspace] || "Tasks";
+---
+
+<MainLayout title={`Task Ledger // ${tituloPagina}`}>
+  <ListaTareas tareas={trabajosOrdenados} client:load />
+</MainLayout>

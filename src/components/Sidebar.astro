@@ -1,0 +1,95 @@
+---
+// src/components/Sidebar.astro
+import WorkspaceSwitcher from './WorkspaceSwitcher.svelte';
+import ThemeSelector from './ThemeSelector.svelte';
+
+const { workspace = 'produccion' } = Astro.params;
+const pathname = Astro.url.pathname;
+
+// SISTEMA DE LUCES EN ENLACES: Ahora muta de color perfectamente de noche
+const getLinkClass = (targetPath: string, strict = false) => {
+  const baseClass = "flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all group outline-none select-none";
+  const isActive = strict 
+    ? pathname === targetPath 
+    : (pathname === targetPath || pathname.startsWith(targetPath + '/'));
+  
+  return isActive 
+    ? `${baseClass} text-[#5C42FF] dark:text-[#9A85FF] bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 font-bold` 
+    : `${baseClass} text-gray-400 dark:text-gray-500 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-[#1E2228]`;
+};
+---
+
+<aside class="w-64 bg-white dark:bg-[#16191D] border-r border-[#E9EBF0] dark:border-[#232830] h-screen flex flex-col justify-between flex-shrink-0 z-30 font-sans transition-colors duration-200">
+  
+  <div class="flex flex-col space-y-4">
+    
+    <div class="h-20 flex items-center px-6 border-b border-gray-100/50 dark:border-[#232830] flex-shrink-0">
+      <a href={`/w/${workspace}`} class="flex items-center gap-2 group outline-none">
+        <img 
+          src="/logotipo-app.svg" 
+          alt="Tolkie Organizer" 
+          class="h-8 w-auto object-contain transition-transform group-hover:scale-[1.01] dark:invert" 
+        />
+      </a>
+    </div>
+
+    <WorkspaceSwitcher workspaceActivo={workspace} client:load />
+
+    <nav class="flex flex-col px-4 pt-2 space-y-1">
+      
+      <a href={`/w/${workspace}`} class={getLinkClass(`/w/${workspace}`, true)}>
+        <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">home</span>
+        <span>Inicio</span>
+      </a>
+
+      <a href={`/w/${workspace}/tasks`} class={getLinkClass(`/w/${workspace}/tasks`)}>
+        <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">assignment</span>
+        <span>Tareas</span>
+      </a>
+
+      <a href={`/w/${workspace}/calendar`} class={getLinkClass(`/w/${workspace}/calendar`)}>
+        <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">calendar_today</span>
+        <span>Calendario</span>
+      </a>
+
+      <a href={`/w/${workspace}/clients`} class={getLinkClass(`/w/${workspace}/clients`)}>
+        <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">group</span>
+        <span>Clientes</span>
+      </a>
+
+    </nav>
+  </div>
+
+  <div class="p-4 space-y-4 flex flex-col">
+    
+    <a 
+      href={`/w/${workspace}/nueva-tarea`} 
+      class="w-full bg-[#5C42FF] text-white font-semibold text-xs py-3 rounded-xl hover:bg-[#472ee6] transition-all shadow-sm flex items-center justify-center gap-2 outline-none text-center select-none"
+    >
+      <span class="material-symbols-rounded text-base" style="font-variation-settings: 'wght' 400;">add</span>
+      <span>Registrar nuevo parte</span>
+    </a>
+
+    <div class="border-t border-gray-100 dark:border-[#232830] pt-3 space-y-0.5">
+      
+      <ThemeSelector client:load />
+
+      <a 
+        href={`/w/${workspace}/help`} 
+        class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-gray-400 dark:text-gray-500 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-all outline-none"
+      >
+        <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">help_outline</span>
+        <span>Ayuda</span>
+      </a>
+
+      <a 
+        href="/logout" 
+        class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50/40 transition-all outline-none"
+      >
+        <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">logout</span>
+        <span>Cerrar sesión</span>
+      </a>
+
+    </div>
+  </div>
+</aside>

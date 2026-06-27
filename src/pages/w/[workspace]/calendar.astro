@@ -1,0 +1,57 @@
+---
+// src/pages/w/[workspace]/calendar.astro
+
+// 1. DECLARACIÓN DE ENTORNOS PERMITIDOS PARA EL COMPILADOR
+export async function getStaticPaths() {
+  return [
+    { params: { workspace: 'produccion' } },
+    { params: { workspace: 'escolar' } },
+    { params: { workspace: 'profesional' } },
+  ];
+}
+
+import MainLayout from '../../../layouts/MainLayout.astro';
+import Calendario from '../../../components/Calendario.svelte';
+// Importamos 'eq' para poder realizar los filtros indexados en la DB
+import { db, Trabajo, DesgloseTrabajo, eq } from 'astro:db';
+
+// 2. CAPTURAMOS EL WORKSPACE DESDE LA URL
+const { workspace } = Astro.params;
+
+if (!workspace) {
+  return Astro.redirect('/w/produccion');
+}
+
+// 3. EXTRAEMOS LOS REGISTROS REALES FILTRADOS POR WORKSPACE
+// Traemos solo los trabajos que pertenecen al espacio activo
+const trabajosDB = await db
+  .select()
+  .from(Trabajo)
+  .where(eq(Trabajo.workspaceId, workspace));
+
+// Traemos solo los desgloses de los trabajos de este espacio (Evita sobrecargar la memoria del navegador)
+const desglosesDB = await db
+  .select({
+    id: DesgloseTrabajo.id,
+    numParte: DesgloseTrabajo.numParte,
+    descripcionProducto: DesgloseTrabajo.descripcionProducto,
+    cantidad: DesgloseTrabajo.cantidad
+  })
+  .from(DesgloseTrabajo)
+  .innerJoin(Trabajo, eq(DesgloseTrabajo.numParte, Trabajo.numParte))
+  .where(eq(Trabajo.workspaceId, workspace));
+
+// Título dinámico adaptado para la pestaña del navegador
+const nombresEspacios = {
+  "produccion": "Producción Industrial",
+  "escolar": "Agendas Escolares",
+  "profesional": "Agendas Profesionales"
+};
+const tituloPagina = nombresEspacios[workspace] || "Calendario";
+---
+
+<MainLayout title={`Calendario de Entregas // ${tituloPagina}`}>
+  <div class="flex flex-col h-full">
+    <Calendario trabajosIniciales={trabajosDB} desglosesIniciales={desglosesDB} client:load />
+  </div>
+</MainLayout>

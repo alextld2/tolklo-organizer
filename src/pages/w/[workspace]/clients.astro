@@ -1,0 +1,89 @@
+---
+// src/pages/w/[workspace]/clients.astro
+
+// 1. DECLARACIÓN DE ENTORNOS PERMITIDOS PARA EL COMPILADOR ASTRO
+export async function getStaticPaths() {
+  return [
+    { params: { workspace: 'produccion' } },
+    { params: { workspace: 'escolar' } },
+    { params: { workspace: 'profesional' } },
+  ];
+}
+
+import MainLayout from '../../../layouts/MainLayout.astro';
+import DirectorioClientes from '../../../components/DirectorioClientes.svelte';
+import { db, Trabajo, eq } from 'astro:db'; // Importamos 'eq' para realizar el filtrado
+
+// 2. CAPTURAMOS EL WORKSPACE DESDE LA URL DINÁMICA
+const { workspace } = Astro.params;
+
+if (!workspace) {
+  return Astro.redirect('/w/produccion');
+}
+
+// 3. SOLICITAMOS LAS ÓRDENES DE TRABAJO FILTRADAS POR WORKSPACE
+const todosLosTrabajos = await db
+  .select()
+  .from(Trabajo)
+  .where(eq(Trabajo.workspaceId, workspace)); // <-- El filtro maestro que aísla los entornos
+
+// 4. PROCESAMOS Y AGRUPAMOS LOS DATOS EN TIEMPO REAL POR CLIENTE ÚNICO
+const mapeoClientes = new Map();
+
+todosLosTrabajos.forEach((trabajo) => {
+  const nombreCliente = trabajo.cliente ? trabajo.cliente.trim() : "CLIENTE SIN NOMBRE";
+  
+  if (!mapeoClientes.has(nombreCliente)) {
+    mapeoClientes.set(nombreCliente, []);
+  }
+  mapeoClientes.get(nombreCliente).push(trabajo);
+});
+
+// 5. MOLDEAMOS LA INFORMACIÓN CON TU FORMATO PREMIUM (Tu lógica intacta)
+const clientes = Array.from(mapeoClientes.entries()).map(([nombre, trabajos]) => {
+  const totalTareas = trabajos.length;
+  const terminadas = trabajos.filter(t => t.estado === 'Terminado').length;
+  
+  // Cálculo elástico del porcentaje de progreso
+  const porcentajeProgreso = totalTareas > 0 ? Math.round((terminadas / totalTareas) * 100) : 0;
+
+  // Lógica inteligente automatizada para calcular el ESTADO:
+  // - OVERDUE: Si tiene alguna tarea sin terminar cuya fecha de entrega ya ha pasado.
+  // - ON HOLD: Si todas sus tareas están terminadas (está en pausa hasta que entre un pedido nuevo).
+  // - ACTIVE: Si tiene faena activa en el taller dentro de plazo.
+  const fechaHoy = new Date().toISOString().split('T')[0]; // Captura el día actual en formato YYYY-MM-DD
+  
+  const tieneTareasRetrasadas = trabajos.some(t => t.estado !== 'Terminado' && t.fechaSalida < fechaHoy);
+  const tieneTareasActivas = trabajos.some(t => t.estado === 'Pendiente' || t.estado === 'En proceso');
+
+  let estado: 'ACTIVE' | 'ON HOLD' | 'OVERDUE' = 'ACTIVE';
+  
+  if (tieneTareasRetrasadas) {
+    estado = 'OVERDUE';
+  } else if (!tieneTareasActivas && porcentajeProgreso === 100) {
+    estado = 'ON HOLD';
+  }
+
+  return {
+    nombre,
+    estado,
+    totalTareas,
+    porcentajeProgreso
+  };
+});
+
+// Ordenamos los clientes alfabéticamente por defecto para que la vista luzca impecable
+clientes.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+// Nombres adaptados para inyectar en la pestaña del navegador
+const nombresEspacios = {
+  "produccion": "Producción Industrial",
+  "escolar": "Agendas Escolares",
+  "profesional": "Agendas Profesionales"
+};
+const tituloPagina = nombresEspacios[workspace] || "Clientes";
+---
+
+<MainLayout title={`Directorio de Clientes // ${tituloPagina}`}>
+  <DirectorioClientes clientes={clientes} client:load />
+</MainLayout>

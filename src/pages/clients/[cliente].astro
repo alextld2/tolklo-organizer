@@ -1,0 +1,22 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import DetalleCliente from '../../components/DetalleCliente.svelte';
+import { db, Trabajo, eq } from 'astro:db';
+
+// 1. Obtenemos el nombre del cliente desde los parámetros de la URL
+const { cliente } = Astro.params;
+
+if (!cliente) {
+  return Astro.redirect('/clients');
+}
+
+// 2. Traemos todos los trabajos relacionados con este cliente desde Astro DB
+const trabajosCliente = await db
+  .select()
+  .from(Trabajo)
+  .where(eq(Trabajo.cliente, cliente));
+---
+
+<MainLayout title={`Cliente: ${cliente} // Ethereal`}>
+  <DetalleCliente nombreCliente={cliente} trabajos={trabajosCliente} client:load />
+</MainLayout>
