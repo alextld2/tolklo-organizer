@@ -7,7 +7,7 @@ export default async function seed() {
   await db.delete(DesgloseTrabajo);
   await db.delete(Trabajo);
 
-  // 2. INSERCIÓN DE DATOS DE PRUEBA (Opcional, con la nueva columna 'diseñador' integrada)
+  // 2. INSERCIÓN DE DATOS DE PRUEBA ACTUALIZADOS CON LA NUEVA TAXONOMÍA DE ESTADOS
   await db.insert(Trabajo).values([
     {
       numParte: 1819,
@@ -17,7 +17,7 @@ export default async function seed() {
       comercial: 'Marcos',
       diseñador: 'Alex',
       fechaSalida: '2026-06-30',
-      estado: 'En proceso',
+      estado: 'Imprimiendo', // 🌟 Actualizado (Antiguo 'En proceso')
       area: 'Digital',
       subcontrata: null
     },
@@ -29,7 +29,7 @@ export default async function seed() {
       comercial: 'Alfonso',
       diseñador: 'Yolanda',
       fechaSalida: '2026-07-03',
-      estado: 'Pendiente',
+      estado: 'Por hacer', // 🌟 Actualizado (Antiguo 'Pendiente')
       area: 'Digital',
       subcontrata: null
     },
@@ -41,11 +41,11 @@ export default async function seed() {
       comercial: 'Jesus',
       diseñador: 'Iván',
       fechaSalida: '2026-06-28',
-      estado: 'En proceso',
+      estado: 'Urgente', // 🌟 Actualizado para probar la alerta roja y prioridad del taller
       area: 'Mimaki',
       subcontrata: null
     }
   ]);
 
-  console.log('¡Base de datos local e índice de búsqueda inicializados con éxito! 🎉');
+  console.log('¡Base de datos local e índice de búsqueda inicializados con éxito con los nuevos 5 estados! 🎉');
 }

@@ -64,13 +64,13 @@ const trabajosOrdenados = Array.from(tareasAgrupadas.values()).reverse();
 
 // Título dinámico para la pestaña del navegador
 const nombresEspacios = {
-  "produccion": "Producción Industrial",
+  "produccion": "Imprenta",
   "escolar": "Agendas Escolares",
   "profesional": "Agendas Profesionales"
 };
 const tituloPagina = nombresEspacios[workspace] || "Tasks";
 ---
 
-<MainLayout title={`Task Ledger // ${tituloPagina}`}>
+<MainLayout title={`Control de Tareas - ${tituloPagina}`}>
   <ListaTareas tareas={trabajosOrdenados} client:load />
 </MainLayout>

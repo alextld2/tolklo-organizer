@@ -6,7 +6,7 @@
 
   // Catálogo estático de espacios (Coincide con los IDs exactos de tu DB)
   const espacios = [
-    { id: "produccion", nombre: "Producción Industrial", icono: "factory", color: "text-[#5C42FF]", bg: "bg-purple-50/70" },
+    { id: "produccion", nombre: "Imprenta", icono: "factory", color: "text-[#5C42FF]", bg: "bg-purple-50/70" },
     { id: "escolar", nombre: "Agendas Escolares", icono: "school", color: "text-sky-500", bg: "bg-sky-50/70" },
     { id: "profesional", nombre: "Agendas Profesionales", icono: "business_center", color: "text-emerald-500", bg: "bg-emerald-50/70" }
   ];
