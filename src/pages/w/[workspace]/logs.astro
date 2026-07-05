@@ -1,0 +1,35 @@
+---
+// src/pages/w/[workspace]/logs.astro
+export const prerender = false; // Desactivamos el prerenderizado para que lea Turso en vivo en cada clic
+
+import MainLayout from '../../../layouts/MainLayout.astro';
+import HistorialLogs from '../../../components/HistorialLogs.svelte';
+import { db, RegistroActividad, eq, desc } from 'astro:db';
+
+// 1. Capturamos el espacio de trabajo dinámico desde la URL de Astro
+const { workspace } = Astro.params;
+
+if (!workspace) {
+  return Astro.redirect('/w/produccion/logs');
+}
+
+// 2. Consultamos Turso filtrando por entorno y ordenando de más nuevo a más viejo
+const logsCrudos = await db
+  .select()
+  .from(RegistroActividad)
+  .where(eq(RegistroActividad.workspaceId, workspace))
+  .orderBy(desc(RegistroActividad.fecha));
+
+// 3. Convertimos los objetos Date nativos a cadenas legibles para que Svelte los procese sin errores de tipos
+const logsFiltrados = logsCrudos.map(log => ({
+  ...log,
+  fecha: log.fecha.toISOString()
+}));
+---
+
+<MainLayout title={`Historial de Logs - Sistema ${workspace}`}>
+  <div class="py-2 animate-fade-in">
+    <!-- Inyectamos los datos reales e hidratamos el componente en el cliente -->
+    <HistorialLogs logs={logsFiltrados} client:load />
+  </div>
+</MainLayout>

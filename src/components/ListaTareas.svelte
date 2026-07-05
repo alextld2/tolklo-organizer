@@ -16,7 +16,7 @@
 
   const listaComerciales = ["Marcos", "Alfonso", "Jesus", "Maria Jesús"];
   
-  // 1. 🔥 NUEVA MATRIZ DE 5 ESTADOS ACTUALIZADA
+  // 1. 🔥 MATRIZ DE 5 ESTADOS ACTUALIZADA
   const listaEstados = ["Por hacer", "Imprimiendo", "Manipulado", "Terminado", "Urgente"];
   const listaAreas = ["Digital", "Offset", "Plotter", "OPX", "DTF", "Mimaki"];
 
@@ -39,7 +39,7 @@
   let modalEliminarAbierto = false;
   let numParteAEliminar: number | null = null;
 
-  // 2. 🎨 PALETA DE COLORES CALCADA A TU CAPTURA DE PANTALLA (NOTION STYLE)
+  // 2. 🎨 PALETA DE COLORES ESTILO NOTION
   const coloresTextoEstado = {
     "Terminado": "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-2.5 py-1 rounded-xl font-bold",
     "Imprimiendo": "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-2.5 py-1 rounded-xl font-bold",
@@ -51,22 +51,20 @@
   const iconosEstado = {
     "Terminado": "check_circle",
     "Imprimiendo": "print",
-    "Manipulado": "precision_manufacturing",
+    "Manipulado": "package_2",
     "Urgente": "bolt",
     "Por hacer": "radio_button_unchecked"
   };
 
-  // 3. 🧠 LÓGICA DE CONTROL DE TRANSICIÓN UNIDIRECCIONAL (BARRERA INTEGRADA)
+  // 3. 🧠 LÓGICA DE CONTROL DE TRANSICIÓN UNIDIRECCIONAL
   function esTransicionValida(estadoActual: string, estadoNuevo: string): boolean {
     if (estadoActual === estadoNuevo) return false;
-    // La urgencia es libre: se puede activar o desactivar desde cualquier sitio
     if (estadoNuevo === "Urgente" || estadoActual === "Urgente") return true;
 
     const flujoSecuencial = ["Por hacer", "Imprimiendo", "Manipulado", "Terminado"];
     const idxActual = flujoSecuencial.indexOf(estadoActual);
     const idxNuevo = flujoSecuencial.indexOf(estadoNuevo);
 
-    // Solo permite transiciones si el nuevo estado está por delante en la cola de producción
     return idxNuevo > idxActual;
   }
 
@@ -242,7 +240,7 @@
   $: totalPaginas = Math.ceil(totalTareasFiltradas / tareasPorPagina) || 1;
   $: tareasPaginadas = tareasFiltradas.slice((paginaActual - 1) * tareasPorPagina, paginaActual * tareasPorPagina);
 
-  // Analíticas globales vinculadas al nuevo estado "Terminado"
+  // Analíticas globales
   $: totalTareasGlobal = tareas.length;
   $: completadas = tareas.filter(t => t.estado === 'Terminado').length;
   $: porcentajeEficiencia = totalTareasGlobal > 0 ? Math.round((completadas / totalTareasGlobal) * 100) : 0;
@@ -255,10 +253,9 @@
   <div class="flex justify-between items-center flex-shrink-0">
     <div>
       <div class="flex items-center gap-3">
-        <h1 class="text-3xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">Task Ledger</h1>
+        <h1 class="text-3xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">Listado de partes</h1>
         <span class="bg-[#5C42FF]/10 dark:bg-[#5C42FF]/20 text-[#5C42FF] dark:text-[#9A85FF] text-[11px] font-semibold px-2.5 py-1 rounded-full">
-          🔄 {porcentajeEficiencia}% Eficiencia
-        </span>
+          {porcentajeEficiencia}% Eficiencia        </span>
       </div>
       <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1">Gestiona y supervisa el flujo de órdenes de producción de Aeroprint.</p>
     </div>
@@ -269,15 +266,15 @@
       <table class="w-full text-left border-collapse">
         <thead>
           <tr class="border-b border-gray-100 dark:border-[#232830] bg-gray-50/50 dark:bg-[#1E2228]/20">
-            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest w-44">Status</th>
-            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Task Name</th>
-            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Due Date</th>
-            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Area</th>
-            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right pr-8 w-36">Actions</th>
+            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest w-44">Estado</th>
+            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Descripcción</th>
+            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Fecga de salida</th>
+            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Área</th>
+            <th class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right pr-8 w-36">Acciones</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50 dark:divide-[#232830]/40">
-          {#each tareasPaginadas as tarea (tarea.numParte)}
+          {#each tareasPaginadas as tarea, index (tarea.numParte)}
             <tr class="group hover:bg-gray-50/40 dark:hover:bg-[#1E2228]/30 transition-colors">
               
               <td class="px-6 py-4.5">
@@ -313,8 +310,8 @@
                 </span>
               </td>
               
-              <td class="px-6 py-4.5 text-right pr-8 relative">
-                <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-end gap-3">
+              <td class="px-6 py-4.5 text-right pr-8 relative {menuAbiertoNumParte === tarea.numParte ? 'z-30' : ''}">
+                <div class="transition-opacity duration-150 flex items-center justify-end gap-3 {menuAbiertoNumParte === tarea.numParte ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}">
                   <button type="button" on:click={() => abrirModalEditar(tarea)} title="Editar Tarea" class="text-gray-400 hover:text-[#5C42FF] dark:hover:text-[#9A85FF] transition-all cursor-pointer flex items-center justify-center">
                     <span class="material-symbols-rounded text-lg">edit</span>
                   </button>
@@ -322,30 +319,33 @@
                     <span class="material-symbols-rounded text-lg">delete</span>
                   </button>
                   
-                  <div class="relative inline-block text-left">
-                    <button type="button" on:click|stopPropagation={(e) => ordenarMenuAcciones(tarea.numParte, e)} class="text-gray-400 hover:text-black dark:hover:text-white font-semibold text-base px-1 cursor-pointer flex items-center justify-center">
-                      <span class="material-symbols-rounded text-lg">more_horiz</span>
-                    </button>
-                    {#if menuAbiertoNumParte === tarea.numParte}
-                      <div class="absolute right-0 z-30 mt-2 w-44 bg-white dark:bg-[#1E2228] rounded-xl shadow-xl border border-gray-100 dark:border-[#232830] p-1.5 space-y-0.5 text-left animate-scale-up">
-                        {#each listaEstados as estadoOpcion}
-                          {#if esTransicionValida(tarea.estado, estadoOpcion)}
-                            <button type="button" on:click={() => actualizarEstadoRapido(tarea.numParte, estadoOpcion)} class="w-full text-left px-3 py-2 rounded-lg text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
-                              <span class="material-symbols-rounded text-base
-                                {estadoOpcion === 'Terminado' ? 'text-emerald-500' : ''}
-                                {estadoOpcion === 'Imprimiendo' ? 'text-blue-500' : ''}
-                                {estadoOpcion === 'Manipulado' ? 'text-amber-500' : ''}
-                                {estadoOpcion === 'Urgente' ? 'text-red-500' : ''}
-                                {estadoOpcion === 'Por hacer' ? 'text-gray-400' : ''}">
-                                {iconosEstado[estadoOpcion]}
-                              </span> 
-                              <span>{estadoOpcion}</span>
-                            </button>
-                          {/if}
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
+                  {#if tarea.estado !== 'Terminado'}
+                    <div class="relative inline-block text-left">
+                      <button type="button" on:click|stopPropagation={(e) => ordenarMenuAcciones(tarea.numParte, e)} class="text-gray-400 hover:text-black dark:hover:text-white font-semibold text-base px-1 cursor-pointer flex items-center justify-center">
+                        <span class="material-symbols-rounded text-lg">more_horiz</span>
+                      </button>
+                      {#if menuAbiertoNumParte === tarea.numParte}
+                        <div class="absolute right-0 z-30 w-44 bg-white dark:bg-[#1E2228] rounded-xl shadow-xl border border-gray-100 dark:border-[#232830] p-1.5 space-y-0.5 text-left animate-scale-up
+                          {index >= 4 ? 'bottom-full mb-2' : 'top-full mt-2'}">
+                          {#each listaEstados as estadoOpcion}
+                            {#if esTransicionValida(tarea.estado, estadoOpcion)}
+                              <button type="button" on:click={() => actualizarEstadoRapido(tarea.numParte, estadoOpcion)} class="w-full text-left px-3 py-2 rounded-lg text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                                <span class="material-symbols-rounded text-base
+                                  {estadoOpcion === 'Terminado' ? 'text-emerald-500' : ''}
+                                  {estadoOpcion === 'Imprimiendo' ? 'text-blue-500' : ''}
+                                  {estadoOpcion === 'Manipulado' ? 'text-amber-500' : ''}
+                                  {estadoOpcion === 'Urgente' ? 'text-red-500' : ''}
+                                  {estadoOpcion === 'Por hacer' ? 'text-gray-400' : ''}">
+                                  {iconosEstado[estadoOpcion]}
+                                </span> 
+                                <span>{estadoOpcion}</span>
+                              </button>
+                            {/if}
+                          {/each}
+                        </div>
+                      {/if}
+                    </div>
+                  {/if}
 
                 </div>
               </td>
@@ -417,20 +417,20 @@
 
     <div class="bg-[#5C42FF] rounded-3xl p-6 text-white shadow-xs flex flex-col justify-between border border-[#5C42FF]">
       <div>
-        <span class="text-[9px] font-semibold text-purple-200 uppercase tracking-widest block mb-1">Quick Summary</span>
-        <h3 class="text-lg font-semibold tracking-tight">Finish Strong</h3>
+        <span class="text-[9px] font-semibold text-purple-200 uppercase tracking-widest block mb-1">Resumen rápido</span>
+        <h3 class="text-lg font-semibold tracking-tight">Finalizados completamente</h3>
         <div class="mt-4 space-y-2">
           <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-            <span class="text-xs font-semibold text-purple-100">Completed</span>
+            <span class="text-xs font-semibold text-purple-100">Completados</span>
             <span class="text-base font-semibold">{completadas.toString().padStart(2, '0')}</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-xs font-semibold text-purple-100">Pending</span>
+            <span class="text-xs font-semibold text-purple-100">Pendientes</span>
             <span class="text-base font-semibold">{(totalTareasGlobal - completadas).toString().padStart(2, '0')}</span>
           </div>
         </div>
       </div>
-      <button type="button" class="w-full bg-white text-[#5C42FF] font-semibold text-xs py-3 rounded-xl mt-5 hover:bg-purple-50 transition-colors shadow-xs">Weekly Review</button>
+      <button type="button" class="w-full bg-white text-[#5C42FF] font-semibold text-xs py-3 rounded-xl mt-5 hover:bg-purple-50 transition-colors shadow-xs">Revisión mensual</button>
     </div>
   </div>
 

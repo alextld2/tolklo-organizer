@@ -10,12 +10,24 @@
 
   let fechaVisualizada = new Date();
   
-  // 🔥 CORREGIDO: Diccionario expandido para soportar de forma nativa e integrada el modo oscuro
+  // 1. DICCIONARIO DE COLORES ESTILO NOTION
   const coloresEstado = {
-    "En proceso": "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
-    "Terminado": "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
-    "Pendiente": "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
+    "Terminado": "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+    "Imprimiendo": "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+    "Manipulado": "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
+    "Urgente": "bg-red-50 text-red-700 border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 font-black animate-pulse",
+    "Por hacer": "bg-gray-50 text-gray-600 border-gray-100 dark:bg-[#1E2228] dark:text-gray-400 dark:border-[#232830]"
   };
+
+  const iconosEstado = {
+    "Terminado": "check_circle",
+    "Imprimiendo": "print",
+    "Manipulado": "precision_manufacturing",
+    "Urgente": "bolt",
+    "Por hacer": "radio_button_unchecked"
+  };
+
+  const listaEstados = ["Por hacer", "Imprimiendo", "Manipulado", "Terminado", "Urgente"];
 
   // Control de Modales
   let modalMasAbierto = false; 
@@ -35,6 +47,18 @@
   $: diasEnMes = new Date(año, mesIndex + 1, 0).getDate();
   $: celdas = [...Array(offset).fill(null), ...Array.from({ length: diasEnMes }, (_, i) => i + 1)];
 
+  // MATRIZ DE TRANSICIÓN UNIDIRECCIONAL
+  function esTransicionValida(estadoActual: string, estadoNuevo: string): boolean {
+    if (estadoActual === estadoNuevo) return false;
+    if (estadoNuevo === "Urgente" || estadoActual === "Urgente") return true;
+
+    const flujoSecuencial = ["Por hacer", "Imprimiendo", "Manipulado", "Terminado"];
+    const idxActual = flujoSecuencial.indexOf(estadoActual);
+    const idxNuevo = flujoSecuencial.indexOf(estadoNuevo);
+
+    return idxNuevo > idxActual;
+  }
+
   // Funciones de Navegación
   const mesAnterior = () => fechaVisualizada = new Date(año, mesIndex - 1, 1);
   const mesSiguiente = () => fechaVisualizada = new Date(año, mesIndex + 1, 1);
@@ -52,25 +76,55 @@
     trabajoSeleccionado = null;
   }
 
-  function cambiarEstado(nuevoEstado: string) {
+  async function cambiarEstado(nuevoEstado: string) {
     if (trabajoSeleccionado) {
+      const estadoAnterior = trabajoSeleccionado.estado;
+      
       trabajos = trabajos.map(t => t.numParte === trabajoSeleccionado.numParte ? { ...t, estado: nuevoEstado } : t);
-      trabajoSeleccionado.estado = nuevoEstado; 
-      cerrarModalDetalle();
+      trabajoSeleccionado.estado = nuevoEstado;
+      
+      if (modalMasAbierto) {
+        trabajosModalMas = trabajos.filter(t => t.fechaSalida === trabajoSeleccionado.fechaSalida);
+      }
+
+      try {
+        const respuesta = await fetch('/api/actualizar-tarea', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(trabajoSeleccionado)
+        });
+        if (!respuesta.ok) throw new Error();
+        cerrarModalDetalle();
+      } catch (e) {
+        trabajos = trabajos.map(t => t.numParte === trabajoSeleccionado.numParte ? { ...t, estado: estadoAnterior } : t);
+        alert("❌ Error: No se pudo actualizar el estado en el servidor remoto.");
+      }
     }
   }
 
-  function eliminarTrabajo() {
+  async function eliminarTrabajo() {
     if (trabajoSeleccionado) {
       if (!confirmandoEliminar) {
         confirmandoEliminar = true; 
         return;
       }
-      trabajos = trabajos.filter(t => t.numParte !== trabajoSeleccionado.numParte);
+      
+      const numParteEliminar = trabajoSeleccionado.numParte;
+      trabajos = trabajos.filter(t => t.numParte !== numParteEliminar);
       if (modalMasAbierto) {
         trabajosModalMas = trabajos.filter(t => t.fechaSalida === trabajoSeleccionado.fechaSalida);
       }
       cerrarModalDetalle();
+
+      try {
+        await fetch('/api/eliminar-tarea', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ numParte: numParteEliminar })
+        });
+      } catch (e) {
+        alert("❌ Error crítico eliminando el registro de la nube.");
+      }
     }
   }
 
@@ -124,23 +178,26 @@
   
   <div class="flex items-center justify-between pb-6 flex-shrink-0">
     <div>
-      <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Production Calendar</p>
+
       
       <div class="flex items-center gap-6">
         <h1 class="text-3xl font-semibold capitalize tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]">{nombreMes} {año}</h1>
         
-        <div class="hidden lg:flex items-center gap-4 border-l border-gray-200 dark:border-gray-800 pl-6 mt-1">
-          <div class="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-            <span class="material-symbols-rounded text-base text-amber-500" style="font-variation-settings: 'wght' 300;">schedule</span>
-            <span>Pendiente</span>
+        <div class="hidden lg:flex items-center gap-4 border-l border-gray-200 dark:border-gray-800 pl-6 mt-1 text-[10px] font-bold uppercase tracking-wider">
+          <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+            <span class="material-symbols-rounded text-sm text-gray-400">radio_button_unchecked</span> <span>Por hacer</span>
           </div>
-          <div class="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-            <span class="material-symbols-rounded text-base text-blue-500" style="font-variation-settings: 'wght' 300;">motion_photos_on</span>
-            <span>En proceso</span>
+          <div class="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+            <span class="material-symbols-rounded text-sm text-blue-500 animate-pulse">print</span> <span>Imprimiendo</span>
           </div>
-          <div class="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">
-            <span class="material-symbols-rounded text-base text-emerald-500" style="font-variation-settings: 'wght' 300;">check_circle</span>
-            <span>Terminado</span>
+          <div class="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+            <span class="material-symbols-rounded text-sm text-amber-500">package_2</span> <span>Manipulado</span>
+          </div>
+          <div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+            <span class="material-symbols-rounded text-sm text-emerald-500">check_circle</span> <span>Terminado</span>
+          </div>
+          <div class="flex items-center gap-1 text-red-600 dark:text-red-400 animate-pulse">
+            <span class="material-symbols-rounded text-sm text-red-500">bolt</span> <span>Urgente</span>
           </div>
         </div>
       </div>
@@ -195,7 +252,7 @@
                   draggable="true"
                   on:dragstart={(e) => iniciarArrastre(e, trabajo.numParte)}
                   on:click={(e) => abrirDetallesTrabajo(e, trabajo)}
-                  class="px-2.5 py-1 rounded-lg text-[10px] font-medium cursor-pointer transition-all truncate border flex items-center justify-between {coloresEstado[trabajo.estado] || 'bg-gray-50 text-gray-600 border-gray-100'}"
+                  class="px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all truncate border flex items-center justify-between {coloresEstado[trabajo.estado] || 'bg-gray-50 text-gray-600 border-gray-100'}"
                   title="{trabajo.numParte} - {trabajo.cliente}"
                 >
                   <span class="truncate">#{trabajo.numParte} {trabajo.cliente}</span>
@@ -220,6 +277,7 @@
     </div>
   </div>
 
+  <!-- MODAL: VER MÁS PARTES DEL DÍA -->
   {#if modalMasAbierto}
     <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[250] flex items-center justify-center p-4 animate-fade-in" on:click={cerrarModalMas}>
       <div class="bg-white dark:bg-[#16191D] border border-gray-100 dark:border-[#232830] rounded-3xl w-full max-w-md p-6 shadow-2xl flex flex-col max-h-[70vh]" on:click|stopPropagation>
@@ -229,7 +287,7 @@
             <h3 class="text-lg font-semibold text-[#1A1D21] dark:text-[#EDF0F3] capitalize">{fechaModalMasTexto}</h3>
           </div>
           <button on:click={cerrarModalMas} class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-[#1E2228] hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 cursor-pointer">
-            <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">close</span>
+            <span class="material-symbols-rounded text-lg">close</span>
           </button>
         </div>
 
@@ -243,12 +301,12 @@
             >
               <div class="flex items-center gap-2">
                 <span class="text-gray-400 dark:text-gray-500">#{trabajo.numParte}</span>
-                <span class="font-semibold text-[#1A1D21] dark:text-[#EDF0F3]">{trabajo.cliente}</span>
+                <span class="font-bold text-[#1A1D21] dark:text-[#EDF0F3]">{trabajo.cliente}</span>
                 {#if trabajo.subcontrata}
                   <span class="material-symbols-rounded text-sm text-orange-500" style="font-variation-settings: 'wght' 300;">handshake</span>
                 {/if}
               </div>
-              <span class="px-2 py-0.5 text-[9px] font-semibold rounded-md uppercase border {coloresEstado[trabajo.estado]}">{trabajo.estado}</span>
+              <span class="px-2 py-0.5 text-[9px] font-extrabold rounded-md uppercase border {coloresEstado[trabajo.estado]}">{trabajo.estado}</span>
             </div>
           {/each}
         </div>
@@ -256,6 +314,7 @@
     </div>
   {/if}
 
+  <!-- MODAL: FICHA DETALLADA DEL PEDIDO -->
   {#if modalDetalleAbierto && trabajoSeleccionado}
     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[300] flex items-center justify-center p-4 animate-fade-in" on:click={cerrarModalDetalle}>
       <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl w-full max-w-2xl p-8 shadow-2xl flex flex-col max-h-[90vh] relative animate-scale-up text-[#1A1D21] dark:text-[#EDF0F3] transition-colors overflow-y-auto" on:click|stopPropagation>
@@ -265,7 +324,7 @@
             <span class="px-2.5 py-1 bg-black text-white dark:bg-[#1E2228] dark:border dark:border-gray-800 text-[10px] font-bold rounded-lg tracking-wider uppercase">
               Parte #{trabajoSeleccionado.numParte}
             </span>
-            <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider border {coloresEstado[trabajoSeleccionado.estado]}">
+            <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-lg uppercase tracking-wider border {coloresEstado[trabajoSeleccionado.estado]}">
               {trabajoSeleccionado.estado}
             </span>
           </div>
@@ -279,10 +338,9 @@
         </h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          
           <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
             <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">account_circle</span>
+              <span class="material-symbols-rounded text-lg">account_circle</span>
             </div>
             <div class="min-w-0 flex flex-col">
               <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Comercial</span>
@@ -292,7 +350,7 @@
 
           <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
             <div class="w-9 h-9 rounded-lg bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-white flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">layers</span>
+              <span class="material-symbols-rounded text-lg">layers</span>
             </div>
             <div class="min-w-0 flex flex-col">
               <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Área</span>
@@ -302,7 +360,7 @@
 
           <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
             <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">palette</span>
+              <span class="material-symbols-rounded text-lg">palette</span>
             </div>
             <div class="min-w-0 flex flex-col">
               <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Diseñador</span>
@@ -312,19 +370,18 @@
 
           <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
             <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">calendar_today</span>
+              <span class="material-symbols-rounded text-lg">calendar_today</span>
             </div>
             <div class="min-w-0 flex flex-col">
               <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Entrega</span>
               <span class="text-xs font-bold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{trabajoSeleccionado.fechaSalida}</span>
             </div>
           </div>
-
         </div>
 
         <div class="mt-6">
           <p class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-            <span class="material-symbols-rounded text-sm" style="font-variation-settings: 'wght' 300;">description</span>
+            <span class="material-symbols-rounded text-sm">description</span>
             <span>Descripción General del Pedido</span>
           </p>
           <div class="bg-white dark:bg-[#1A1D21] p-4 rounded-2xl border border-[#E9EBF0] dark:border-[#232830] text-xs font-medium text-gray-600 dark:text-gray-400 leading-relaxed shadow-xs">
@@ -334,7 +391,7 @@
 
         <div class="mt-6">
           <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-            <span class="material-symbols-rounded text-sm" style="font-variation-settings: 'wght' 300;">reorder</span>
+            <span class="material-symbols-rounded text-sm">reorder</span>
             <span>Desglose Técnico de Producción</span>
           </p>
           <div class="border border-gray-100 dark:border-[#232830] rounded-2xl overflow-hidden bg-white dark:bg-[#1A1D21] shadow-xs">
@@ -358,7 +415,7 @@
                 {:else}
                   <tr>
                     <td colspan="2" class="p-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center justify-center gap-2">
-                      <span class="material-symbols-rounded text-3xl opacity-30" style="font-variation-settings: 'wght' 100;">inventory_2</span>
+                      <span class="material-symbols-rounded text-3xl opacity-30">inventory_2</span>
                       <span class="text-[11px] font-medium italic">No hay subproductos detallados en este parte.</span>
                     </td>
                   </tr>
@@ -369,8 +426,8 @@
         </div>
 
         {#if trabajoSeleccionado.subcontrata}
-          <div class="mt-4 flex items-center gap-2 px-4 py-3 bg-orange-500/5 border border-orange-500/10 rounded-2xl animate-fade-in">
-            <span class="material-symbols-rounded text-orange-500 text-base" style="font-variation-settings: 'wght' 300;">handshake</span>
+          <div class="mt-4 flex items-center gap-2 px-4 py-3 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
+            <span class="material-symbols-rounded text-orange-500 text-base">handshake</span>
             <p class="text-[11px] font-medium text-orange-600 dark:text-orange-400">
               Esta orden se encuentra externalizada en: <span class="font-bold uppercase">{trabajoSeleccionado.subcontrata}</span>
             </p>
@@ -380,48 +437,51 @@
         <div class="mt-8 border-t border-gray-100 dark:border-[#232830] pt-5 space-y-3 flex-shrink-0">
           
           {#if trabajoSeleccionado.estado === 'Terminado'}
-            <div class="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-3.5 flex items-center gap-3 text-emerald-700 dark:text-emerald-400 text-xs font-medium animate-fade-in">
-              <span class="material-symbols-rounded text-lg text-emerald-600" style="font-variation-settings: 'wght' 300;">lock</span>
+            <div class="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-3.5 flex items-center gap-3 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+              <span class="material-symbols-rounded text-lg text-emerald-600">lock</span>
               <p>Este parte de trabajo ya está archivado como <strong>Terminado</strong>. Por seguridad de taller, su estado no puede volver a modificarse en frío.</p>
             </div>
           {:else}
-            <div class="animate-fade-in space-y-3">
+            <!-- 🎛️ BOTONERA OPERATIVA DINÁMICA MEJORADA -->
+            <div class="space-y-3">
               <p class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-center block mb-1">Avanzar o Cambiar Estado de Producción</p>
               
-              {#if trabajoSeleccionado.estado !== 'En proceso'}
+              <!-- 🔥 REVOLUCIÓN VISUAL: Usamos Flexbox para agrupar todas las opciones relacionales en una sola fila elástica de ancho equitativo -->
+              <div class="flex w-full gap-2.5">
+                {#each listaEstados.filter(e => e !== 'Terminado') as estadoOpcion}
+                  {#if esTransicionValida(trabajoSeleccionado.estado, estadoOpcion)}
+                    <button 
+                      on:click={() => cambiarEstado(estadoOpcion)} 
+                      class="flex-1 py-3 px-2 border border-[#E9EBF0] dark:border-[#232830] font-bold text-[11px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none bg-white dark:bg-[#1E2228] truncate
+                        {estadoOpcion === 'Imprimiendo' ? 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10' : ''}
+                        {estadoOpcion === 'Manipulado' ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10' : ''}
+                        {estadoOpcion === 'Por hacer' ? 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700' : ''}
+                        {estadoOpcion === 'Urgente' ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 border-red-200' : ''}"
+                    >
+                      <span class="material-symbols-rounded text-base flex-shrink-0">{iconosEstado[estadoOpcion]}</span>
+                      <span class="truncate">Mover a {estadoOpcion}</span>
+                    </button>
+                  {/if}
+                {/each}
+              </div>
+
+              {#if esTransicionValida(trabajoSeleccionado.estado, 'Terminado')}
                 <button 
-                  on:click={() => cambiarEstado('En proceso')} 
-                  class="w-full py-3.5 border border-[#E9EBF0] dark:border-[#232830] text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 font-bold text-xs rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer outline-none"
+                  on:click={() => cambiarEstado('Terminado')} 
+                  class="w-full py-3.5 bg-[#5C42FF] text-white hover:bg-[#4B33E6] font-bold text-xs rounded-full shadow-lg shadow-[#5C42FF]/10 dark:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer outline-none"
                 >
-                  <span class="material-symbols-rounded text-base" style="font-variation-settings: 'wght' 400;">motion_photos_on</span>
-                  <span>Poner En proceso</span>
+                  <span class="material-symbols-rounded text-base">check_circle</span>
+                  <span>Finalizar y Cerrar Orden de Trabajo (Archivar)</span>
                 </button>
               {/if}
-
-              {#if trabajoSeleccionado.estado !== 'Pendiente'}
-                <button 
-                  on:click={() => cambiarEstado('Pendiente')} 
-                  class="w-full py-3.5 border border-[#E9EBF0] dark:border-[#232830] text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 font-bold text-xs rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer outline-none"
-                >
-                  <span class="material-symbols-rounded text-base" style="font-variation-settings: 'wght' 400;">schedule</span>
-                  <span>Poner Pendiente</span>
-                </button>
-              {/if}
-
-              <button 
-                on:click={() => cambiarEstado('Terminado')} 
-                class="w-full py-3.5 bg-[#5C42FF] text-white hover:bg-[#4B33E6] font-bold text-xs rounded-full shadow-lg shadow-[#5C42FF]/10 dark:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer outline-none"
-              >
-                <span class="material-symbols-rounded text-base" style="font-variation-settings: 'wght' 400;">check_circle</span>
-                <span>Finalizar y Cerrar Orden de Trabajo (Archivar)</span>
-              </button>
             </div>
           {/if}
 
+          <!-- CONFIRMACIÓN DE BORRADO -->
           <div class="pt-1">
             {#if !confirmandoEliminar}
               <button on:click={eliminarTrabajo} class="w-full text-center py-2.5 text-xs font-semibold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full border border-dashed border-red-200/60 dark:border-red-500/20 transition-colors cursor-pointer flex items-center justify-center gap-1.5 outline-none">
-                <span class="material-symbols-rounded text-base" style="font-variation-settings: 'wght' 300;">delete</span>
+                <span class="material-symbols-rounded text-base">delete</span>
                 <span>Archivar u Ordenar Eliminación del Parte</span>
               </button>
             {:else}
@@ -438,9 +498,7 @@
 
       </div>
     </div>
-  {#if modalDetalleAbierto && trabajoSeleccionado}
   {/if}
-{/if}
 
 </div>
 
