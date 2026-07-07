@@ -1,8 +1,10 @@
 ---
 // src/pages/w/[workspace]/nueva-tarea.astro
 import MainLayout from '../../../layouts/MainLayout.astro';
-import NuevaTarea from '../../../components/FormularioTarea.svelte';
 import { db, Trabajo } from 'astro:db';
+
+// 🛠️ CORREGIDO: Cambiamos la ruta absoluta con barra por la ruta relativa exacta
+import FormularioTareaWizard from '../../../components/FormularioTareaWizard.svelte';
 
 export async function getStaticPaths() {
   return [
@@ -12,13 +14,39 @@ export async function getStaticPaths() {
   ];
 }
 
-// Capturamos el entorno actual de la URL
 const { workspace } = Astro.params;
 
+// Recuperamos todos los trabajos de Turso
 const todos = await db.select().from(Trabajo);
 const clientesExistentes = [...new Set(todos.map((t) => t.cliente))];
+
+// LÓGICA AUTOINCREMENTAL INTELIGENTE
+const añoActual = new Date().getFullYear().toString().slice(-2); // Captura "26"
+const prefijoAño = `${añoActual}-`; // "26-"
+
+// Filtramos los códigos del año actual para encontrar el más alto
+const partesDelAño = todos
+  .map((t) => t.numParte)
+  .filter((num) => num && num.startsWith(prefijoAño));
+
+let proximoNumero = 1;
+
+if (partesDelAño.length > 0) {
+  const numeros = partesDelAño.map((p) => parseInt(p.split('-')[1], 10));
+  proximoNumero = Math.max(...numeros) + 1;
+}
+
+// Formateamos el número final con 4 dígitos (ej: "26-0001")
+const proximoNumParte = `${prefijoAño}${proximoNumero.toString().padStart(4, '0')}`;
 ---
 
-<MainLayout title="Registrar nuevo parte">
-  <NuevaTarea clientesExistentes={clientesExistentes} workspace={workspace} client:load />
+<MainLayout title="Registrar nuevo parte de trabajo">
+  <div class="py-2">
+    <FormularioTareaWizard 
+      workspace={workspace} 
+      clientesExistentes={clientesExistentes} 
+      proximoNumParte={proximoNumParte}
+      client:load 
+    />
+  </div>
 </MainLayout>

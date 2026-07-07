@@ -6,13 +6,13 @@ export default async function seed() {
   await db.delete(DesgloseTrabajo);
   await db.delete(Trabajo);
 
-  // 2. INSERCIÓN DE HISTÓRICO MULTIANUAL (2024, 2025 y 2026)
+  // 2. INSERCIÓN DE HISTÓRICO MULTIANUAL (Prefijos de año en formato Texto)
   await db.insert(Trabajo).values([
     // ==========================================
     // 📅 AÑO 2024 (HISTÓRICO COMPLETO - TODO TERMINADO)
     // ==========================================
     {
-      numParte: 1205,
+      numParte: '24-1205',
       workspaceId: 'produccion',
       cliente: 'Ayuntamiento de Granada',
       descripcionGeneral: 'CARTELERÍA FIESTAS DEL CORPUS 2024',
@@ -24,7 +24,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1206,
+      numParte: '24-1206',
       workspaceId: 'produccion',
       cliente: 'Restaurante Los Manueles',
       descripcionGeneral: 'RENOVACIÓN DE CARTAS DE OTOÑO 2024',
@@ -36,7 +36,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1207,
+      numParte: '24-1207',
       workspaceId: 'produccion',
       cliente: 'Clínica Dental Nevada',
       descripcionGeneral: 'FOLLETOS APERTURA SEGUNDA PLANTA',
@@ -52,7 +52,7 @@ export default async function seed() {
     // 📅 AÑO 2025 (HISTÓRICO COMPLETO - TODO TERMINADO)
     // ==========================================
     {
-      numParte: 1540,
+      numParte: '25-1540',
       workspaceId: 'produccion',
       cliente: 'Ayuntamiento de Granada',
       descripcionGeneral: 'LONAS DECORATIVAS CONGRESO TURISMO 2025',
@@ -64,7 +64,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1541,
+      numParte: '25-1541',
       workspaceId: 'produccion',
       cliente: 'Hermandad del Sur',
       descripcionGeneral: 'PAPELETAS DE SITIO SEMANA SANTA 2025',
@@ -76,7 +76,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1542,
+      numParte: '25-1542',
       workspaceId: 'produccion',
       cliente: 'Colegio Sierra Elvira',
       descripcionGeneral: 'ORLAS E IMPRESIONES FIN DE CURSO 2025',
@@ -88,7 +88,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1543,
+      numParte: '25-1543',
       workspaceId: 'produccion',
       cliente: 'Restaurante Los Manueles',
       descripcionGeneral: 'ETIQUETAS ADHESIVAS PARA BOTELLAS DE VINO DE LA CASA',
@@ -100,7 +100,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1544,
+      numParte: '25-1544',
       workspaceId: 'produccion',
       cliente: 'Hoteles Alhambra',
       descripcionGeneral: 'TARJETAS LLAVE HABITACIÓN CORTESÍA',
@@ -116,7 +116,7 @@ export default async function seed() {
     // 📅 AÑO 2026 (AÑO ACTUAL - FLUJO DINÁMICO COMÚN)
     // ==========================================
     {
-      numParte: 1825,
+      numParte: '26-1825',
       workspaceId: 'produccion',
       cliente: 'Ayuntamiento de Granada',
       descripcionGeneral: 'CARTELERÍA FIESTAS DEL CORPUS 2026',
@@ -128,7 +128,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1824,
+      numParte: '26-1824',
       workspaceId: 'produccion',
       cliente: 'Restaurante Los Manueles',
       descripcionGeneral: 'CARTAS MENÚ PREMIUM ENCAPSULADAS',
@@ -140,7 +140,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1823,
+      numParte: '26-1823',
       workspaceId: 'produccion',
       cliente: 'Hermandad del Sur',
       descripcionGeneral: 'SUDADERAS CON CAPUCHA ESCUDO ORO',
@@ -152,7 +152,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1822,
+      numParte: '26-1822',
       workspaceId: 'produccion',
       cliente: 'Colegio Sierra Elvira',
       descripcionGeneral: 'ORLAS FIN DE CURSO 2026 BRILLO',
@@ -164,7 +164,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1821,
+      numParte: '26-1821',
       workspaceId: 'produccion',
       cliente: 'Automóviles Granada',
       descripcionGeneral: 'LUNETAS TÉRMICAS ADHESIVAS CORTE',
@@ -176,7 +176,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1820,
+      numParte: '26-1820',
       workspaceId: 'produccion',
       cliente: 'Clínica Dental Nevada',
       descripcionGeneral: 'FOLLETOS PUBLICITARIOS DIARIO',
@@ -188,7 +188,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1819,
+      numParte: '26-1819',
       workspaceId: 'produccion',
       cliente: 'Óptica Albaicín',
       descripcionGeneral: 'VINILOS ÁCIDO PARA ESCAPARATE',
@@ -200,7 +200,7 @@ export default async function seed() {
       subcontrata: null
     },
     {
-      numParte: 1818,
+      numParte: '26-1818',
       workspaceId: 'produccion',
       cliente: 'Gimnasio Inacua',
       descripcionGeneral: 'CAMISETAS TÉCNICAS SUBLIMACIÓN DTF',
@@ -213,31 +213,31 @@ export default async function seed() {
     }
   ]);
 
-  // 3. INSERCIÓN DE LÍNEAS DE PRODUCTOS ASOCIADAS (Desglose 1:N)
+  // 3. INSERCIÓN DE LÍNEAS DE PRODUCTOS ASOCIADAS (Sincronizado con claves de Texto)
   await db.insert(DesgloseTrabajo).values([
     // Desgloses 2024
-    { numParte: 1205, descripcionProducto: 'Carteles Mupi Papel Posteri', cantidad: 50 },
-    { numParte: 1206, descripcionProducto: 'Dípticos Menú Kraft Reciclado', cantidad: 100 },
-    { numParte: 1207, descripcionProducto: 'Flyers A6 Brillo 115g', cantidad: 10000 },
+    { numParte: '24-1205', descripcionProducto: 'Carteles Mupi Papel Posteri', cantidad: 50 },
+    { numParte: '24-1206', descripcionProducto: 'Dípticos Menú Kraft Reciclado', cantidad: 100 },
+    { numParte: '24-1207', descripcionProducto: 'Flyers A6 Brillo 115g', cantidad: 10000 },
     
     // Desgloses 2025
-    { numParte: 1540, descripcionProducto: 'Lonas Microperforadas Andamio', cantidad: 2 },
-    { numParte: 1541, descripcionProducto: 'Papeletas cartulina con matriz numerada', cantidad: 600 },
-    { numParte: 1542, descripcionProducto: 'Orlas Mate 30x40cm', cantidad: 110 },
-    { numParte: 1543, descripcionProducto: 'Pegatinas Troqueladas Bobina', cantidad: 2000 },
-    { numParte: 1544, descripcionProducto: 'Tarjetas PVC Magnéticas impresas', cantidad: 500 },
+    { numParte: '25-1540', descripcionProducto: 'Lonas Microperforadas Andamio', cantidad: 2 },
+    { numParte: '25-1541', descripcionProducto: 'Papeletas cartulina con matriz numerada', cantidad: 600 },
+    { numParte: '25-1542', descripcionProducto: 'Orlas Mate 30x40cm', cantidad: 110 },
+    { numParte: '25-1543', descripcionProducto: 'Pegatinas Troqueladas Bobina', cantidad: 2000 },
+    { numParte: '25-1544', descripcionProducto: 'Tarjetas PVC Magnéticas impresas', cantidad: 500 },
 
     // Desgloses 2026
-    { numParte: 1825, descripcionProducto: 'Mupis Vinilo Polimérico Mate', cantidad: 15 },
-    { numParte: 1825, descripcionProducto: 'Lonas Frontlit con Ojales 3x2m', cantidad: 4 },
-    { numParte: 1824, descripcionProducto: 'Menús A4 Estucado 350g + Laminado Mate', cantidad: 120 },
-    { numParte: 1823, descripcionProducto: 'Sudaderas JHK Negras Talla L', cantidad: 45 },
-    { numParte: 1823, descripcionProducto: 'Sudaderas JHK Negras Talla XL', cantidad: 25 },
-    { numParte: 1822, descripcionProducto: 'Orlas 40x50cm Papel Fotográfico', cantidad: 85 },
-    { numParte: 1821, descripcionProducto: 'Vinilo Corte Blanco Vehículos', cantidad: 20 },
-    { numParte: 1820, descripcionProducto: 'Dípticos A5 Brillo 135g', cantidad: 5000 },
-    { numParte: 1819, descripcionProducto: 'Instalación Vinilo Ácido Arenado', cantidad: 2 },
-    { numParte: 1818, descripcionProducto: 'Metros Impresión DTF Textil', cantidad: 12 }
+    { numParte: '26-1825', descripcionProducto: 'Mupis Vinilo Polimérico Mate', cantidad: 15 },
+    { numParte: '26-1825', descripcionProducto: 'Lonas Frontlit con Ojales 3x2m', cantidad: 4 },
+    { numParte: '26-1824', descripcionProducto: 'Menús A4 Estucado 350g + Laminado Mate', cantidad: 120 },
+    { numParte: '26-1823', descripcionProducto: 'Sudaderas JHK Negras Talla L', cantidad: 45 },
+    { numParte: '26-1823', descripcionProducto: 'Sudaderas JHK Negras Talla XL', cantidad: 25 },
+    { numParte: '26-1822', descripcionProducto: 'Orlas 40x50cm Papel Fotográfico', cantidad: 85 },
+    { numParte: '26-1821', descripcionProducto: 'Vinilo Corte Blanco Vehículos', cantidad: 20 },
+    { numParte: '26-1820', descripcionProducto: 'Dípticos A5 Brillo 135g', cantidad: 5000 },
+    { numParte: '26-1819', descripcionProducto: 'Instalación Vinilo Ácido Arenado', cantidad: 2 },
+    { numParte: '26-1818', descripcionProducto: 'Metros Impresión DTF Textil', cantidad: 12 }
   ]);
 
   console.log('¡Histórico multianual inyectado con éxito en Turso Cloud! 🚀');

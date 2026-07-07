@@ -2,10 +2,9 @@
 import { defineDb, defineTable, column, NOW } from 'astro:db'; 
 
 // Control de cabeceras de trabajo
-// 🔥 CORREGIDO: Añadido 'export' delante
 export const Trabajo = defineTable({
   columns: {
-    numParte: column.number({ primaryKey: true }),
+    numParte: column.text({ primaryKey: true }), // Texto para soportar "26-0001"
     workspaceId: column.text(), 
     cliente: column.text(),
     descripcionGeneral: column.text({ optional: true }),
@@ -19,23 +18,22 @@ export const Trabajo = defineTable({
 });
 
 // Desglose de productos 1:N
-// 🔥 CORREGIDO: Añadido 'export' delante
 export const DesgloseTrabajo = defineTable({
   columns: {
     id: column.number({ primaryKey: true }),
-    numParte: column.number({ references: () => Trabajo.columns.numParte }),
+    // 🔥 CORREGIDO: Cambiado de .number() a .text() para coincidir con la tabla Trabajo
+    numParte: column.text({ references: () => Trabajo.columns.numParte }),
     descripcionProducto: column.text(),
     cantidad: column.number(),
   }
 });
 
 // Registro de Auditoría (Audit Trail)
-// 🔥 CORREGIDO: Añadido 'export' delante
 export const RegistroActividad = defineTable({
   columns: {
     id: column.number({ primaryKey: true }),
     fecha: column.date({ default: NOW }), 
-    usuario: column.text(),               
+    usuario: column.text(),              
     workspaceId: column.text(),           
     tipo: column.text(),                  
     accion: column.text(),                
