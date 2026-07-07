@@ -2,29 +2,24 @@
 // src/pages/w/[workspace]/nueva-tarea.astro
 import MainLayout from '../../../layouts/MainLayout.astro';
 import { db, Trabajo } from 'astro:db';
-
-// 🛠️ CORREGIDO: Cambiamos la ruta absoluta con barra por la ruta relativa exacta
 import FormularioTareaWizard from '../../../components/FormularioTareaWizard.svelte';
 
-export async function getStaticPaths() {
-  return [
-    { params: { workspace: 'produccion' } },
-    { params: { workspace: 'escolar' } },
-    { params: { workspace: 'profesional' } },
-  ];
-}
+// 🔥 REGLA DE ORO: Desactivamos el prerenderizado estático.
+// Esto obliga a Render a procesar la página en vivo en el servidor (SSR)
+export const prerender = false;
 
+// Al ser SSR, capturamos el parámetro del workspace directamente en tiempo real de la URL
 const { workspace } = Astro.params;
 
-// Recuperamos todos los trabajos de Turso
+// Solicitamos el histórico a Turso EN VIVO en cada carga de pantalla
 const todos = await db.select().from(Trabajo);
 const clientesExistentes = [...new Set(todos.map((t) => t.cliente))];
 
-// LÓGICA AUTOINCREMENTAL INTELIGENTE
-const añoActual = new Date().getFullYear().toString().slice(-2); // Captura "26"
-const prefijoAño = `${añoActual}-`; // "26-"
+// LÓGICA AUTOINCREMENTAL DINÁMICA SIN CONGELAR
+const añoActual = new Date().getFullYear().toString().slice(-2);
+const prefijoAño = `${añoActual}-`;
 
-// Filtramos los códigos del año actual para encontrar el más alto
+// Filtramos únicamente los códigos del año actual reales
 const partesDelAño = todos
   .map((t) => t.numParte)
   .filter((num) => num && num.startsWith(prefijoAño));
@@ -32,16 +27,24 @@ const partesDelAño = todos
 let proximoNumero = 1;
 
 if (partesDelAño.length > 0) {
-  const numeros = partesDelAño.map((p) => parseInt(p.split('-')[1], 10));
-  proximoNumero = Math.max(...numeros) + 1;
+  // Extraemos de forma segura el número tras el guion para calcular el máximo real en Turso
+  const numeros = partesDelAño.map((p) => {
+    const fragmentos = p.split('-');
+    return fragmentos[1] ? parseInt(fragmentos[1], 10) : 0;
+  }).filter(n => !isNaN(n));
+  
+  if (numeros.length > 0) {
+    proximoNumero = Math.max(...numeros) + 1;
+  }
 }
 
-// Formateamos el número final con 4 dígitos (ej: "26-0001")
+// Formateamos el número autoincremental en tiempo real (Ej: "26-1826")
 const proximoNumParte = `${prefijoAño}${proximoNumero.toString().padStart(4, '0')}`;
 ---
 
 <MainLayout title="Registrar nuevo parte de trabajo">
   <div class="py-2">
+    <!-- Enviamos los datos frescos al Wizard de Svelte -->
     <FormularioTareaWizard 
       workspace={workspace} 
       clientesExistentes={clientesExistentes} 
