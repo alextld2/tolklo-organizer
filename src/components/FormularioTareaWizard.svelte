@@ -104,7 +104,7 @@
   function irAlSiguiente() { if (pasoActual < 3) pasoActual += 1; }
   function irAlAnterior() { if (pasoActual > 1) pasoActual -= 1; }
 
-  // 🔥 CONEXIÓN AJUSTADA A TU RUTA: /api/tarea
+ // 🖊️ MOTOR DE ENVÍO CON INCREMENTO REACTIVO AUTOMÁTICO (SIN F5)
   async function procesarEnvio() {
     if (!cliente || !fechaSalida) {
       mensajeNotificacion = "Faltan campos obligatorios por rellenar (Cliente o Fecha Salida).";
@@ -117,7 +117,6 @@
     mensajeNotificacion = "";
 
     try {
-      // 🚀 CORREGIDO: Fetch directo a tu endpoint en español
       const response = await fetch(`/api/tarea/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,24 +126,58 @@
         })
       });
 
-      if (!response.ok) throw new Error("Error al guardar en el servidor de Turso.");
+      if (!response.ok) {
+        const datosError = await response.json().catch(() => ({}));
+        throw new Error(datosError.error || "Error indeterminado en el servidor.");
+      }
 
-      // Disparamos la ventana de impresión limpia en A3
+      // 1. Lanzamos la ventana limpia máster A3 para la imprenta
       lanzarVentanaImpresionA3();
 
-      mensajeNotificacion = `¡Parte #${numParte} registrado con éxito en la base de datos e impreso!`;
+      // 2. Notificamos el éxito en el banner superior
+      mensajeNotificacion = `¡Parte #${numParte} guardado con éxito en Turso!`;
       tipoNotificacion = "success";
+
+      // 3. 🔥 EL TRUCO: Calculamos el siguiente número autoincremental en caliente
+      const fragmentos = numParte.split('-');
+      if (fragmentos[1]) {
+        const numeroActual = parseInt(fragmentos[1], 10);
+        const proximoNumero = numeroActual + 1;
+        // Reasignamos el nuevo valor formateado con sus ceros (Ej: "26-1827")
+        proximoNumParte = `${fragmentos[0]}-${proximoNumero.toString().padStart(4, '0')}`;
+      }
+
+      // 4. Limpiamos los campos del formulario para la siguiente orden de trabajo
+      cliente = "";
+      descripcionGeneral = "";
+      fechaSalida = "";
+      direccionEntrega = "";
+      albaranAnonimo = false;
+      tipoEntrega = "taller";
+      area = "DIGITAL";
       
-      // Reseteamos parámetros limpios
-      cliente = ""; descripcionGeneral = ""; desgloses = [{ descripcionProducto: "", cantidad: null }];
+      // Limpiamos los desgloses dinámicos dejándolo a cero
+      desgloses = [{ descripcionProducto: "", cantidad: null }];
+
+      // Limpiamos la ficha técnica del Paso 3
+      papelPortada = ""; colorPortada = "";
+      papelInterior = ""; colorInterior = "";
+      listaPantonesPortada = []; listaPantonesInterior = [];
+      encuadernacion = { rustica: false, cosida: false, contracolado: false, fresada: false, colapur: false, solapa: false };
+      acabados = { hendido: false, troquelado: false, goma: false, plegado: false, perforado: false, pegado: false, agujero: false, enumerado: false };
+      espiralColor = ""; wireOColor = "";
+      grapadoTipo = "Normal"; barnizUVTipo = "No requiere"; estampingTipo = "No requiere";
+      laminadoTipo = "1 cara";
+
+      // Devolvemos al usuario al Paso 1 con todo limpio y el nuevo número listo
       pasoActual = 1;
 
     } catch (err: any) {
-      mensajeNotificacion = err.message || "Ha surgido un error crítico al procesar la inserción.";
+      mensajeNotificacion = `${err.message}`;
       tipoNotificacion = "error";
     } finally {
       guardandoDato = false;
-      setTimeout(() => { mensajeNotificacion = ""; }, 6000);
+      setTimeout(() => { mensajeNotificacion = ""; }, 5000);
     }
   }
 
