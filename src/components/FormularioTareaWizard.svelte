@@ -118,7 +118,7 @@
 
     try {
       // 🚀 CORREGIDO: Fetch directo a tu endpoint en español
-      const response = await fetch(`/api/tarea`, {
+      const response = await fetch(`/api/tarea/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
