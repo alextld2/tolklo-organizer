@@ -78,7 +78,7 @@
       bind:value={$busquedaGlobal}
       on:focus={() => tieneFoco = true}
       on:blur={() => setTimeout(() => tieneFoco = false, 250)}
-      class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] border border-transparent focus:border-[#5C42FF] dark:focus:border-[#7A62FF] pl-11 pr-4 py-2.5 rounded-2xl text-xs font-bold text-[#1A1D21] dark:text-[#EDF0F3] outline-none focus:bg-[#F1F3F6] dark:focus:bg-[#1E2228] transition-all placeholder-gray-400/80 dark:placeholder-gray-500 shadow-xs"
+      class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] border border-transparent focus:border-[#5C42FF] dark:focus:border-[#7A62FF] pl-11 pr-4 py-2.5 rounded-2xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none focus:bg-[#F1F3F6] dark:focus:bg-[#1E2228] transition-all placeholder-gray-400/80 dark:placeholder-gray-500 shadow-xs"
     />
 
     {#if mostrarResultados}
@@ -86,7 +86,7 @@
         
         {#if clientesEncontrados.length > 0}
           <div class="mb-4">
-            <p class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 block">Clientes</p>
+            <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 block">Clientes</p>
             <div class="space-y-1">
               {#each clientesEncontrados as cl}
                 <div class="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-colors group">
@@ -96,7 +96,7 @@
                   </div>
                   <a 
                     href="/w/{workspace}/clients?search={encodeURIComponent(cl.nombre)}" 
-                    class="text-[10px] font-bold text-[#5C42FF] dark:text-[#9A85FF] bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 px-2.5 py-1 rounded-lg border border-[#5C42FF]/10 hover:bg-[#5C42FF]/10 transition-colors"
+                    class="text-[10px] font-semibold text-[#5C42FF] dark:text-[#9A85FF] bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 px-2.5 py-1 rounded-lg border border-[#5C42FF]/10 hover:bg-[#5C42FF]/10 transition-colors"
                   >
                     Ver Ficha
                   </a>
@@ -108,14 +108,14 @@
 
         {#if tareasEncontradas.length > 0}
           <div>
-            <p class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 block">Órdenes de producción</p>
+            <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 block">Órdenes de producción</p>
             <div class="space-y-1">
               {#each tareasEncontradas as trabajo}
                 <div class="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-colors group">
                   <div class="flex items-center gap-3 min-w-0">
                     <div class="w-2 h-2 rounded-full bg-[#5C42FF] dark:bg-[#7A62FF] flex-shrink-0"></div>
                     <div class="flex flex-col min-w-0">
-                      <span class="text-xs font-bold text-[#1A1D21] dark:text-[#EDF0F3]">
+                      <span class="text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3]">
                         #{trabajo.numParte} — {trabajo.cliente}
                       </span>
                       <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 truncate">
@@ -154,10 +154,10 @@
     >
       <div class="flex justify-between items-start mb-2">
         <div class="flex items-center gap-2">
-          <span class="px-2.5 py-1 bg-black text-white dark:bg-[#1E2228] dark:border dark:border-gray-800 text-[10px] font-bold rounded-lg tracking-wider uppercase">
+          <span class="px-2.5 py-1 bg-black text-white dark:bg-[#1E2228] dark:border dark:border-gray-800 text-[10px] font-semibold rounded-lg tracking-wider uppercase">
             Parte #{tareaSeleccionada.numParte}
           </span>
-          <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider border 
+          <span class="px-2.5 py-1 text-[10px] font-semibold rounded-lg uppercase tracking-wider border 
             {tareaSeleccionada.estado === 'En proceso' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20' : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'}">
             {tareaSeleccionada.estado}
           </span>
@@ -167,7 +167,7 @@
         </button>
       </div>
 
-      <h2 class="text-3xl font-extrabold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3] uppercase mb-6">
+      <h2 class="text-3xl font-bold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3] uppercase mb-6">
         {tareaSeleccionada.cliente}
       </h2>
 
@@ -178,8 +178,8 @@
             <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">account_circle</span>
           </div>
           <div class="min-w-0 flex flex-col">
-            <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Comercial</span>
-            <span class="text-xs font-bold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{tareaSeleccionada.comercial || 'Sin asignar'}</span>
+            <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Comercial</span>
+            <span class="text-xs font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{tareaSeleccionada.comercial || 'Sin asignar'}</span>
           </div>
         </div>
 
@@ -188,8 +188,8 @@
             <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">layers</span>
           </div>
           <div class="min-w-0 flex flex-col">
-            <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Área</span>
-            <span class="text-xs font-bold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{tareaSeleccionada.area}</span>
+            <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Área</span>
+            <span class="text-xs font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{tareaSeleccionada.area}</span>
           </div>
         </div>
 
@@ -198,8 +198,8 @@
             <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">palette</span>
           </div>
           <div class="min-w-0 flex flex-col">
-            <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Diseñador</span>
-            <span class="text-xs font-bold mt-1 text-emerald-600 dark:text-emerald-400 truncate">{tareaSeleccionada.diseñador || 'Sin asignar'}</span>
+            <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Diseñador</span>
+            <span class="text-xs font-semibold mt-1 text-emerald-600 dark:text-emerald-400 truncate">{tareaSeleccionada.diseñador || 'Sin asignar'}</span>
           </div>
         </div>
 
@@ -208,15 +208,15 @@
             <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">calendar_today</span>
           </div>
           <div class="min-w-0 flex flex-col">
-            <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Entrega</span>
-            <span class="text-xs font-bold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{tareaSeleccionada.fechaSalida}</span>
+            <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Entrega</span>
+            <span class="text-xs font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{tareaSeleccionada.fechaSalida}</span>
           </div>
         </div>
 
       </div>
 
       <div class="mt-6">
-        <p class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+        <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
           <span class="material-symbols-rounded text-sm" style="font-variation-settings: 'wght' 300;">description</span>
           <span>Descripción General del Pedido</span>
         </p>
@@ -243,7 +243,7 @@
                 <tr class="hover:bg-gray-50/30 dark:hover:bg-gray-800/20 transition-colors">
                   <td class="p-3.5 pl-5 font-medium text-gray-600 dark:text-gray-400">{subItem.descripcionProducto}</td>
                   <td class="p-3.5 text-right pr-5">
-                    <span class="bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] px-2.5 py-1 rounded-md font-bold text-[11px] border border-purple-100/40 dark:border-transparent">
+                    <span class="bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] px-2.5 py-1 rounded-md font-semibold text-[11px] border border-purple-100/40 dark:border-transparent">
                       {subItem.cantidad.toLocaleString()} uds
                     </span>
                   </td>
@@ -265,7 +265,7 @@
         <div class="mt-4 flex items-center gap-2 px-4 py-3 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
           <span class="material-symbols-rounded text-orange-500 text-base" style="font-variation-settings: 'wght' 300;">handshake</span>
           <p class="text-[11px] font-medium text-orange-600 dark:text-orange-400">
-            Esta orden se encuentra externalizada en: <span class="font-bold uppercase">{tareaSeleccionada.subcontrata}</span>
+            Esta orden se encuentra externalizada en: <span class="font-semibold uppercase">{tareaSeleccionada.subcontrata}</span>
           </p>
         </div>
       {/if}

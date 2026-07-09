@@ -61,7 +61,7 @@
           ></div>
           
         </div>
-        <span class="text-[10px] font-bold text-gray-300 dark:text-gray-600 tracking-tighter transition-colors">
+        <span class="text-[10px] font-semibold text-gray-300 dark:text-gray-600 tracking-tighter transition-colors">
           {mes}
         </span>
       </div>

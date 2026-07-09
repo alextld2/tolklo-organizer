@@ -47,7 +47,7 @@
     if (desgloses.length > 1) desgloses = desgloses.filter((_, i) => i !== index);
   }
 
-  // --- PASO 3: FICHA TÉCNICA (LIMPIOS POR DEFECTO SIN PRESELECCIÓN) ---
+  // --- PASO 3: FICHA TÉCNICA (CAMPOS LIMPIOS POR DEFECTO) ---
   let papelPortada = "";
   let colorPortada = "";
   let papelInterior = "";
@@ -104,7 +104,7 @@
   function irAlSiguiente() { if (pasoActual < 3) pasoActual += 1; }
   function irAlAnterior() { if (pasoActual > 1) pasoActual -= 1; }
 
- // 🖊️ MOTOR DE ENVÍO CON INCREMENTO REACTIVO AUTOMÁTICO (SIN F5)
+  // PROCESAR ENVÍO CON INCREMENTO REACTIVO AUTOMÁTICO (RUTA EXACTA /api/tarea/create)
   async function procesarEnvio() {
     if (!cliente || !fechaSalida) {
       mensajeNotificacion = "Faltan campos obligatorios por rellenar (Cliente o Fecha Salida).";
@@ -117,12 +117,16 @@
     mensajeNotificacion = "";
 
     try {
+      // 1. Enviamos el objeto completo incluyendo la Ficha Técnica del Paso 3
       const response = await fetch(`/api/tarea/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           numParte, workspaceId: workspace, cliente, descripcionGeneral,
-          comercial, fechaSalida, area, desgloses
+          comercial, fechaSalida, area, desgloses,
+          papelPortada, colorPortada, papelInterior, colorInterior, espiralColor, wireOColor,
+          grapadoTipo, barnizUVTipo, estampingTipo, laminadoTipo,
+          encuadernacion, acabados, tipoLaminadoCara1, tipoLaminadoCara2
         })
       });
 
@@ -131,45 +135,29 @@
         throw new Error(datosError.error || "Error indeterminado en el servidor.");
       }
 
-      // 1. Lanzamos la ventana limpia máster A3 para la imprenta
-      lanzarVentanaImpresionA3();
+      // 2. 🔥 EL NUEVO FLUJO MÁSTER: Abrimos la ruta del PDF real dinámico
+      window.open(`/w/${workspace}/parte/${numParte}/print`, '_blank');
 
-      // 2. Notificamos el éxito en el banner superior
       mensajeNotificacion = `¡Parte #${numParte} guardado con éxito en Turso!`;
       tipoNotificacion = "success";
 
-      // 3. 🔥 EL TRUCO: Calculamos el siguiente número autoincremental en caliente
+      // 3. Incrementamos el contador reactivo en caliente
       const fragmentos = numParte.split('-');
       if (fragmentos[1]) {
         const numeroActual = parseInt(fragmentos[1], 10);
         const proximoNumero = numeroActual + 1;
-        // Reasignamos el nuevo valor formateado con sus ceros (Ej: "26-1827")
         proximoNumParte = `${fragmentos[0]}-${proximoNumero.toString().padStart(4, '0')}`;
       }
 
-      // 4. Limpiamos los campos del formulario para la siguiente orden de trabajo
-      cliente = "";
-      descripcionGeneral = "";
-      fechaSalida = "";
-      direccionEntrega = "";
-      albaranAnonimo = false;
-      tipoEntrega = "taller";
-      area = "DIGITAL";
-      
-      // Limpiamos los desgloses dinámicos dejándolo a cero
+      // 4. Reseteamos el formulario a virgen
+      cliente = ""; descripcionGeneral = ""; fechaSalida = ""; direccionEntrega = ""; albaranAnonimo = false; tipoEntrega = "taller"; area = "DIGITAL";
       desgloses = [{ descripcionProducto: "", cantidad: null }];
-
-      // Limpiamos la ficha técnica del Paso 3
-      papelPortada = ""; colorPortada = "";
-      papelInterior = ""; colorInterior = "";
+      papelPortada = ""; colorPortada = ""; papelInterior = ""; colorInterior = "";
       listaPantonesPortada = []; listaPantonesInterior = [];
       encuadernacion = { rustica: false, cosida: false, contracolado: false, fresada: false, colapur: false, solapa: false };
       acabados = { hendido: false, troquelado: false, goma: false, plegado: false, perforado: false, pegado: false, agujero: false, enumerado: false };
-      espiralColor = ""; wireOColor = "";
-      grapadoTipo = "Normal"; barnizUVTipo = "No requiere"; estampingTipo = "No requiere";
-      laminadoTipo = "1 cara";
+      espiralColor = ""; wireOColor = ""; grapadoTipo = "Normal"; barnizUVTipo = "No requiere"; estampingTipo = "No requiere"; laminadoTipo = "1 cara";
 
-      // Devolvemos al usuario al Paso 1 con todo limpio y el nuevo número listo
       pasoActual = 1;
 
     } catch (err: any) {
@@ -288,8 +276,8 @@
                   <div class="chk-item" style="font-size: 10px; font-weight: normal;"><span class="chk-box" style="width:13px; height:13px; line-height:11px; font-weight: bold;">${tipoEntrega === 'almacen' ? 'X' : ''}</span><span>Recogida en almacén</span></div>
                   <div class="chk-item" style="font-size: 10px; font-weight: normal;"><span class="chk-box" style="width:13px; height:13px; line-height:11px; font-weight: bold;">${albaranAnonimo ? 'X' : ''}</span><span>Albarán Anónimo</span></div>
                 </div>
-                <div class="box-borde text-center font-bold" style="width: 130px; background: white;"><span class="label-mini">Entrada</span><span style="color: ${colorBoli}; font-size: 10px;">${new Date().toLocaleDateString('es-ES')}</span></div>
-                <div class="box-borde text-center font-bold" style="width: 130px; background: white;"><span class="label-mini">Salida</span><span style="color: ${colorBoli}; font-size: 10px;">${fechaSalida ? new Date(fechaSalida).toLocaleDateString('es-ES') : '___/___/___'}</span></div>
+                <div class="box-borde text-center font-semibold" style="width: 130px; background: white;"><span class="label-mini">Entrada</span><span style="color: ${colorBoli}; font-size: 10px;">${new Date().toLocaleDateString('es-ES')}</span></div>
+                <div class="box-borde text-center font-semibold" style="width: 130px; background: white;"><span class="label-mini">Salida</span><span style="color: ${colorBoli}; font-size: 10px;">${fechaSalida ? new Date(fechaSalida).toLocaleDateString('es-ES') : '___/___/___'}</span></div>
               </div>
               <div class="box-borde" style="min-height: 35px;"><span class="label-mini">Dirección de entrega</span><div style="font-size: 10px; font-weight: bold; color: ${colorBoli}; text-transform: uppercase; margin-top: 1px;">${tipoEntrega === 'envio' ? (direccionEntrega || 'Dirección de envío') : 'RECOGIDA EN TALLER / ALMACÉN'}</div></div>
               <div class="flex-row-box">
@@ -315,7 +303,7 @@
               <div class="flex-row-box">
                 <div class="box-borde flex-1"><span class="label-mini">Grapado</span><div style="color: ${colorBoli}; font-weight: bold; margin-top: 1px;">${grapadoTipo}</div></div>
                 <div class="box-borde flex-1"><span class="label-mini">Barniz UV</span><div style="color: ${colorBoli}; font-weight: bold; margin-top: 1px;">${barnizUVTipo}</div></div>
-                <div class="box-borde flex-1"><span class="label-mini">Estamping</span><div style="color: ${colorBoli}; font-weight: bold; margin-top: 1px;">${estampingTipo}</div></div>
+                <div class="box-borde flex-1"><span class="label-mini">Estamping</span><div style="color: ${colorBoli}; font-weight: bold; margin-top: 1px;">${grapadoTipo}</div></div>
               </div>
               <div class="box-borde" style="display: flex; flex-direction: column; gap: 5px; background: white;">
                 <div class="flex-row-box" style="justify-content: space-between; align-items: center; padding-right: 20px;">
@@ -346,7 +334,7 @@
 </script>
 
 {#if mensajeNotificacion}
-  <div class="w-full p-4 rounded-2xl text-xs font-black tracking-wide shadow-md flex items-center gap-2 mb-4 animate-pulse
+  <div transition:slide class="w-full p-4 rounded-2xl text-xs font-semibold tracking-wide shadow-md flex items-center gap-2 mb-4 animate-pulse
     {tipoNotificacion === 'success' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}">
     <span class="material-symbols-rounded text-base">{tipoNotificacion === 'success' ? 'check_circle' : 'error'}</span>
     <span>{mensajeNotificacion}</span>
@@ -358,18 +346,18 @@
   <div class="flex items-center justify-between select-none py-1">
     <div class="flex items-center gap-6 md:gap-14 mx-auto">
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-xl font-bold text-xs flex items-center justify-center transition-all {pasoActual >= 1 ? 'bg-[#5C42FF] text-white shadow-md' : 'bg-gray-200 text-gray-400'}">1</div>
-        <span class="text-xs font-black {pasoActual === 1 ? 'text-[#1A1D21] dark:text-[#EDF0F3]' : 'text-gray-400'}">Administrativo</span>
+        <div class="w-7 h-7 rounded-xl font-semibold text-xs flex items-center justify-center transition-all {pasoActual >= 1 ? 'bg-[#5C42FF] text-white shadow-md' : 'bg-gray-200 text-gray-400'}">1</div>
+        <span class="text-xs font-semibold {pasoActual === 1 ? 'text-[#1A1D21] dark:text-[#EDF0F3]' : 'text-gray-400'}">Administrativo</span>
       </div>
       <div class="h-px w-10 bg-gray-300 dark:bg-gray-700"></div>
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-xl font-bold text-xs flex items-center justify-center transition-all {pasoActual >= 2 ? 'bg-[#5C42FF] text-white shadow-md' : 'bg-gray-200 text-gray-400'}">2</div>
-        <span class="text-xs font-black {pasoActual === 2 ? 'text-[#1A1D21] dark:text-[#EDF0F3]' : 'text-gray-400'}">Producción</span>
+        <div class="w-7 h-7 rounded-xl font-semibold text-xs flex items-center justify-center transition-all {pasoActual >= 2 ? 'bg-[#5C42FF] text-white shadow-md' : 'bg-gray-200 text-gray-400'}">2</div>
+        <span class="text-xs font-semibold {pasoActual === 2 ? 'text-[#1A1D21] dark:text-[#EDF0F3]' : 'text-gray-400'}">Producción</span>
       </div>
       <div class="h-px w-10 bg-gray-300 dark:bg-gray-700"></div>
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-xl font-bold text-xs flex items-center justify-center transition-all {pasoActual >= 3 ? 'bg-[#5C42FF] text-white shadow-md' : 'bg-gray-200 text-gray-400'}">3</div>
-        <span class="text-xs font-black {pasoActual === 3 ? 'text-[#1A1D21] dark:text-[#EDF0F3]' : 'text-gray-400'}">Ficha Técnica</span>
+        <div class="w-7 h-7 rounded-xl font-semibold text-xs flex items-center justify-center transition-all {pasoActual >= 3 ? 'bg-[#5C42FF] text-white shadow-md' : 'bg-gray-200 text-gray-400'}">3</div>
+        <span class="text-xs font-semibold {pasoActual === 3 ? 'text-[#1A1D21] dark:text-[#EDF0F3]' : 'text-gray-400'}">Ficha Técnica</span>
       </div>
     </div>
   </div>
@@ -377,19 +365,19 @@
   <div class="flex-1 bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-8 shadow-xs overflow-y-auto min-h-0">
     
     {#if pasoActual === 1}
-      <div class="space-y-6">
+      <div class="space-y-6" in:fade={{ duration: 150 }}>
         <div>
-          <h2 class="text-xl font-black tracking-tight">Paso 1: Identificación y Plazos</h2>
+          <h2 class="text-xl font-semibold tracking-tight">Paso 1: Identificación y Plazos</h2>
           <p class="text-xs text-gray-400 mt-0.5">Apertura técnica comercial y logística de la orden.</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-bold">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-semibold">
           <div class="flex flex-col space-y-2">
             <label for="numParte" class="text-gray-400 uppercase tracking-wider text-[10px]">Número de Parte (Automático)</label>
-            <input id="numParte" type="text" bind:value={numParte} readonly class="p-3 bg-gray-100 dark:bg-gray-800 border border-transparent rounded-xl font-mono text-xs font-bold text-gray-500 cursor-not-allowed select-none" />
+            <input id="numParte" type="text" bind:value={numParte} readonly class="p-3 bg-gray-100 dark:bg-gray-800 border border-transparent rounded-xl font-mono text-xs font-semibold text-gray-500 cursor-not-allowed select-none" />
           </div>
           <div class="flex flex-col space-y-2">
             <label for="comercial" class="text-gray-400 uppercase tracking-wider text-[10px]">Comercial Asignado</label>
-            <select id="comercial" bind:value={comercial} class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-100 rounded-xl outline-none text-xs font-bold text-black dark:text-white">
+            <select id="comercial" bind:value={comercial} class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-100 rounded-xl outline-none text-xs font-semibold text-black dark:text-white">
               {#each comerciales as c}<option value={c}>{c}</option>{/each}
             </select>
           </div>
@@ -399,7 +387,7 @@
             {#if mostrarSugerencias && sugerenciasFiltradas.length > 0}
               <div class="absolute top-[68px] left-0 w-full bg-white dark:bg-[#1E2228] border rounded-xl max-h-40 overflow-y-auto shadow-lg z-50 divide-y">
                 {#each sugerenciasFiltradas as sug}
-                  <button type="button" on:click={() => seleccionarCliente(sug)} class="w-full text-left p-2.5 text-xs font-bold hover:bg-gray-50 transition-colors block border-none">{sug}</button>
+                  <button type="button" on:click={() => seleccionarCliente(sug)} class="w-full text-left p-2.5 text-xs font-semibold hover:bg-gray-50 transition-colors block border-none">{sug}</button>
                 {/each}
               </div>
             {/if}
@@ -409,18 +397,18 @@
             <input id="fechaSalida" type="date" bind:value={fechaSalida} class="p-3 bg-gray-50 dark:bg-[#1E2228] border rounded-xl outline-none text-xs font-semibold" />
           </div>
         </div>
-        <div class="border-t border-gray-100 dark:border-[#232830] pt-5 space-y-4 text-xs font-bold">
+        <div class="border-t border-gray-100 dark:border-[#232830] pt-5 space-y-4 text-xs font-semibold">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="flex flex-col space-y-2">
               <span class="text-gray-400 uppercase tracking-wider text-[10px]">Modalidad de Distribución</span>
               <div class="flex gap-1 bg-gray-50 dark:bg-[#1E2228] p-1.5 rounded-xl border">
-                <button type="button" on:click={() => tipoEntrega = "taller"} class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all {tipoEntrega === 'taller' ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs' : 'text-gray-400'}">Entrega en Taller</button>
-                <button type="button" on:click={() => tipoEntrega = "almacen"} class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all {tipoEntrega === 'almacen' ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs' : 'text-gray-400'}">Recogida Almacén</button>
-                <button type="button" on:click={() => tipoEntrega = "envio"} class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all {tipoEntrega === 'envio' ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs' : 'text-gray-400'}">Se Envía Fuera</button>
+                <button type="button" on:click={() => tipoEntrega = "taller"} class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all {tipoEntrega === 'taller' ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs' : 'text-gray-400'}">Entrega en Taller</button>
+                <button type="button" on:click={() => tipoEntrega = "almacen"} class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all {tipoEntrega === 'almacen' ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs' : 'text-gray-400'}">Recogida Almacén</button>
+                <button type="button" on:click={() => tipoEntrega = "envio"} class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all {tipoEntrega === 'envio' ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs' : 'text-gray-400'}">Se Envía Fuera</button>
               </div>
             </div>
             <div class="flex items-center pt-6">
-              <label class="flex items-center gap-3 cursor-pointer text-gray-400 select-none font-bold text-xs">
+              <label class="flex items-center gap-3 cursor-pointer text-gray-400 select-none font-semibold text-xs">
                 <input type="checkbox" bind:checked={albaranAnonimo} class="w-4 h-4 rounded accent-[#5C42FF]" />
                 <span>Albarán Anónimo</span>
               </label>
@@ -437,34 +425,40 @@
     {/if}
 
     {#if pasoActual === 2}
-      <div class="space-y-6">
+      <div class="space-y-6" in:fade={{ duration: 150 }}>
         <div>
-          <h2 class="text-xl font-black tracking-tight">Paso 2: Maquinaria y Líneas de Producto</h2>
+          <h2 class="text-xl font-semibold tracking-tight">Paso 2: Maquinaria y Líneas de Producto</h2>
           <p class="text-xs text-gray-400 mt-0.5">Asignación de maquinaria y desglose de volúmenes.</p>
         </div>
-        <div class="flex flex-col space-y-2 text-xs font-bold w-full">
+        <div class="flex flex-col space-y-2 text-xs font-semibold w-full">
           <span class="text-gray-400 uppercase tracking-wider text-[10px]">Área / Maquinaria Principal</span>
           <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2 bg-gray-50 dark:bg-[#1E2228] p-2 rounded-2xl border w-full">
             {#each areasImpresion as item}
-              <button type="button" on:click={() => area = item} class="py-3 rounded-xl text-xs font-black transition-all text-center {area === item ? 'bg-[#5C42FF] text-white shadow-md scale-102' : 'text-gray-400 hover:bg-white dark:hover:bg-gray-800'}">{item}</button>
+              <button type="button" on:click={() => area = item} class="py-3 rounded-xl text-xs font-semibold transition-all text-center {area === item ? 'bg-[#5C42FF] text-white shadow-md scale-102' : 'text-gray-400 hover:bg-white dark:hover:bg-gray-800'}">{item}</button>
             {/each}
           </div>
         </div>
-        <div class="flex flex-col space-y-2 text-xs font-bold">
+        <div class="flex flex-col space-y-2 text-xs font-semibold">
           <label for="descripcionGeneral" class="text-gray-400 uppercase tracking-wider text-[10px]">Descripción General del Trabajo</label>
           <input id="descripcionGeneral" type="text" bind:value={descripcionGeneral} placeholder="Ej: BOLSA DELUXE" class="p-3 bg-gray-50 dark:bg-[#1E2228] border rounded-xl outline-none" />
         </div>
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-[10px] font-black uppercase text-gray-400">Unidades del Parte</span>
-            <button type="button" on:click={agregarFilaDesglose} class="text-xs font-bold text-[#5C42FF] flex items-center gap-1"><span class="material-symbols-rounded text-sm">add_circle</span> Añadir Línea</button>
+        
+        <div class="space-y-4 w-full">
+          <div class="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-gray-800">
+            <span class="text-[10px] font-semibold uppercase text-gray-400">Unidades y Conceptos del Parte</span>
+            <button type="button" on:click={agregarFilaDesglose} class="text-xs font-semibold text-[#5C42FF] flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-none p-0">
+              <span class="material-symbols-rounded text-sm">add_circle</span> Añadir Línea
+            </button>
           </div>
-          <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+          
+          <div class="space-y-2.5 w-full">
             {#each desgloses as item, idx}
-              <div class="flex items-center gap-3 bg-gray-50 dark:bg-[#1E2228] p-3 rounded-xl border">
-                <input type="text" bind:value={item.descripcionProducto} placeholder="Concepto del producto" class="flex-1 bg-white dark:bg-[#16191D] p-2.5 rounded-xl border outline-none" />
-                <input type="number" bind:value={item.cantidad} placeholder="Cantidad" class="w-32 bg-white dark:bg-[#16191D] p-2.5 rounded-xl border text-center font-bold" />
-                <button type="button" on:click={() => eliminarFilaDesglose(idx)} disabled={desgloses.length === 1} class="text-gray-400 hover:text-red-500"><span class="material-symbols-rounded text-base">delete</span></button>
+              <div class="flex items-center gap-3 bg-gray-50 dark:bg-[#1E2228] p-3 rounded-xl border border-gray-100 dark:border-transparent" transition:slide={{ duration: 150 }}>
+                <input type="text" bind:value={item.descripcionProducto} placeholder="Concepto del producto" class="flex-1 bg-white dark:bg-[#16191D] p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 outline-none text-xs font-semibold focus:border-[#5C42FF]" />
+                <input type="number" bind:value={item.cantidad} placeholder="Cantidad" class="w-32 bg-white dark:bg-[#16191D] p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-center font-semibold text-xs focus:border-[#5C42FF]" />
+                <button type="button" on:click={() => eliminarFilaDesglose(idx)} disabled={desgloses.length === 1} class="text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:pointer-events-none bg-transparent border-none">
+                  <span class="material-symbols-rounded text-base">delete</span>
+                </button>
               </div>
             {/each}
           </div>
@@ -473,27 +467,27 @@
     {/if}
 
     {#if pasoActual === 3}
-      <div class="space-y-8 text-sm">
+      <div class="space-y-8 text-sm" in:fade={{ duration: 150 }}>
         <div>
-          <h2 class="text-xl font-black tracking-tight">Paso 3: Parámetros del Soporte Técnico y Tintas</h2>
+          <h2 class="text-xl font-semibold tracking-tight">Paso 3: Parámetros del Soporte Técnico y Tintas</h2>
           <p class="text-xs text-gray-400 mt-0.5">Especificaciones industriales de soportes, acabados y laminación de planta.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 border-b pb-6">
-          <div class="space-y-4 bg-gray-50/50 dark:bg-[#1E2228]/40 p-6 rounded-2xl border text-xs font-black">
-            <span class="text-[11px] font-black uppercase text-[#5C42FF] tracking-wider block border-b pb-1">Configuración Portada</span>
+          <div class="space-y-4 bg-gray-50/50 dark:bg-[#1E2228]/40 p-6 rounded-2xl border text-xs font-semibold">
+            <span class="text-[11px] font-semibold uppercase text-[#5C42FF] tracking-wider block border-b pb-1">Configuración Portada</span>
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col space-y-2">
                 <span class="text-gray-400 uppercase text-[9px]">Papel Portada</span>
-                <select bind:value={papelPortada} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-bold text-black dark:text-white">
-                  <option value="">Seleccionar gramaje</option>
+                <select bind:value={papelPortada} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white">
+                  <option value="">-- Seleccionar gramaje --</option>
                   {#each opcionesGramaje as g}<option value={g}>{g}</option>{/each}
                 </select>
               </div>
               <div class="flex flex-col space-y-2">
                 <span class="text-gray-400 uppercase text-[9px]">Color Portada</span>
-                <select bind:value={colorPortada} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-bold text-black dark:text-white">
-                  <option value="">Seleccionar tintas</option>
+                <select bind:value={colorPortada} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white">
+                  <option value="">-- Seleccionar tintas --</option>
                   {#each opcionesColor as c}<option value={c}>{c}</option>{/each}
                 </select>
               </div>
@@ -502,7 +496,7 @@
             {#if requiereConfigurarTintasPortada}
               <div class="flex flex-col space-y-2 mt-3" transition:slide>
                 <span class="text-gray-400 uppercase text-[9px]">Tipo Tinta Portada</span>
-                <select bind:value={tipoTintaPortada} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl outline-none font-bold">
+                <select bind:value={tipoTintaPortada} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl outline-none font-semibold">
                   <option value="estandar">Tinta Estándar</option>
                   <option value="pantone">Color Pantone Especial</option>
                 </select>
@@ -510,11 +504,11 @@
                   <div class="space-y-2 mt-2">
                     <div class="flex gap-2">
                       <input type="text" bind:value={inputPantonePortada} placeholder="Código (Ej: 485)" class="flex-1 p-2.5 bg-white dark:bg-[#16191D] border rounded-xl font-mono" />
-                      <button type="button" on:click={añadirPantonePortada} class="px-4 bg-[#5C42FF] text-white font-bold rounded-xl">Añadir</button>
+                      <button type="button" on:click={añadirPantonePortada} class="px-4 bg-[#5C42FF] text-white font-semibold rounded-xl">Añadir</button>
                     </div>
                     <div class="flex flex-wrap gap-1">
                       {#each listaPantonesPortada as p, idx}
-                        <span class="bg-blue-500/10 text-blue-500 border font-mono text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1">P. {p} <button type="button" on:click={() => eliminarPantonePortada(idx)} class="font-bold">×</button></span>
+                        <span class="bg-blue-500/10 text-blue-500 border font-mono text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1">P. {p} <button type="button" on:click={() => eliminarPantonePortada(idx)} class="font-semibold">×</button></span>
                       {/each}
                     </div>
                   </div>
@@ -523,20 +517,20 @@
             {/if}
           </div>
 
-          <div class="space-y-4 bg-gray-50/50 dark:bg-[#1E2228]/40 p-6 rounded-2xl border text-xs font-black">
-            <span class="text-[11px] font-black uppercase text-[#5C42FF] tracking-wider block border-b pb-1">Configuración Interior</span>
+          <div class="space-y-4 bg-gray-50/50 dark:bg-[#1E2228]/40 p-6 rounded-2xl border text-xs font-semibold">
+            <span class="text-[11px] font-semibold uppercase text-[#5C42FF] tracking-wider block border-b pb-1">Configuración Interior</span>
             <div class="grid grid-cols-2 gap-4">
               <div class="flex flex-col space-y-2">
                 <span class="text-gray-400 uppercase text-[9px]">Papel Interior</span>
-                <select bind:value={papelInterior} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-bold text-black dark:text-white">
-                  <option value="">Seleccionar gramaje</option>
+                <select bind:value={papelInterior} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white">
+                  <option value="">-- Seleccionar gramaje --</option>
                   {#each opcionesGramaje as g}<option value={g}>{g}</option>{/each}
                 </select>
               </div>
               <div class="flex flex-col space-y-2">
                 <span class="text-gray-400 uppercase text-[9px]">Color Interior</span>
-                <select bind:value={colorInterior} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-bold text-black dark:text-white">
-                  <option value="">Seleccionar tintas</option>
+                <select bind:value={colorInterior} class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white">
+                  <option value="">-- Seleccionar tintas --</option>
                   {#each opcionesColor as c}<option value={c}>{c}</option>{/each}
                   <option value="Pantone">Pantone Especial</option>
                 </select>
@@ -546,7 +540,7 @@
             {#if requiereConfigurarTintasInterior}
               <div class="flex flex-col space-y-2 mt-3" transition:slide>
                 <span class="text-gray-400 uppercase text-[9px]">Tipo Tinta Interior</span>
-                <select bind:value={tipoTintaInterior} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl outline-none font-bold">
+                <select bind:value={tipoTintaInterior} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl outline-none font-semibold">
                   <option value="estandar">Tinta Estándar</option>
                   <option value="pantone">Color Pantone Especial</option>
                 </select>
@@ -554,11 +548,11 @@
                   <div class="space-y-2 mt-2">
                     <div class="flex gap-2">
                       <input type="text" bind:value={inputPantoneInterior} placeholder="Código (Ej: 7241)" class="flex-1 p-2.5 bg-white dark:bg-[#16191D] border rounded-xl font-mono" />
-                      <button type="button" on:click={añadirPantoneInterior} class="px-4 bg-[#5C42FF] text-white font-bold rounded-xl">Añadir</button>
+                      <button type="button" on:click={añadirPantoneInterior} class="px-4 bg-[#5C42FF] text-white font-semibold rounded-xl">Añadir</button>
                     </div>
                     <div class="flex flex-wrap gap-1">
                       {#each listaPantonesInterior as p, idx}
-                        <span class="bg-blue-500/10 text-blue-500 border font-mono text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1">P. {p} <button type="button" on:click={() => eliminarPantoneInterior(idx)} class="font-bold">×</button></span>
+                        <span class="bg-blue-500/10 text-blue-500 border font-mono text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1">P. {p} <button type="button" on:click={() => eliminarPantoneInterior(idx)} class="font-semibold">×</button></span>
                       {/each}
                     </div>
                   </div>
@@ -568,9 +562,9 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-xs font-bold text-gray-500">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-xs font-semibold text-gray-500">
           <div class="space-y-3 bg-gray-50/30 dark:bg-[#1E2228]/20 p-5 rounded-2xl border">
-            <span class="text-[11px] font-black text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2">1. Encuadernación</span>
+            <span class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2">1. Encuadernación</span>
             <div class="grid grid-cols-2 gap-3">
               {#each Object.keys(encuadernacion) as k}
                 <label class="flex items-center gap-2 capitalize cursor-pointer"><input type="checkbox" bind:checked={encuadernacion[k]} class="w-4 h-4 rounded accent-[#5C42FF]" /> {k}</label>
@@ -583,7 +577,7 @@
           </div>
 
           <div class="space-y-3 bg-gray-50/30 dark:bg-[#1E2228]/20 p-5 rounded-2xl border">
-            <span class="text-[11px] font-black text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2">2. Mecanizado</span>
+            <span class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2">2. Mecanizado</span>
             <div class="grid grid-cols-2 gap-3">
               {#each Object.keys(acabados) as k}
                 <label class="flex items-center gap-2 capitalize cursor-pointer"><input type="checkbox" bind:checked={acabados[k]} class="w-4 h-4 rounded accent-[#5C42FF]" /> {k}</label>
@@ -592,25 +586,25 @@
           </div>
 
           <div class="space-y-3 bg-gray-50/30 dark:bg-[#1E2228]/20 p-5 rounded-2xl border">
-            <span class="text-[11px] font-black text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2">3. Triplete Industrial</span>
+            <span class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2">3. Triplete Industrial</span>
             <div class="space-y-3">
-              <div class="flex flex-col space-y-1"><span class="text-[9px] uppercase tracking-wider text-gray-400 font-black">Grapado</span><input type="text" bind:value={grapadoTipo} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-bold text-black" /></div>
-              <div class="flex flex-col space-y-1"><span class="text-[9px] uppercase tracking-wider text-gray-400 font-black">Barniz UV</span><input type="text" bind:value={barnizUVTipo} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-bold text-black" /></div>
-              <div class="flex flex-col space-y-1"><span class="text-[9px] uppercase tracking-wider text-gray-400 font-black">Estamping</span><input type="text" bind:value={grapadoTipo} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-bold text-black" /></div>
+              <div class="flex flex-col space-y-1"><span class="text-[9px] uppercase tracking-wider text-gray-400 font-semibold">Grapado</span><input type="text" bind:value={grapadoTipo} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-semibold text-black" /></div>
+              <div class="flex flex-col space-y-1"><span class="text-[9px] uppercase tracking-wider text-gray-400 font-semibold">Barniz UV</span><input type="text" bind:value={barnizUVTipo} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-semibold text-black" /></div>
+              <div class="flex flex-col space-y-1"><span class="text-[9px] uppercase tracking-wider text-gray-400 font-semibold">Estamping</span><input type="text" bind:value={estampingTipo} class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-semibold text-black" /></div>
             </div>
           </div>
         </div>
 
-        <div class="p-5 bg-gray-50/30 dark:bg-[#1E2228]/20 rounded-2xl border text-xs font-bold text-gray-500">
-          <span class="text-[11px] font-black text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-3">4. Laminadora de Planta</span>
-          <div class="flex gap-6 mb-4 font-black">
+        <div class="p-5 bg-gray-50/30 dark:bg-[#1E2228]/20 rounded-2xl border text-xs font-semibold text-gray-500">
+          <span class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-3">4. Laminadora de Planta</span>
+          <div class="flex gap-6 mb-4 font-semibold">
             <label class="cursor-pointer flex items-center gap-1.5"><input type="radio" bind:group={laminadoTipo} value="1 cara" class="accent-[#5C42FF]" /> 1 cara</label>
             <label class="cursor-pointer flex items-center gap-1.5"><input type="radio" bind:group={laminadoTipo} value="2 caras" class="accent-[#5C42FF]" /> 2 caras</label>
             <label class="cursor-pointer flex items-center gap-1.5"><input type="radio" bind:group={laminadoTipo} value="2 caras diferentes" class="accent-[#5C42FF]" /> 2 caras diferentes</label>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t">
             <div class="space-y-2">
-              <span class="text-[10px] text-gray-400 font-black block uppercase">Cara 1</span>
+              <span class="text-[10px] text-gray-400 font-semibold block uppercase">Cara 1</span>
               <div class="flex flex-wrap gap-3">
                 {#each Object.keys(tipoLaminadoCara1) as k}
                   <label class="flex items-center gap-1.5 cursor-pointer capitalize"><input type="checkbox" bind:checked={tipoLaminadoCara1[k]} class="accent-[#5C42FF]" /> {k}</label>
@@ -619,7 +613,7 @@
             </div>
             {#if laminadoTipo !== '1 cara'}
               <div class="space-y-2" transition:slide>
-                <span class="text-[10px] text-gray-400 font-black block uppercase">Cara 2</span>
+                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Cara 2</span>
                 <div class="flex flex-wrap gap-3">
                   {#each Object.keys(tipoLaminadoCara2) as k}
                     <label class="flex items-center gap-1.5 cursor-pointer capitalize"><input type="checkbox" bind:checked={tipoLaminadoCara2[k]} class="accent-[#5C42FF]" /> {k}</label>
@@ -634,11 +628,11 @@
   </div>
 
   <div class="flex items-center justify-between flex-shrink-0 px-2 py-1">
-    <button type="button" on:click={irAlAnterior} disabled={pasoActual === 1 || guardandoDato} class="px-5 py-2.5 rounded-xl text-xs font-black text-gray-400 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] bg-transparent hover:bg-gray-200 transition-all cursor-pointer">Atrás</button>
+    <button type="button" on:click={irAlAnterior} disabled={pasoActual === 1 || guardandoDato} class="px-5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] bg-transparent hover:bg-gray-200 transition-all cursor-pointer">Atrás</button>
     {#if pasoActual < 3}
-      <button type="button" on:click={irAlSiguiente} class="px-6 py-2.5 rounded-xl text-xs font-black bg-[#5C42FF] text-white hover:bg-[#4730D9] shadow-xs cursor-pointer">Continuar</button>
+      <button type="button" on:click={irAlSiguiente} class="px-6 py-2.5 rounded-xl text-xs font-semibold bg-[#5C42FF] text-white hover:bg-[#4730D9] shadow-xs cursor-pointer">Continuar</button>
     {:else}
-      <button type="button" on:click={procesarEnvio} disabled={guardandoDato} class="px-6 py-2.5 rounded-xl text-xs font-black bg-[#5C42FF] text-white hover:bg-[#4730D9] shadow-md cursor-pointer">
+      <button type="button" on:click={procesarEnvio} disabled={guardandoDato} class="px-6 py-2.5 rounded-xl text-xs font-semibold bg-[#5C42FF] text-white hover:bg-[#4730D9] shadow-md cursor-pointer">
         {guardandoDato ? 'Guardando en Turso...' : 'Guardar y Generar A3'}
       </button>
     {/if}

@@ -1,10 +1,9 @@
 // db/config.ts
 import { defineDb, defineTable, column, NOW } from 'astro:db'; 
 
-// Control de cabeceras de trabajo
 export const Trabajo = defineTable({
   columns: {
-    numParte: column.text({ primaryKey: true }), // Texto para soportar "26-0001"
+    numParte: column.text({ primaryKey: true }),
     workspaceId: column.text(), 
     cliente: column.text(),
     descripcionGeneral: column.text({ optional: true }),
@@ -14,21 +13,36 @@ export const Trabajo = defineTable({
     estado: column.text(),
     area: column.text(),
     subcontrata: column.text({ optional: true }),
+    
+    // 🔥 NUEVOS CAMPOS PARA LA FICHA TÉCNICA REUTILIZABLE
+    papelPortada: column.text({ optional: true }),
+    colorPortada: column.text({ optional: true }),
+    papelInterior: column.text({ optional: true }),
+    colorInterior: column.text({ optional: true }),
+    espiralColor: column.text({ optional: true }),
+    wireOColor: column.text({ optional: true }),
+    grapadoTipo: column.text({ optional: true }),
+    barnizUVTipo: column.text({ optional: true }),
+    estampingTipo: column.text({ optional: true }),
+    laminadoTipo: column.text({ optional: true }),
+    
+    // Guardamos los estados de los checkboxes serializados en JSON string
+    encuadernacionJson: column.text({ optional: true }),
+    acabadosJson: column.text({ optional: true }),
+    laminadoCara1Json: column.text({ optional: true }),
+    laminadoCara2Json: column.text({ optional: true })
   }
 });
 
-// Desglose de productos 1:N
 export const DesgloseTrabajo = defineTable({
   columns: {
     id: column.number({ primaryKey: true }),
-    // 🔥 CORREGIDO: Cambiado de .number() a .text() para coincidir con la tabla Trabajo
     numParte: column.text({ references: () => Trabajo.columns.numParte }),
     descripcionProducto: column.text(),
     cantidad: column.number(),
   }
 });
 
-// Registro de Auditoría (Audit Trail)
 export const RegistroActividad = defineTable({
   columns: {
     id: column.number({ primaryKey: true }),

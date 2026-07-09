@@ -85,7 +85,7 @@ const enlacesNav = [
           <span class="material-symbols-rounded text-xl">
             {workspace === 'produccion' ? 'school' : 'factory'}
           </span>
-          <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">
+          <span class="text-[9px] font-semibold text-gray-400 uppercase tracking-tighter mt-0.5">
             {workspace === 'produccion' ? 'Escolar' : 'Taller'}
           </span>
           <span class="absolute top-0.5 right-4 w-1.5 h-1.5 bg-[#5C42FF] rounded-full animate-pulse"></span>
@@ -101,7 +101,7 @@ const enlacesNav = [
               class={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 rounded-xl transition-all ${esActivo ? 'text-[#5C42FF] dark:text-[#9A85FF]' : 'text-gray-400 hover:text-gray-600'}`}
             >
               <span class="material-symbols-rounded text-xl" style={esActivo ? "font-variation-settings: 'FILL' 1" : ""}>{item.icono}</span>
-              <span class="text-[9px] font-bold tracking-tight mt-0.5 max-w-full truncate">{item.nombre}</span>
+              <span class="text-[9px] font-semibold tracking-tight mt-0.5 max-w-full truncate">{item.nombre}</span>
             </a>
           );
         })}

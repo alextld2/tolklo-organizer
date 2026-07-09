@@ -1,41 +1,30 @@
 // src/middleware.ts
 import { defineMiddleware } from 'astro:middleware';
+import { verifySessionToken } from './utils/auth';
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const { url, redirect } = context;
+  const url = new URL(context.request.url);
+  const token = context.cookies.get('session_token')?.value;
 
-  // 1. 🔥 CORREGIDO: 'null' primitivo, sin comillas corporales
-  const correoLogueado = 'alex@tuempresa.com'; 
-  
-  let usuarioActivo = null;
-
-  if (correoLogueado) {
-    // 2. MATRIZ DE ROLES (RBAC): Definimos los permisos según la cuenta corporativa
-    if (correoLogueado === "alex@tuempresa.com") {
-      usuarioActivo = {
-        id: "usr_01",
-        nombre: "Alex",
-        email: correoLogueado,
-        rol: "admin",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
-      };
-    } else if (correoLogueado === "pepe@tuempresa.com") {
-      usuarioActivo = {
-        id: "usr_02",
-        nombre: "Pepe",
-        email: correoLogueado,
-        rol: "viewer",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"
-      };
-    }
+  let user = null;
+  if (token) {
+    user = verifySessionToken(token);
   }
 
-  // Inyectamos el usuario en el contexto global de Astro
-  context.locals.user = usuarioActivo;
+  // Almacenamos el perfil del usuario en context.locals para usarlo en cualquier archivo .astro
+  context.locals.user = user;
 
-  // 3. BARRERA DE SEGURIDAD INTERNA:
-  if (url.pathname.startsWith('/w') && !usuarioActivo) {
-    return redirect('/login');
+  const isWorkspaceRoute = url.pathname.startsWith('/w/');
+  const isLoginRoute = url.pathname === '/login';
+
+  // 🛡️ REGLA DE PROTECCIÓN 1: Si no está logueado e intenta entrar en /w/* lo mandamos a login
+  if (isWorkspaceRoute && !user) {
+    return context.redirect('/login');
+  }
+
+  // 🛡️ REGLA DE PROTECCIÓN 2: Si ya está logueado e intenta ir a /login, lo mandamos a producción
+  if (isLoginRoute && user) {
+    return context.redirect('/w/produccion');
   }
 
   return next();

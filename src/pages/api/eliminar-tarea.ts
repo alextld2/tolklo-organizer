@@ -1,46 +1,37 @@
-export const prerender = false;
+// src/pages/api/eliminar-tarea.ts
+// 1. Añade la 's' al importar si en tu config.ts se llama Desgloses
+import { db, Trabajo, RegistroActividad, DesgloseTrabajo, eq } from 'astro:db'; 
 import type { APIRoute } from 'astro';
-// Importamos 'RegistroActividad' para capturar la destrucción del registro
-import { db, Trabajo, DesgloseTrabajo, RegistroActividad, eq } from 'astro:db';
+
+export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const body = await request.json();
-    const { numParte } = body;
+    const { id, workspaceId } = await request.json();
 
-    if (!numParte) {
-      return new Response(JSON.stringify({ success: false, message: 'Nº de parte requerido.' }), { status: 400 });
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'Falta el ID del parte' }), { status: 400 });
     }
 
-    // 1. EXTRAER DATOS PREVIOS: Consultamos la orden antes de destruirla por completo
-    const trabajoExistente = await db.select().from(Trabajo).where(eq(Trabajo.numParte, Number(numParte)));
-    
-    if (trabajoExistente.length === 0) {
-      return new Response(JSON.stringify({ success: false, message: 'No se encontró la orden de trabajo a eliminar.' }), { status: 404 });
-    }
+    // 2. Cambia Desglose por Desgloses aquí también
+    await db.delete(DesgloseTrabajo).where(eq(DesgloseTrabajo.numParte, id));
 
-    const workspaceId = trabajoExistente[0].workspaceId;
-    const cliente = trabajoExistente[0].cliente;
-    const descripcion = trabajoExistente[0].descripcionGeneral || 'Sin descripción';
+    // El resto de tu código de eliminación del Trabajo se queda exactamente igual...
+    await db.delete(Trabajo).where(eq(Trabajo.numParte, id));
 
-    // 2. ELIMINACIÓN EN CASCADA RELACIONAL: Limpiamos desgloses y luego la cabecera
-    await db.delete(DesgloseTrabajo).where(eq(DesgloseTrabajo.numParte, Number(numParte)));
-    await db.delete(Trabajo).where(eq(Trabajo.numParte, Number(numParte)));
+    const usuarioLogueado = locals.user?.name || locals.user?.email || 'Sistema';
 
-    // 3. REGISTRO DE AUDITORÍA INMUTABLE: Grabamos la huella digital del borrado
-    const usuarioActivo = locals.user ? locals.user.nombre : "Alex";
-    
     await db.insert(RegistroActividad).values({
-      usuario: usuarioActivo,
-      workspaceId: workspaceId,
-      tipo: 'delete',
-      accion: 'Eliminación de Orden',
-      detalles: `Eliminó de forma permanente el parte #${numParte} perteneciente a "${cliente}" (${descripcion}).`
+      usuario: usuarioLogueado,
+      workspaceId: workspaceId || 'general',
+      tipo: 'DELETE',
+      accion: 'Eliminar Parte',
+      detalles: `Se eliminó el parte de trabajo #${id} y sus líneas de desglose asociadas de la base de datos.`
     });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error: any) {
-    console.error("❌ ERROR EN API [eliminar-tarea]:", error);
-    return new Response(JSON.stringify({ success: false, message: error.message }), { status: 500 });
+    console.error('❌ Error al eliminar tarea en la base de datos:', error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 };

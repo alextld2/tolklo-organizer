@@ -1,52 +1,68 @@
-export const prerender = false;
-import type { APIRoute } from 'astro';
-// Importamos 'RegistroActividad' para la auditoría de planta
+// src/pages/api/actualizar-fecha.ts
 import { db, Trabajo, RegistroActividad, eq } from 'astro:db';
+import type { APIRoute } from 'astro';
+
+export const prerender = false; // Forzamos carga en vivo SSR
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
-    console.log("--> API [actualizar-fecha] ha recibido:", body);
+    
+    // Leemos la estructura nativa que envía tu calendario
     const { numParte, nuevaFecha } = body;
 
     if (!numParte || !nuevaFecha) {
-      return new Response(JSON.stringify({ message: 'Faltan campos obligatorios: numParte o nuevaFecha' }), { status: 400 });
+      return new Response(
+        JSON.stringify({ message: 'Faltan campos obligatorios: numParte o nuevaFecha' }), 
+        { status: 400 }
+      );
     }
 
-    // 1. EXTRAER ESTADO PREVIO: Consultamos el parte antes de modificarlo para el registro técnico
-    const trabajoExistente = await db.select().from(Trabajo).where(eq(Trabajo.numParte, Number(numParte)));
+    // Convertimos a String limpio para asegurar compatibilidad de búsqueda en la base de datos
+    const numParteStr = String(numParte).trim();
+
+    // 1. CARGA DE CONTROL: Buscamos la orden de trabajo con el formato de texto exacto
+    const trabajoExistente = await db.select().from(Trabajo).where(eq(Trabajo.numParte, numParteStr));
     
     if (trabajoExistente.length === 0) {
-      return new Response(JSON.stringify({ message: 'No se encontró la orden de trabajo especificada' }), { status: 404 });
+      return new Response(
+        JSON.stringify({ message: `No se encontró la orden de trabajo especificada para: ${numParteStr}` }), 
+        { status: 404 }
+      );
     }
 
     const fechaAnterior = trabajoExistente[0].fechaSalida;
     const workspaceId = trabajoExistente[0].workspaceId;
     const cliente = trabajoExistente[0].cliente;
 
-    // 2. ACTUALIZACIÓN MÁSTER: Guardamos la nueva fecha en el parte de producción
+    // 2. ACTUALIZACIÓN MÁSTER: Guardamos la fecha utilizando la clave recuperada exacta
     await db.update(Trabajo)
       .set({ fechaSalida: nuevaFecha })
-      .where(eq(Trabajo.numParte, Number(numParte)));
+      .where(eq(Trabajo.numParte, numParteStr));
 
-    // 3. INYECCIÓN DEL LOG: Si la fecha ha cambiado realmente, grabamos la huella del operario
+    // 3. INSERCIÓN DE AUDITORÍA: Si la fecha ha cambiado realmente, grabamos la huella del operario
     if (fechaAnterior !== nuevaFecha) {
-      // Extraemos el operario del middleware de sesión o usamos el fallback de tu entorno
-      const usuarioActivo = locals.user ? locals.user.nombre : "Alex";
-      
-      await db.insert(RegistroActividad).values({
-        usuario: usuarioActivo,
-        workspaceId: workspaceId,
-        tipo: 'update',
-        accion: 'Cambio de Fecha',
-        detalles: `Modificó la entrega del parte #${numParte} (${cliente}) de "${fechaAnterior}" a "${nuevaFecha}".`
-      });
+      try {
+        // Extraemos con seguridad el nombre de sesión de Google o el correo
+        const usuarioActivo = String(locals.user?.name || locals.user?.email || "Alex");
+        
+        await db.insert(RegistroActividad).values({
+          usuario: usuarioActivo,
+          workspaceId: workspaceId || 'general',
+          tipo: 'update',
+          accion: 'Cambio de Fecha',
+          detalles: `Modificó la entrega del parte #${numParteStr} (${cliente || 'Sin Cliente'}) de "${fechaAnterior}" a "${nuevaFecha}".`
+        });
+      } catch (logError: any) {
+        // Escudo de protección: Si la auditoría falla en desarrollo, el calendario NO se cae
+        console.warn("⚠️ Advertencia: No se pudo registrar la actividad de auditoría:", logError.message);
+      }
     }
 
-    console.log(`--> ✅ Astro DB y Log guardados con éxito: Parte #${numParte} cambiado al ${nuevaFecha}`);
     return new Response(JSON.stringify({ success: true }), { status: 200 });
+
   } catch (error: any) {
-    console.error("❌ ERROR EN CONTROLLER [actualizar-fecha]:", error);
+    console.error("❌ ERROR CRÍTICO EN API actualizar-fecha:", error);
     return new Response(JSON.stringify({ message: error.message }), { status: 500 });
   }
 };

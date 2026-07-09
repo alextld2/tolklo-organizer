@@ -1,0 +1,451 @@
+---
+// src/pages/w/[workspace]/parte/[numParte]/print.astro
+import { db, Trabajo, DesgloseTrabajo, eq } from 'astro:db';
+
+export const prerender = false; // Forzamos carga en vivo SSR
+
+const { workspace, numParte } = Astro.params;
+
+// 1. Solicitamos los datos del parte técnico guardado en Turso
+const parteResultado = await db.select().from(Trabajo).where(eq(Trabajo.numParte, numParte));
+const deconstruido = parteResultado[0];
+
+if (!deconstruido) {
+  return Astro.redirect('/404');
+}
+
+// 2. Traemos las líneas de producto asociadas
+const lineasDesglose = await db.select().from(DesgloseTrabajo).where(eq(DesgloseTrabajo.numParte, numParte));
+
+// 3. Parseamos los objetos de checkboxes JSON con seguridad
+const encuadernacion = deconstruido.encuadernacionJson ? JSON.parse(deconstruido.encuadernacionJson) : {};
+const acabados = deconstruido.acabadosJson ? JSON.parse(deconstruido.acabadosJson) : {};
+const laminado1 = deconstruido.laminadoCara1Json ? JSON.parse(deconstruido.laminadoCara1Json) : {};
+const laminado2 = deconstruido.laminadoCara2Json ? JSON.parse(deconstruido.laminadoCara2Json) : {};
+
+const colorBoli = "#0038a8";
+const areasImpresion = ["DIGITAL", "PLOTTER", "MIMAKI", "DISEÑO", "OFFSET", "OPX", "DTF", "SUBCONTRATA"];
+---
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Parte de Trabajo - {numParte}</title>
+  
+  <!-- 🔥 Importamos html2pdf para la conversión exacta a PDF A3 en el cliente -->
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    @page { size: A3 landscape; margin: 0; }
+    
+    /* Variables de diseño premium */
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 8mm; 
+      color: black; 
+      background: #f0f2f5; 
+      font-size: 11px; 
+      box-sizing: border-box; 
+    }
+    
+    /* Espacio superior en pantalla para no solaparse con la barra de herramientas */
+    @media screen {
+      body {
+        padding-top: 75px !important;
+      }
+    }
+
+    /* Estilos de la barra de control flotante */
+    .barra-controles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(18, 20, 24, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      z-index: 99999;
+      color: white;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+    .titulo-barra {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .titulo-barra span.tag {
+      background: #5C42FF;
+      color: white;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .estado-proceso {
+      font-size: 11px;
+      color: #A3AED0;
+      font-weight: bold;
+    }
+    .grupo-botones {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn {
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primario {
+      background: #5C42FF;
+      color: white;
+    }
+    .btn-primario:hover {
+      background: #4730D9;
+      transform: translateY(-1px);
+    }
+    .btn-secundario {
+      background: rgba(255, 255, 255, 0.08);
+      color: #EDF0F3;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-secundario:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Estructura del documento de taller */
+    .documento-a3 { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 14mm; 
+      width: 404mm; 
+      height: 281mm; 
+      margin: 0 auto; 
+      background: white; 
+      padding: 5mm; 
+      box-shadow: 0 10px 35px rgba(0,0,0,0.06); 
+      box-sizing: border-box; 
+    }
+    .hoja-taller { display: flex; flex-direction: column; justify-content: flex-start; gap: 9px; height: 100%; box-sizing: border-box; }
+    .box-borde { border: 1.5px solid black; padding: 7px; box-sizing: border-box; background: white; }
+    .label-mini { font-size: 8.5px; font-weight: bold; text-transform: uppercase; color: #444; display: block; margin-bottom: 2px; }
+    .box-pliegos-lineal { border: 1.5px solid black; padding: 6px 10px; background: white; }
+    .grid-pliegos { display: grid; grid-template-columns: 1fr 1fr; gap-x: 25px; gap-y: 2px; }
+    .fila-pliego-linea { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e5e5; padding: 2px 0; font-size: 9px; font-weight: bold; }
+    .chk-item { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: 9.5px; text-transform: uppercase; }
+    .chk-box { width: 13px; height: 13px; border: 1.5px solid black; display: inline-block; text-align: center; line-height: 11px; font-weight: 900; font-size: 10px; background: white; flex-shrink: 0; }
+    .flex-row-box { display: flex; gap: 8px; width: 100%; }
+    .flex-1 { flex: 1; }
+    .tabla-prod { border: 1.5px solid black; flex: 1; min-height: 140px; display: flex; flex-direction: column; }
+    .tab-header { display: grid; grid-template-columns: 1fr 140px; background: #f2f2f2; font-weight: bold; font-size: 9.5px; padding: 5px 8px; border-bottom: 1.5px solid black; text-transform: uppercase; }
+    .tab-operarios { width: 100%; border-collapse: collapse; border: 1.5px solid black; }
+    .tab-operarios th { background: #f2f2f2; font-size: 8.5px; font-weight: bold; border: 1px solid black; padding: 4.5px; text-transform: uppercase; }
+    .tab-operarios td { border: 1px solid black; padding: 4.5px; text-align: center; font-weight: bold; font-size: 9.5px; }
+    .box-cajas-matriz-taller { border: 1.5px solid black; padding: 8px 12px; background: white; }
+    .caja-vacia-escribir { border: 1px solid black; width: 35px; height: 16px; display: inline-block; background: white; }
+    .caja-vacia-unids { border: 1px solid black; width: 75px; height: 16px; display: inline-block; background: white; }
+    .fila-matriz-cajas { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: bold; color: #333; }
+    .box-observaciones-gigante { border: 1.5px solid black; padding: 10px; flex: 1; background: white; }
+    
+    /* Forzado de estilos para la exportación o impresión física */
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0 !important; background: white; }
+      .documento-a3 { box-shadow: none; margin: 0; width: 420mm; height: 297mm; padding: 10mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🔥 MENÚ DE CONTROL FLOTANTE (Ocultado automáticamente en impresión/PDF) -->
+  <div class="barra-controles no-print">
+    <div class="titulo-barra">
+      aeroprint <span class="tag">Ficha A3</span> — Parte #{numParte}
+    </div>
+    <div id="estado" class="estado-proceso">
+      Preparando documento...
+    </div>
+    <div class="grupo-botones">
+      <button id="btn-descargar" class="btn btn-primario">
+        Descargar PDF
+      </button>
+      <button id="btn-imprimir" class="btn btn-secundario">
+        Imprimir Físico
+      </button>
+    </div>
+  </div>
+
+  <div class="documento-a3" id="lienzo-a3">
+    <!-- ================= HOJA IZQUIERDA ================= -->
+    <div class="hoja-taller">
+      <div style="border-bottom: 2px solid black; padding-bottom: 3px; display: flex; justify-content: space-between; align-items: end;">
+        <div>
+          <h2 style="font-size: 11.5px; font-weight: 900; text-transform: uppercase; margin: 0;">HOJA DE MANIPULADO Y CONTROL</h2>
+          <p style="font-size: 7.5px; font-weight: bold; text-transform: uppercase; color: #555; margin: 1px 0 0 0;">Uso exclusivo para operarios de planta de producción</p>
+        </div>
+        <span style="font-size: 8px; font-weight: bold; border: 1px dashed black; padding: 1px 5px;">Mesa Técnica</span>
+      </div>
+
+      <div class="box-pliegos-lineal">
+        <span class="label-mini" style="font-weight: 900; border-bottom: 1.5px solid black; padding-bottom: 2px; margin-bottom: 4px;">Control de Pliegos de Folletos / Portadas</span>
+        <div class="grid-pliegos">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <div class="fila-pliego-linea">
+              <span style="color: #000; width: 55px; font-size:8.5px;">PLIEGO {i + 1}</span>
+              <span style="color: #666; font-size: 8.5px; flex-grow: 1; text-align: right; padding-right: 5px;">Tamaño: _______________________ mm</span>
+              <span style="color: #666; font-size: 8.5px; width: 65px; text-align: right;">Págs: ________</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <table class="tab-operarios">
+        <thead>
+          <tr><th style="width: 35%; text-align: left; padding-left: 8px;">Fase de Acabado</th><th style="width: 30%;">Cantidad Confección</th><th style="width: 35%;">Operario / Firma</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">PLASTIFICADORA</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
+          <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">TROQUELADORA</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
+          <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">GUILLOTINA</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
+          <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">TREN DE ALZADO</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
+        </tbody>
+      </table>
+
+      <div class="box-borde" style="padding: 5px 8px;">
+        <span class="label-mini" style="font-weight: 700;">Tren y Encolado Manual</span>
+        <div style="display: flex; gap: 30px; font-size: 8.5px; color: #444; font-weight: bold; margin-top: 1px;">
+          <div>Operario Ajuste: ____________________________________</div>
+          <div>Velocidad Tren: ___________________________________</div>
+        </div>
+      </div>
+
+      <div class="box-cajas-matriz-taller">
+        <span class="label-mini" style="font-weight: 900; border-bottom: 1px solid black; padding-bottom: 2px; margin-bottom: 6px;">Logística de Desglose de Cajas</span>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap-x: 25px; gap-y: 6px; align-items: center;">
+          {Array(6).fill(0).map(() => (
+            <div class="fila-matriz-cajas">
+              <span>Nº CAJAS</span> <span class="caja-vacia-escribir"></span>
+              <span style="margin-left: 4px;">UNIDS.</span> <span class="caja-vacia-unids"></span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="box-observaciones-gigante">
+        <span class="label-mini" style="font-weight: 900; border-bottom: 1.5px solid #000; padding-bottom: 2px;">Observaciones e Incidencias Técnicas de Planta</span>
+      </div>
+    </div>
+
+    <!-- ================= HOJA DERECHA ================= -->
+    <div class="hoja-taller" style="gap: 7.5px;">
+      <div style="display: flex; flex-direction: column; gap: 7.5px; height: 100%; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid black; padding-bottom: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 26px; font-weight: 900; text-transform: lowercase; letter-spacing: -1px;">aeroprint</span>
+            <span style="font-size: 18px; font-weight: bold; color: {colorBoli}; text-transform: uppercase; margin-left: 5px;">{deconstruido.cliente}</span>
+          </div>
+          <div style="border: 1.5px solid black; padding: 4px 10px; font-weight: bold; font-size: 11px; text-align: center; background: white;">
+            Nº PARTE: <span style="color: {colorBoli}; font-family: monospace; font-size: 12px; font-weight: 900;">{numParte}</span>
+          </div>
+        </div>
+
+        <div class="box-borde">
+          <span class="label-mini">Descripción General del Trabajo</span>
+          <div style="font-size: 12px; font-weight: bold; color: {colorBoli}; text-transform: uppercase;">{deconstruido.descripcionGeneral || '---'}</div>
+        </div>
+
+        <div class="tabla-prod">
+          <div class="tab-header"><div>Concepto del producto</div><div style="text-align: right;">Cantidad</div></div>
+          <div style="padding: 0 8px; flex: 1; background: white;">
+            {lineasDesglose.map((d) => (
+              <div style={`display: grid; grid-template-columns: 1fr 140px; border-bottom: 1px solid #000; padding: 5px 8px; font-weight: bold; text-transform: uppercase; color: ${colorBoli};`}>
+                <div>{d.descripcionProducto}</div>
+                <div style="text-align: right; font-family: monospace; font-size:13px;">{d.cantidad ? d.cantidad.toLocaleString() : '0'}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div class="flex-row-box">
+          <div class="box-borde" style="width: 150px; background: white;">
+            <span class="label-mini">Comercial</span>
+            <div style="font-size: 13px; font-weight: bold; color: {colorBoli}; text-transform: uppercase; margin-top: 2px;">{deconstruido.comercial || '---'}</div>
+          </div>
+          <div class="box-borde flex-1" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; align-items: center; padding-left: 10px; background: white;">
+            {areasImpresion.map((item) => (
+              <div class="chk-item">
+                <span class="chk-box">{deconstruido.area === item ? 'X' : ''}</span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div class="flex-row-box">
+          <div class="box-borde flex-1" style="display: flex; align-items: center; gap: 35px; padding-left: 10px; background: white;">
+            <div class="chk-item" style="font-size: 10px;">
+              <span class="chk-box">{deconstruido.laminadoTipo === 'almacen' ? 'X' : ''}</span>
+              <span>Recogida en almacén</span>
+            </div>
+            <div class="chk-item" style="font-size: 10px;">
+              <span class="chk-box">{deconstruido.laminadoTipo === 'anonimo' ? 'X' : ''}</span>
+              <span>Albarán Anónimo</span>
+            </div>
+          </div>
+          <div class="box-borde text-center font-semibold" style="width: 130px; background: white;">
+            <span class="label-mini">Entrada</span>
+            <span style="color: {colorBoli}; font-size: 10px;">{new Date().toLocaleDateString('es-ES')}</span>
+          </div>
+          <div class="box-borde text-center font-semibold" style="width: 130px; background: white;">
+            <span class="label-mini">Salida</span>
+            <span style="color: {colorBoli}; font-size: 10px;">{deconstruido.fechaSalida}</span>
+          </div>
+        </div>
+
+        <div class="box-borde" style="min-height: 35px;"><span class="label-mini">Dirección de entrega</span><div style="font-size: 10px; font-weight: bold; color: {colorBoli}; text-transform: uppercase; margin-top: 1px;">{deconstruido.laminadoTipo === 'envio' ? deconstruido.subcontrata : 'RECOGIDA EN TALLER / ALMACÉN'}</div></div>
+
+        <div class="flex-row-box">
+          <div class="box-borde flex-1"><span class="label-mini">Color de portada</span><div style="font-weight: bold; color: {colorBoli}; font-size: 11px;">{deconstruido.colorPortada || '_________________'}</div></div>
+          <div class="box-borde flex-1"><span class="label-mini">Color del interior</span><div style="font-weight: bold; color: {colorBoli}; font-size: 11px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{deconstruido.colorInterior || '_________________'}</div></div>
+        </div>
+
+        <div class="flex-row-box">
+          <div class="box-borde flex-1"><span class="label-mini">Papel portada</span><div style="font-weight: bold; color: {colorBoli}; font-size: 11px;">{deconstruido.papelPortada || '_________________'}</div></div>
+          <div class="box-borde flex-1"><span class="label-mini">Papel interior</span><div style="font-weight: bold; color: {colorBoli}; font-size: 11px;">{deconstruido.papelInterior || '_________________'}</div></div>
+        </div>
+
+        <div class="flex-row-box">
+          <div class="box-borde flex-1" style="display: grid; grid-template-columns: repeat(3, 1fr); gap-y: 3px; padding-left: 8px; background: white;">
+            {Object.keys(encuadernacion).map((k) => <div class="chk-item"><span class="chk-box">{encuadernacion[k] ? 'X' : ''}</span><span>{k}</span></div>)}
+          </div>
+          <div class="box-borde" style="width: 200px; display: flex; flex-direction: column; gap: 3px; justify-content: center; padding-left: 10px; background: white;">
+            <div style="font-weight: bold; font-size: 9px;">Espiral: <span style="color:${colorBoli}; font-weight:bold; margin-left:4px;">{deconstruido.espiralColor || '___________'}</span></div>
+            <div style="font-weight: bold; font-size: 9px;">Wire-o: <span style="color:${colorBoli}; font-weight:bold; margin-left:8px;">{deconstruido.wireOColor || '___________'}</span></div>
+          </div>
+        </div>
+
+        <div class="box-borde" style="display: grid; grid-template-columns: repeat(4, 1fr); gap-y: 4px; padding-left: 8px; background: white;">
+          {Object.keys(acabados).map((k) => <div class="chk-item"><span class="chk-box">{acabados[k] ? 'X' : ''}</span><span>{k}</span></div>)}
+        </div>
+
+        <div class="flex-row-box">
+          <div class="box-borde flex-1"><span class="label-mini">Grapado</span><div style="color: {colorBoli}; font-weight: bold; margin-top: 1px;">{deconstruido.grapadoTipo || 'Normal'}</div></div>
+          <div class="box-borde flex-1"><span class="label-mini">Barniz UV</span><div style="color: {colorBoli}; font-weight: bold; margin-top: 1px;">{deconstruido.barnizUVTipo || 'No requiere'}</div></div>
+          <div class="box-borde flex-1"><span class="label-mini">Estamping</span><div style="color: {colorBoli}; font-weight: bold; margin-top: 1px;">{deconstruido.estampingTipo || 'No requiere'}</div></div>
+        </div>
+
+        <div class="box-borde" style="display: flex; flex-direction: column; gap: 5px; background: white;">
+          <div class="flex-row-box" style="justify-content: space-between; align-items: center; padding-right: 20px;">
+            <span class="label-mini" style="display:inline; margin: 0;">Laminado:</span>
+            <div class="chk-item"><span class="chk-box">{deconstruido.laminadoTipo === '1 cara' ? 'X' : ''}</span><span>1 cara</span></div>
+            <div class="chk-item"><span class="chk-box">{deconstruido.laminadoTipo === '2 caras' ? 'X' : ''}</span><span>2 caras</span></div>
+            <div class="chk-item"><span class="chk-box">{deconstruido.laminadoTipo === '2 caras diferentes' ? 'X' : ''}</span><span>2 caras diferentes</span></div>
+          </div>
+          <!-- LAMINADO 1 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-weight: bold; border-top: 1px solid #000; padding-top: 5px; width: 100%;">
+            <span style="color:#666; font-size: 8.5px; width: 95px; flex-shrink: 0;">TIPO LAMINADO 1:</span>
+            {Object.keys(laminado1).map((k) => (
+              <div class="chk-item">
+                <span class="chk-box">{laminado1[k] ? 'X' : ''}</span>
+                <span>{k}</span>
+              </div>
+            ))}
+          </div>
+          <!-- LAMINADO 2 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-weight: bold; padding-top: 2px; width: 100%;">
+            <span style="color:#666; font-size: 8.5px; width: 95px; flex-shrink: 0;">TIPO LAMINADO 2:</span>
+            {Object.keys(laminado2).map((k) => (
+              <div class="chk-item">
+                <span class="chk-box">{laminado2[k] ? 'X' : ''}</span>
+                <span>{k}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ numParte }}>
+    // Ejecutar lógica de guardado automático al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      const elementoA3 = document.getElementById('lienzo-a3');
+      const txtEstado = document.getElementById('estado');
+      const btnDescargar = document.getElementById('btn-descargar');
+      const btnImprimir = document.getElementById('btn-imprimir');
+
+      const opcionesPDF = {
+        margin:       0,
+        filename:     `parte-${numParte}.pdf`,
+        image:        { type: 'jpeg', quality: 1.0 },
+        html2canvas:  { 
+          scale: 2,           // Doble escala para conservar textos vectoriales limpios
+          useCORS: true, 
+          logging: false 
+        },
+        jsPDF:        { unit: 'mm', format: 'a3', orientation: 'landscape' }
+      };
+
+      // Función de exportación
+      function descargarParteComoPDF() {
+        if (typeof html2pdf === 'undefined') {
+          txtEstado.innerText = "Error: Librería PDF no cargada.";
+          txtEstado.style.color = "#FF4B4B";
+          return;
+        }
+
+        txtEstado.innerText = "Generando archivo PDF...";
+        txtEstado.style.color = "#FFB020";
+        btnDescargar.disabled = true;
+
+        html2pdf()
+          .set(opcionesPDF)
+          .from(elementoA3)
+          .save()
+          .then(() => {
+            txtEstado.innerText = "¡PDF Descargado con éxito!";
+            txtEstado.style.color = "#47D173";
+            btnDescargar.disabled = false;
+          })
+          .catch((error) => {
+            console.error(error);
+            txtEstado.innerText = "Error al compilar el PDF.";
+            txtEstado.style.color = "#FF4B4B";
+            btnDescargar.disabled = false;
+          });
+      }
+
+      // Evento del botón de descarga manual
+      btnDescargar.addEventListener('click', descargarParteComoPDF);
+
+      // Evento del botón de impresión nativa del sistema
+      btnImprimir.addEventListener('click', () => {
+        window.print();
+      });
+
+      // 🔥 AUTO-DISPARO: Iniciamos la descarga instantánea tras 800ms para asegurar la carga del DOM
+      setTimeout(() => {
+        descargarParteComoPDF();
+      }, 800);
+    });
+  </script>
+</body>
+</html>

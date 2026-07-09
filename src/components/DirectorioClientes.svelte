@@ -71,7 +71,7 @@
       <button
         type="button"
         on:click={() => letraSeleccionada = letra}
-        class="px-2.5 py-1 rounded-lg text-[11px] font-bold tracking-wide transition-all cursor-pointer duration-150
+        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold tracking-wide transition-all cursor-pointer duration-150
                {letraSeleccionada === letra 
                  ? 'bg-[#5C42FF] text-white shadow-sm scale-102' 
                  : 'text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-[#1E2228]'}"
@@ -98,7 +98,7 @@
           <!-- AVATAR MÓRFICO UNIFICADO (SQUIRCLE PREMIUM) -->
           <div 
             style="view-transition-name: cliente-avatar-{slug};"
-            class="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg border shadow-xs flex-shrink-0 transition-transform group-hover:scale-105 duration-300 {avatar.bg} {avatar.texto} {avatar.borde}"
+            class="w-12 h-12 rounded-2xl flex items-center justify-center font-semibold text-lg border shadow-xs flex-shrink-0 transition-transform group-hover:scale-105 duration-300 {avatar.bg} {avatar.texto} {avatar.borde}"
           >
             {cliente.nombre.charAt(0).toUpperCase()}
           </div>
@@ -110,7 +110,7 @@
 
         <!-- 🔥 SECCIÓN B: CONTADOR EXCLUSIVO DE ÓRDENES (REEMPLAZA A LA BARRA Y A LAS ETIQUETAS CONFUSAS) -->
         <div class="flex flex-col w-[120px] flex-shrink-0 text-left sm:text-center">
-          <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Órdenes Totales</span>
+          <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Órdenes Totales</span>
           <span class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] mt-1.5 tabular-nums leading-none">
             {cliente.totalTareas.toString().padStart(2, '0')} partes
           </span>
@@ -120,7 +120,7 @@
         <div class="w-[130px] flex-shrink-0 flex items-center justify-end">
           <a 
             href="/clients/{cliente.nombre}" 
-            class="text-[10px] font-bold tracking-wider px-4 py-2 bg-gray-50 dark:bg-[#1E2228] text-[#1A1D21] dark:text-[#EDF0F3] rounded-xl hover:bg-[#5C42FF] dark:hover:bg-[#5C42FF] hover:text-white dark:hover:text-white transition-all cursor-pointer shadow-xs text-center inline-block"
+            class="text-[10px] font-semibold tracking-wider px-4 py-2 bg-gray-50 dark:bg-[#1E2228] text-[#1A1D21] dark:text-[#EDF0F3] rounded-xl hover:bg-[#5C42FF] dark:hover:bg-[#5C42FF] hover:text-white dark:hover:text-white transition-all cursor-pointer shadow-xs text-center inline-block"
           >
             Ver Historial
           </a>
@@ -131,7 +131,7 @@
       <!-- MENSAJE DE BÚSQUEDA SIN COINCIDENCIAS -->
       <div class="bg-white dark:bg-[#16191D] border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-12 text-center text-gray-400 dark:text-gray-600 shadow-xs transition-colors">
         <span class="material-symbols-rounded text-4xl block mb-2 text-gray-300 dark:text-gray-700" style="font-variation-settings: 'wght' 100;">folder_open</span>
-        <p class="text-xs font-bold">No se encontraron clientes que empiecen por "{letraSeleccionada}" o coincidan con tu búsqueda actual.</p>
+        <p class="text-xs font-semibold">No se encontraron clientes que empiecen por "{letraSeleccionada}" o coincidan con tu búsqueda actual.</p>
       </div>
     {/each}
   </div>

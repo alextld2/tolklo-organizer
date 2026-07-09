@@ -129,7 +129,7 @@
 
       <div class="flex-1 min-w-0">
         <h4 
-          class="text-sm font-bold tracking-tight leading-none
+          class="text-sm font-semibold tracking-tight leading-none
             {toast.tipo === 'success' ? 'text-emerald-900 dark:text-emerald-300' : 'text-red-900 dark:text-red-300'}"
         >
           {toast.titulo}

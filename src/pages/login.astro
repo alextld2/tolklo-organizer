@@ -1,7 +1,8 @@
 ---
 // src/pages/login.astro
-import '../styles/global.css'; // 🔥 EL TRUCO MAESTRO: Importamos el CSS aquí para que Astro lo procese e inyecte al 100%
+import '../styles/global.css';
 
+// El middleware inyecta locals.user automáticamente. Si existe, salta al taller.
 const user = Astro.locals.user;
 if (user) {
   return Astro.redirect('/w/produccion');
@@ -13,7 +14,7 @@ if (user) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Acceder — Tolklo+ Organizer</title>
+  <title>Acceder — Tolkio+ Organizer</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,22 +25,23 @@ if (user) {
 
   <div class="w-full max-w-md bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-[32px] p-10 shadow-2xl shadow-gray-200/40 dark:shadow-none text-center flex flex-col items-center animate-scale-up">
     
-    <div class="mb-8 flex items-center gap-1 text-2xl font-black tracking-tighter text-[#1A1D21] dark:text-[#EDF0F3] select-none">
+    <div class="mb-8 flex items-center gap-1 text-2xl font-semibold tracking-tighter text-[#1A1D21] dark:text-[#EDF0F3] select-none">
       <img 
           src="/logotipo-app.svg" 
-          alt="Tolkie Organizer" 
+          alt="Tolkio+ Organizer" 
           class="h-8 w-auto object-contain transition-transform group-hover:scale-[1.01] dark:invert" 
         />
     </div>
 
     <div class="mb-8">
-      <h2 class="text-xl font-bold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]">Bienvenido de nuevo</h2>
+      <h2 class="text-xl font-semibold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]">Bienvenido de nuevo</h2>
       <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1.5">Identifícate con tu cuenta corporativa de Google para acceder a los talleres de producción.</p>
     </div>
 
+    <!-- 🔥 CORREGIDO: Redirigimos al endpoint de redirección OAuth de Google que acabamos de crear -->
     <a 
-      href="/w/produccion" 
-      class="w-full py-3.5 px-6 bg-white dark:bg-[#1E2228] hover:bg-gray-50 dark:hover:bg-gray-800 text-[#1A1D21] dark:text-[#EDF0F3] font-bold text-xs rounded-full border border-[#E9EBF0] dark:border-[#232830] shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer select-none outline-none focus:ring-2 focus:ring-[#5C42FF]/20"
+      href="/api/auth/google" 
+      class="w-full py-3.5 px-6 bg-white dark:bg-[#1E2228] hover:bg-gray-50 dark:hover:bg-gray-800 text-[#1A1D21] dark:text-[#EDF0F3] font-semibold text-xs rounded-full border border-[#E9EBF0] dark:border-[#232830] shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer select-none outline-none focus:ring-2 focus:ring-[#5C42FF]/20"
     >
       <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
         <path fill="#EA4335" d="M12 5.04c1.64 0 3.12.56 4.28 1.67l3.2-3.2C17.52 1.58 14.96 1 12 1 7.35 1 3.39 3.65 1.42 7.53l3.82 2.96C6.18 7.15 8.87 5.04 12 5.04z"/>
@@ -50,7 +52,7 @@ if (user) {
       <span>Acceder con cuenta de Google</span>
     </a>
 
-    <div class="mt-12 flex items-center gap-1.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-t border-gray-50 dark:border-[#232830] pt-5 w-full justify-center">
+    <div class="mt-12 flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-t border-gray-50 dark:border-[#232830] pt-5 w-full justify-center">
       <span class="material-symbols-rounded text-xs" style="font-variation-settings: 'wght' 500;">lock</span>
       <span>Conexión cifrada segura</span>
     </div>

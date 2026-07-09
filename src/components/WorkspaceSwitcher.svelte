@@ -42,7 +42,7 @@
       </div>
       
       <div class="flex flex-col text-left min-w-0">
-        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Workspace</span>
+        <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest leading-none">Workspace</span>
         <span class="text-xs font-semibold text-[#1A1D21] mt-1 truncate">{espacioSeleccionado.nombre}</span>
       </div>
     </div>
@@ -58,7 +58,7 @@
 
   {#if desplegado}
     <div class="absolute top-[calc(100%+6px)] left-4 right-4 bg-white border border-[#E9EBF0] rounded-2xl shadow-xl p-1.5 space-y-0.5 z-50 animate-scale-up">
-      <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-2.5 py-1.5">Cambiar de espacio</p>
+      <p class="text-[9px] font-semibold text-gray-400 uppercase tracking-widest px-2.5 py-1.5">Cambiar de espacio</p>
       
       {#each espacios as espacio}
         <a

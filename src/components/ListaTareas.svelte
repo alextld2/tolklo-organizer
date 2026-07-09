@@ -41,11 +41,11 @@
 
   // 2. 🎨 PALETA DE COLORES ESTILO NOTION
   const coloresTextoEstado = {
-    "Terminado": "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-2.5 py-1 rounded-xl font-bold",
-    "Imprimiendo": "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-2.5 py-1 rounded-xl font-bold",
-    "Manipulado": "text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 px-2.5 py-1 rounded-xl font-bold",
-    "Urgente": "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 px-2.5 py-1 rounded-xl font-black animate-pulse",
-    "Por hacer": "text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-[#232830] px-2.5 py-1 rounded-xl font-bold"
+    "Terminado": "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-2.5 py-1 rounded-xl font-semibold",
+    "Imprimiendo": "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-2.5 py-1 rounded-xl font-semibold",
+    "Manipulado": "text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 px-2.5 py-1 rounded-xl font-semibold",
+    "Urgente": "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 px-2.5 py-1 rounded-xl font-semibold animate-pulse",
+    "Por hacer": "text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-[#232830] px-2.5 py-1 rounded-xl font-semibold"
   };
 
   const iconosEstado = {

@@ -12,7 +12,6 @@ export async function getStaticPaths() {
 
 import MainLayout from '../../../layouts/MainLayout.astro';
 import Calendario from '../../../components/Calendario.svelte';
-// Importamos 'eq' para poder realizar los filtros indexados en la DB
 import { db, Trabajo, DesgloseTrabajo, eq } from 'astro:db';
 
 // 2. CAPTURAMOS EL WORKSPACE DESDE LA URL
@@ -23,7 +22,6 @@ if (!workspace) {
 }
 
 // 3. EXTRAEMOS LOS REGISTROS REALES FILTRADOS POR WORKSPACE
-// Traemos solo los trabajos que pertenecen al espacio activo
 const trabajosDB = await db
   .select()
   .from(Trabajo)
@@ -51,7 +49,12 @@ const tituloPagina = nombresEspacios[workspace] || "Calendario";
 ---
 
 <MainLayout title={`Calendario de Entregas // ${tituloPagina}`}>
-  <div class="flex flex-col h-full">
-    <Calendario trabajosIniciales={trabajosDB} desglosesIniciales={desglosesDB} client:load />
+  <div class="flex flex-col h-full bg-[#fcfdfe] dark:bg-[#0c0d0f] p-6">
+    <Calendario 
+  client:load 
+  transition:persist="calendario-produccion"
+  trabajosIniciales={trabajosDB} 
+  desglosesIniciales={desglosesDB} 
+/>
   </div>
 </MainLayout>

@@ -78,7 +78,7 @@
     <button 
       type="button" 
       on:click={() => window.history.back()} 
-      class="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-[#5C42FF] dark:hover:text-[#9A85FF] transition-colors group cursor-pointer bg-transparent border-none p-0 outline-none"
+      class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#5C42FF] dark:hover:text-[#9A85FF] transition-colors group cursor-pointer bg-transparent border-none p-0 outline-none"
     >
       <span class="material-symbols-rounded text-lg transition-transform group-hover:-translate-x-1" style="font-variation-settings: 'wght' 300;">arrow_back</span>
       <span>Volver al listado de clientes</span>
@@ -94,7 +94,7 @@
       <!-- 🔥 ICONO MÓRFICO: Le asignamos su propia firma visual única -->
       <div 
         style="view-transition-name: cliente-avatar-{clienteSlug};"
-        class="w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-xl border shadow-xs flex-shrink-0 transition-transform hover:scale-105 duration-300 {avatar.bg} {avatar.texto} {avatar.borde}"
+        class="w-14 h-14 rounded-2xl flex items-center justify-center font-semibold text-xl border shadow-xs flex-shrink-0 transition-transform hover:scale-105 duration-300 {avatar.bg} {avatar.texto} {avatar.borde}"
       >
         {nombreCliente.charAt(0).toUpperCase()}
       </div>
@@ -102,7 +102,7 @@
       <div class="space-y-0.5">
         <div class="flex items-center gap-2.5 flex-wrap">
           <h1 class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">{nombreCliente}</h1>
-          <span class="bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md border border-[#5C42FF]/10 dark:border-transparent">
+          <span class="bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] text-[9px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-md border border-[#5C42FF]/10 dark:border-transparent">
             Aeroprint Partner
           </span>
         </div>
@@ -114,7 +114,7 @@
 
     <!-- MÉTRICA TOTAL TIPOGRÁFICA -->
     <div class="bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-[#232830] px-6 py-2.5 rounded-2xl flex flex-col items-end justify-center sm:self-center transition-colors">
-      <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Historial Total</span>
+      <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Historial Total</span>
       <span class="text-base font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] tabular-nums leading-none">
         {totalTrabajosHistoricos.toString().padStart(2, '0')} órdenes
       </span>
@@ -128,7 +128,7 @@
         <button
           type="button"
           on:click={() => añoSeleccionado = año}
-          class="px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer relative overflow-hidden duration-200
+          class="px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer relative overflow-hidden duration-200
                  {añoSeleccionado === año 
                     ? 'bg-[#5C42FF] text-white shadow-md shadow-[#5C42FF]/20 scale-102' 
                     : 'text-gray-400 dark:text-gray-500 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] hover:bg-gray-200/40 dark:hover:bg-[#1E2228]'}"
@@ -172,21 +172,22 @@
           </div>
           
           <div class="w-[120px] flex-shrink-0 whitespace-nowrap">
-            <span class="text-[9px] font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider bg-gray-50 dark:bg-[#1E2228] text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-transparent">
+            <span class="text-[9px] font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wider bg-gray-50 dark:bg-[#1E2228] text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-transparent">
               {trabajo.area}
             </span>
           </div>
           
-          <div class="w-[130px] flex-shrink-0 text-xs font-bold text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
+          <div class="w-[130px] flex-shrink-0 text-xs font-semibold text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
             {trabajo.fechaSalida}
           </div>
           
-          <div class="w-[140px] flex-shrink-0 flex items-center justify-end gap-2 text-[10px] font-extrabold tracking-wide whitespace-nowrap">
+          <div class="w-[140px] flex-shrink-0 flex items-center justify-end gap-2 text-[10px] font-bold tracking-wide whitespace-nowrap">
             <span class="px-2.5 py-1 rounded-xl flex items-center gap-1.5 uppercase tracking-wider {coloresEstado[trabajo.estado] || coloresEstado['Por hacer']}">
               <span class="material-symbols-rounded text-sm flex-shrink-0 {trabajo.estado === 'Imprimiendo' ? 'animate-pulse' : ''}">
                 {iconosEstado[trabajo.estado] || iconosEstado['Por hacer']}
               </span>
               <span>{trabajo.estado}</span>
+              <a href={`/w/imprenta/parte/${trabajo.numParte}/print`} target="_blank" class="boton-pdf">Ver PDF</a>
             </span>
           </div>
 
@@ -204,7 +205,7 @@
             class="w-full border-t border-gray-100 dark:border-[#232830] bg-gray-50/50 dark:bg-[#121418]/30 px-6 py-5 flex flex-col space-y-4"
           >
             <div class="flex items-center justify-between border-b border-dashed border-gray-200 dark:border-gray-800 pb-2.5">
-              <span class="text-[10px] font-extrabold text-[#5C42FF] dark:text-[#9A85FF] uppercase tracking-widest flex items-center gap-1.5">
+              <span class="text-[10px] font-bold text-[#5C42FF] dark:text-[#9A85FF] uppercase tracking-widest flex items-center gap-1.5">
                 <span class="material-symbols-rounded text-xs">analytics</span> Ficha Técnica de Producción (Vista Previa)
               </span>
               <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Asignación ID: {trabajo.numParte}</span>
@@ -212,23 +213,23 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
               <div class="flex flex-col space-y-2">
-                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Equipo de Diseño y Gestión</span>
+                <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Equipo de Diseño y Gestión</span>
                 <div class="bg-white dark:bg-[#16191D] border border-gray-100 dark:border-[#232830] p-3 rounded-xl space-y-1.5">
-                  <p class="text-gray-500 dark:text-gray-400 font-medium">💼 Comercial: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-bold">Por definir</span></p>
-                  <p class="text-gray-500 dark:text-gray-400 font-medium">🎨 Diseñador: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-bold">Por definir</span></p>
+                  <p class="text-gray-500 dark:text-gray-400 font-medium">💼 Comercial: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-semibold">Por definir</span></p>
+                  <p class="text-gray-500 dark:text-gray-400 font-medium">🎨 Diseñador: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-semibold">Por definir</span></p>
                 </div>
               </div>
 
               <div class="flex flex-col space-y-2">
-                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Logística de Taller</span>
+                <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Logística de Taller</span>
                 <div class="bg-white dark:bg-[#16191D] border border-gray-100 dark:border-[#232830] p-3 rounded-xl space-y-1.5">
-                  <p class="text-gray-500 dark:text-gray-400 font-medium">⚙️ Maquinaria principal: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-bold uppercase">{trabajo.area}</span></p>
-                  <p class="text-gray-500 dark:text-gray-400 font-medium">📦 Subcontratación: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-bold">{trabajo.subcontrata || 'No requiere externa'}</span></p>
+                  <p class="text-gray-500 dark:text-gray-400 font-medium">⚙️ Maquinaria principal: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-semibold uppercase">{trabajo.area}</span></p>
+                  <p class="text-gray-500 dark:text-gray-400 font-medium">📦 Subcontratación: <span class="text-[#1A1D21] dark:text-[#EDF0F3] font-semibold">{trabajo.subcontrata || 'No requiere externa'}</span></p>
                 </div>
               </div>
 
               <div class="flex flex-col space-y-2">
-                <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Observaciones Generales</span>
+                <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Observaciones Generales</span>
                 <div class="bg-white dark:bg-[#16191D] border border-gray-100 dark:border-[#232830] p-3 rounded-xl h-full min-h-[62px]">
                   <p class="text-gray-400 dark:text-gray-500 italic font-medium leading-relaxed">
                     Pendiente de anexar las especificaciones y el desglose de productos desde el formulario máster de planta...
@@ -245,7 +246,7 @@
         class="bg-white dark:bg-[#16191D] border border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-16 text-center text-gray-400 dark:text-gray-600 shadow-xs transition-colors"
       >
         <span class="material-symbols-rounded text-3xl block mb-1.5 opacity-30" style="font-variation-settings: 'wght' 100;">folder_open</span>
-        <p class="text-xs font-bold">No se registran órdenes de producción en el año {añoSeleccionado}.</p>
+        <p class="text-xs font-semibold">No se registran órdenes de producción en el año {añoSeleccionado}.</p>
       </div>
     {/each}
   </div>

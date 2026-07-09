@@ -31,7 +31,7 @@
 <div class="w-full bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-6 shadow-xs flex flex-col h-full">
   
   <div class="mb-6">
-    <h3 class="text-sm font-bold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">Registro de Operaciones de Planta</h3>
+    <h3 class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">Registro de Operaciones de Planta</h3>
     <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Auditoría en tiempo real de accesos, modificaciones y borrados del sistema.</p>
   </div>
 
@@ -49,13 +49,13 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div class="flex items-center gap-2">
             <!-- Nombre del culpable destacado -->
-            <span class="font-black text-[#1A1D21] dark:text-[#EDF0F3] bg-gray-100 dark:bg-[#1E2228] px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wide">
+            <span class="font-semibold text-[#1A1D21] dark:text-[#EDF0F3] bg-gray-100 dark:bg-[#1E2228] px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wide">
               👤 {log.usuario}
             </span>
-            <span class="font-bold text-gray-700 dark:text-gray-300">{log.accion}</span>
+            <span class="font-semibold text-gray-700 dark:text-gray-300">{log.accion}</span>
           </div>
           <!-- Timestamp exacto -->
-          <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 tracking-tighter tabular-nums">
+          <span class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 tracking-tighter tabular-nums">
             {formatearFecha(log.fecha)}
           </span>
         </div>

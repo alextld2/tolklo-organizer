@@ -1,510 +1,777 @@
 <script lang="ts">
+  // src/components/Calendario.svelte
   import { onMount } from 'svelte';
 
-  // RECEPCIÓN DE DATOS DE ASTRO DB
   export let trabajosIniciales: any[] = [];
   export let desglosesIniciales: any[] = [];
 
-  let trabajos = [...trabajosIniciales];
-  let desgloses = [...desglosesIniciales];
+// Variables de estado del calendario (se inicializan vacías)
+  let trabajos: any[] = [];
+  let desgloses: any[] = [];
 
-  let fechaVisualizada = new Date();
+  // 🛡️ Sincronización reactiva: se actualizan automáticamente cuando Astro cambie los props
+  $: if (trabajosIniciales) trabajos = [...trabajosIniciales];
+  $: if (desglosesIniciales) desgloses = [...desglosesIniciales];
   
-  // 1. DICCIONARIO DE COLORES ESTILO NOTION
-  const coloresEstado = {
-    "Terminado": "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
-    "Imprimiendo": "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
-    "Manipulado": "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
-    "Urgente": "bg-red-50 text-red-700 border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 font-black animate-pulse",
-    "Por hacer": "bg-gray-50 text-gray-600 border-gray-100 dark:bg-[#1E2228] dark:text-gray-400 dark:border-[#232830]"
-  };
+  let currentDate = new Date();
+  let currentYear = currentDate.getFullYear();
+  let currentMonth = currentDate.getMonth(); // 0-11
 
-  const iconosEstado = {
-    "Terminado": "check_circle",
-    "Imprimiendo": "print",
-    "Manipulado": "precision_manufacturing",
-    "Urgente": "bolt",
-    "Por hacer": "radio_button_unchecked"
-  };
+  // Nombres de meses y días para la maqueta
+  const nombresMeses = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+  const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
-  const listaEstados = ["Por hacer", "Imprimiendo", "Manipulado", "Terminado", "Urgente"];
+  // Reactivos: cálculo de celdas del mes actual
+  $: daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  $: firstDayIndex = (new Date(currentYear, currentMonth, 1).getDay() + 6) % 7; // Lunes como primer día
 
-  // Control de Modales
-  let modalMasAbierto = false; 
-  let trabajosModalMas: typeof trabajos = [];
-  let fechaModalMasTexto = "";
-
-  let modalDetalleAbierto = false; 
-  let trabajoSeleccionado: any = null;
-  let confirmandoEliminar = false;
-
-  // Cálculos dinámicos del calendario
-  $: año = fechaVisualizada.getFullYear();
-  $: mesIndex = fechaVisualizada.getMonth();
-  $: nombreMes = fechaVisualizada.toLocaleString('es-ES', { month: 'long' });
-  $: primerDiaDelMes = new Date(año, mesIndex, 1).getDay();
-  $: offset = primerDiaDelMes === 0 ? 6 : primerDiaDelMes - 1; 
-  $: diasEnMes = new Date(año, mesIndex + 1, 0).getDate();
-  $: celdas = [...Array(offset).fill(null), ...Array.from({ length: diasEnMes }, (_, i) => i + 1)];
-
-  // MATRIZ DE TRANSICIÓN UNIDIRECCIONAL
-  function esTransicionValida(estadoActual: string, estadoNuevo: string): boolean {
-    if (estadoActual === estadoNuevo) return false;
-    if (estadoNuevo === "Urgente" || estadoActual === "Urgente") return true;
-
-    const flujoSecuencial = ["Por hacer", "Imprimiendo", "Manipulado", "Terminado"];
-    const idxActual = flujoSecuencial.indexOf(estadoActual);
-    const idxNuevo = flujoSecuencial.indexOf(estadoNuevo);
-
-    return idxNuevo > idxActual;
-  }
-
-  // Funciones de Navegación
-  const mesAnterior = () => fechaVisualizada = new Date(año, mesIndex - 1, 1);
-  const mesSiguiente = () => fechaVisualizada = new Date(año, mesIndex + 1, 1);
-  const irAHoy = () => fechaVisualizada = new Date();
-
-  function abrirDetallesTrabajo(e: MouseEvent, trabajo: any) {
-    e.stopPropagation(); 
-    trabajoSeleccionado = trabajo;
-    confirmandoEliminar = false; 
-    modalDetalleAbierto = true;
-  }
-
-  function cerrarModalDetalle() {
-    modalDetalleAbierto = false;
-    trabajoSeleccionado = null;
-  }
-
-  async function cambiarEstado(nuevoEstado: string) {
-    if (trabajoSeleccionado) {
-      const estadoAnterior = trabajoSeleccionado.estado;
-      
-      trabajos = trabajos.map(t => t.numParte === trabajoSeleccionado.numParte ? { ...t, estado: nuevoEstado } : t);
-      trabajoSeleccionado.estado = nuevoEstado;
-      
-      if (modalMasAbierto) {
-        trabajosModalMas = trabajos.filter(t => t.fechaSalida === trabajoSeleccionado.fechaSalida);
-      }
-
-      try {
-        const respuesta = await fetch('/api/actualizar-tarea', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(trabajoSeleccionado)
-        });
-        if (!respuesta.ok) throw new Error();
-        cerrarModalDetalle();
-      } catch (e) {
-        trabajos = trabajos.map(t => t.numParte === trabajoSeleccionado.numParte ? { ...t, estado: estadoAnterior } : t);
-        alert("❌ Error: No se pudo actualizar el estado en el servidor remoto.");
-      }
-    }
-  }
-
-  async function eliminarTrabajo() {
-    if (trabajoSeleccionado) {
-      if (!confirmandoEliminar) {
-        confirmandoEliminar = true; 
-        return;
-      }
-      
-      const numParteEliminar = trabajoSeleccionado.numParte;
-      trabajos = trabajos.filter(t => t.numParte !== numParteEliminar);
-      if (modalMasAbierto) {
-        trabajosModalMas = trabajos.filter(t => t.fechaSalida === trabajoSeleccionado.fechaSalida);
-      }
-      cerrarModalDetalle();
-
-      try {
-        await fetch('/api/eliminar-tarea', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ numParte: numParteEliminar })
-        });
-      } catch (e) {
-        alert("❌ Error crítico eliminando el registro de la nube.");
-      }
-    }
-  }
-
-  function abrirModalMas(fechaString: string, todosLosTrabajos: typeof trabajos, dia: number) {
-    fechaModalMasTexto = `${dia} de ${nombreMes} ${año}`;
-    trabajosModalMas = todosLosTrabajos;
-    modalMasAbierto = true;
-  }
-
-  function cerrarModalMas() { modalMasAbierto = false; }
-
-  function iniciarArrastre(e: DragEvent, numParte: number) {
-    e.dataTransfer?.setData("text/plain", numParte.toString());
-  }
-
-  async function soltar(e: DragEvent, fechaSalidaNueva: string) {
-    e.preventDefault();
-    const numParteStr = e.dataTransfer?.getData("text/plain");
+  // Construcción de la matriz mensual
+  $: daysGrid = (() => {
+    let grid = [];
+    const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
     
-    if (numParteStr) {
-      const numParteInt = parseInt(numParteStr);
-      const tareaMovida = trabajos.find(t => t.numParte === numParteInt);
-      if (tareaMovida && tareaMovida.fechaSalida === fechaSalidaNueva) return;
+    // Relleno de mes anterior
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const prevDay = prevMonthDays - i;
+      const month = currentMonth === 0 ? 11 : currentMonth - 1;
+      const year = currentMonth === 0 ? currentYear - 1 : currentYear;
+      grid.push({ day: prevDay, month, year, currentMonth: false });
+    }
+    
+    // Días del mes activo
+    for (let d = 1; d <= daysInMonth; d++) {
+      grid.push({ day: d, month: currentMonth, year: currentYear, currentMonth: true });
+    }
+    
+    // Relleno de mes siguiente (Hasta completar matriz de 42 celdas)
+    const totalSlots = 42;
+    const nextMonthFiller = totalSlots - grid.length;
+    for (let d = 1; d <= nextMonthFiller; d++) {
+      const month = currentMonth === 11 ? 0 : currentMonth + 1;
+      const year = currentMonth === 11 ? currentYear + 1 : currentYear;
+      grid.push({ day: d, month, year, currentMonth: false });
+    }
+    
+    return grid;
+  })();
 
-      const copiaSeguridadTrabajos = [...trabajos];
-      const copiaSeguridadModalMas = [...trabajosModalMas];
+  // Utilidades auxiliares para fechas
+  function formatDate(year: number, month: number, day: number): string {
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    return `${year}-${mm}-${dd}`;
+  }
 
-      trabajos = trabajos.map(t => t.numParte === numParteInt ? { ...t, fechaSalida: fechaSalidaNueva } : t);
-      
-      if (modalMasAbierto && tareaMovida) {
-        trabajosModalMas = trabajos.filter(t => t.fechaSalida === tareaMovida.fechaSalida);
+  // 🛡️ SOLUCIÓN AL RETARDO EN TIEMPO REAL (F5):
+  // Creamos un diccionario reactivo de trabajos agrupados por fecha.
+  // Al actualizarse 'trabajos', Svelte recalculará instantáneamente este mapa,
+  // disparando la renderización de las celdas en el DOM sin necesidad de refrescar la página.
+  $: trabajosPorFecha = trabajos.reduce((acc, t) => {
+    const fecha = t.fechaSalida;
+    if (!acc[fecha]) acc[fecha] = [];
+    acc[fecha].push(t);
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  function getDesgloses(numParte: string) {
+    return desgloses.filter(d => d.numParte === numParte);
+  }
+
+  // Comprueba si un día corresponde a la fecha actual del sistema
+  function esHoy(d: number, m: number, y: number): boolean {
+    const hoy = new Date();
+    return d === hoy.getDate() && m === hoy.getMonth() && y === hoy.getFullYear();
+  }
+
+  // Devuelve la visualización del calendario al mes y año actual
+  function irAHoy() {
+    const hoy = new Date();
+    currentMonth = hoy.getMonth();
+    currentYear = hoy.getFullYear();
+  }
+
+  // Navegación mensual
+  function prevMonth() {
+    if (currentMonth === 0) {
+      currentMonth = 11;
+      currentYear -= 1;
+    } else {
+      currentMonth -= 1;
+    }
+  }
+
+  function nextMonth() {
+    if (currentMonth === 11) {
+      currentMonth = 0;
+      currentYear += 1;
+    } else {
+      currentMonth += 1;
+    }
+  }
+
+  // Lógica Drag & Drop Robusta (Protección contra truncamiento)
+  let draggedParte: string | null = null;
+  let dragOverCellDate: string | null = null;
+  
+  // Mensajes flotantes (Toasts integrados de control para no usar alert)
+  let toastMessage = "";
+  let toastType = "success"; // "success" | "error" | "info"
+
+  function showToast(msg: string, type = "success") {
+    toastMessage = msg;
+    toastType = type;
+    setTimeout(() => {
+      if (toastMessage === msg) toastMessage = "";
+    }, 5000);
+  }
+
+  function handleDragStart(event: DragEvent, numParte: string) {
+    draggedParte = numParte;
+    if (event.dataTransfer) {
+      event.dataTransfer.setData("text/plain", String(numParte));
+      event.dataTransfer.effectAllowed = "move";
+    }
+  }
+
+  function handleDragOver(event: DragEvent, dateStr: string) {
+    event.preventDefault();
+    dragOverCellDate = dateStr;
+  }
+
+  function handleDragLeave() {
+    dragOverCellDate = null;
+  }
+
+  async function handleDrop(event: DragEvent, targetDateStr: string) {
+    event.preventDefault();
+    dragOverCellDate = null;
+
+    const numParteStr = event.dataTransfer?.getData("text/plain") || draggedParte;
+    if (!numParteStr) return;
+
+    // Localizamos el índice del parte de trabajo
+    const jobIndex = trabajos.findIndex(t => t.numParte === numParteStr);
+    if (jobIndex === -1) return;
+
+    const originalDate = trabajos[jobIndex].fechaSalida;
+    if (originalDate === targetDateStr) return; // Mismo día, no procesar
+
+    // Modificación de UI optimista (La tarjeta se mueve de inmediato para dar fluidez)
+    trabajos[jobIndex].fechaSalida = targetDateStr;
+    trabajos = [...trabajos];
+
+    showToast(`Actualizando entrega de parte #${numParteStr}...`, "info");
+
+    try {
+      const response = await fetch('/api/actualizar-fecha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          numParte: numParteStr,
+          nuevaFecha: targetDateStr
+        })
+      });
+
+      const resData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(resData.message || 'Error en la actualización remota de Turso.');
       }
 
-      try {
-        const respuesta = await fetch('/api/actualizar-fecha', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ numParte: numParteInt, nuevaFecha: fechaSalidaNueva })
-        });
-        if (!respuesta.ok) throw new Error("Error de servidor");
-      } catch (error) {
-        trabajos = copiaSeguridadTrabajos;
-        trabajosModalMas = copiaSeguridadModalMas;
-        alert("❌ Error: No se pudo guardar la fecha en la base de datos. Movimiento revertido.");
+      showToast(`Parte #${numParteStr} guardado con éxito el ${targetDateStr}.`, "success");
+    } catch (error: any) {
+      console.error("❌ Falló el canje remoto:", error);
+      // Reversión de UI optimista en caso de error
+      trabajos[jobIndex].fechaSalida = originalDate;
+      trabajos = [...trabajos];
+      showToast(`Error al mover parte: ${error.message}. Movimiento revertido.`, "error");
+    } finally {
+      draggedParte = null;
+    }
+  }
+
+  // Visor de Desgloses y Ficha Técnica lateral
+  let selectedTrabajo: any = null;
+  
+  // Solución reactiva para calcular el desglose del parte seleccionado sin usar {@const} anidados prohibidos
+  $: desglosesFiltro = selectedTrabajo ? getDesgloses(selectedTrabajo.numParte) : [];
+  $: estadoActual = selectedTrabajo ? (selectedTrabajo.estado || 'Por hacer').toLowerCase() : 'por hacer';
+
+  function openDetails(trabajo: any) {
+    selectedTrabajo = trabajo;
+  }
+  function closeDetails() {
+    selectedTrabajo = null;
+    showDeleteConfirmation = false;
+  }
+
+  // Estado para la ventana modal de "+ X más tareas"
+  let showMoreModal = false;
+  let moreModalDate = "";
+  let moreModalTrabajos: any[] = [];
+
+  function abrirMasTareas(dateStr: string) {
+    moreModalDate = dateStr;
+    moreModalTrabajos = trabajosPorFecha[dateStr] || [];
+    showMoreModal = true;
+  }
+
+  function cerrarMasTareas() {
+    showMoreModal = false;
+    moreModalDate = "";
+    moreModalTrabajos = [];
+  }
+
+  // 🎨 Retorna las clases de estilo por color exactas asociadas a cada estado (image_d42d7d.png)
+  function getEstadoClases(estado: string): string {
+    const est = (estado || 'Por hacer').toLowerCase();
+    
+    if (est === 'imprimiendo') {
+      return 'bg-indigo-50/75 text-indigo-700 border-indigo-200/80 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/50';
+    } else if (est === 'manipulado') {
+      return 'bg-amber-50/75 text-amber-800 border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50';
+    } else if (est === 'terminado') {
+      return 'bg-emerald-50/75 text-emerald-800 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/50';
+    } else if (est === 'urgente') {
+      return 'bg-rose-50/90 text-rose-800 border-rose-200/80 animate-pulse-slow dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50';
+    }
+    // "Por hacer" o por defecto
+    return 'bg-white text-slate-700 border-slate-200 dark:bg-[#1a1d24] dark:text-slate-200 dark:border-slate-850/80';
+  }
+
+  // 🛡️ ACCIONES DEL CONJUNTO TÉCNICO DE TRABAJO (image_d47fd4.png)
+  async function cambiarEstado(nuevoEstado: string) {
+    if (!selectedTrabajo) return;
+    const originalEstado = selectedTrabajo.estado;
+    const numParteStr = selectedTrabajo.numParte;
+
+    // Modificación Optimista de UI en Caliente (Instantáneo, sin F5)
+    trabajos = trabajos.map(t => t.numParte === numParteStr ? { ...t, estado: nuevoEstado } : t);
+    selectedTrabajo = { ...selectedTrabajo, estado: nuevoEstado };
+
+    showToast(`Cambiando estado del parte a "${nuevoEstado}"...`, "info");
+
+    try {
+      const response = await fetch('/api/actualizar-tarea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: numParteStr,
+          estado: nuevoEstado,
+          workspaceId: selectedTrabajo.workspaceId
+        })
+      });
+
+      const resData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(resData.error || 'Error al cambiar estado en base de datos.');
       }
+
+      showToast(`Parte #${numParteStr} actualizado con éxito a "${nuevoEstado}".`, "success");
+    } catch (error: any) {
+      console.error(error);
+      // Reversión optimista de UI en caso de error
+      trabajos = trabajos.map(t => t.numParte === numParteStr ? { ...t, estado: originalEstado } : t);
+      selectedTrabajo = { ...selectedTrabajo, estado: originalEstado };
+      showToast(`Error: No se pudo actualizar el estado: ${error.message}`, "error");
+    }
+  }
+
+  // Confirmación nativa integrada de Svelte para borrado de partes (Elimina alert/confirm intrusivos)
+  let showDeleteConfirmation = false;
+
+  async function archivarEliminarTarea() {
+    if (!showDeleteConfirmation) {
+      showDeleteConfirmation = true;
+      return;
+    }
+
+    if (!selectedTrabajo) return;
+    const numParteStr = selectedTrabajo.numParte;
+
+    showToast(`Eliminando parte de trabajo #${numParteStr}...`, "info");
+
+    try {
+      const response = await fetch('/api/eliminar-tarea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: numParteStr,
+          workspaceId: selectedTrabajo.workspaceId
+        })
+      });
+
+      const resData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(resData.error || 'Error al procesar la eliminación en Turso.');
+      }
+
+      // Eliminación física en el estado reactivo en memoria
+      trabajos = trabajos.filter(t => t.numParte !== numParteStr);
+      closeDetails();
+      showToast(`Parte #${numParteStr} eliminado permanentemente del sistema.`, "success");
+    } catch (error: any) {
+      console.error(error);
+      showToast(`Error al eliminar: ${error.message}`, "error");
+    } finally {
+      showDeleteConfirmation = false;
+    }
+  }
+
+  // Controladores de accesibilidad seguros para evitar errores sintácticos de Svelte en "keydown"
+  function handleCardKeydown(event: KeyboardEvent, trabajo: any) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openDetails(trabajo);
+    }
+  }
+
+  function handleMoreKeydown(event: KeyboardEvent, trabajo: any) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openDetails(trabajo);
+      cerrarMasTareas();
     }
   }
 </script>
 
-<div class="flex flex-col h-full w-full font-sans relative text-[#1A1D21] dark:text-[#EDF0F3]">
-  
-  <div class="flex items-center justify-between pb-6 flex-shrink-0">
-    <div>
+<!-- 🛡️ ESCUDO DE ESTILOS GLOBALES DINÁMICOS CONTRA NAVEGACIÓN Y DESHIDRATACIÓN ASTRO -->
+<svelte:head>
+  <style>
+    .animate-fade-in { 
+      animation: fadeIn 0.18s ease-out forwards; 
+    }
+    .animate-slide-left { 
+      animation: slideLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    }
+    .animate-scale-up { 
+      animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    }
+    .animate-pulse-slow {
+      animation: pulseSlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes fadeIn { 
+      from { opacity: 0; } 
+      to { opacity: 1; } 
+    }
+    @keyframes slideLeft { 
+      from { transform: translateX(100%); } 
+      to { transform: translateX(0); } 
+    }
+    @keyframes scaleUp {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulseSlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .7; }
+    }
+  </style>
+</svelte:head>
 
-      
-      <div class="flex items-center gap-6">
-        <h1 class="text-3xl font-semibold capitalize tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]">{nombreMes} {año}</h1>
+<div class="flex flex-col h-full select-none">
+  <!-- CABECERA DEL CALENDARIO -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center gap-6">
+      <div class="flex flex-col">
+        <h1 class="text-3xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-3">
+          📅 Planificación de Entregas
+        </h1>
+      </div>
+
+      <!-- LEYENDA DE ESTADOS DE COLOR (Estilo exacto image_d42d7d.png) -->
+      <div class="flex flex-wrap items-center gap-4 border-l border-slate-200 dark:border-slate-800 pl-0 md:pl-6 pt-2 md:pt-0">
+        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+          <span class="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600 bg-white"></span>
+          <span>Por Hacer</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-[#5C42FF] dark:text-indigo-400 uppercase tracking-wider">
+          <span class="w-3.5 h-3.5 rounded-md bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900/50 flex items-center justify-center text-[8px]">🖨️</span>
+          <span>Imprimiendo</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-amber-600 uppercase tracking-wider">
+          <span class="w-3.5 h-3.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50 flex items-center justify-center text-[8px]">📦</span>
+          <span>Manipulado</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">
+          <span class="w-3.5 h-3.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-center text-[8px]">✔️</span>
+          <span>Terminado</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-rose-600 uppercase tracking-wider animate-pulse">
+          <span class="w-3.5 h-3.5 rounded-md bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center text-[8px]">⚡</span>
+          <span>Urgente</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3 self-end md:self-auto">
+      <!-- Botón HOY (Estructura corregida matching image_d421a0.png con bordes armonizados) -->
+      <button 
+        on:click={irAHoy}
+        class="px-4 py-2 bg-white hover:bg-slate-50 dark:bg-[#16181c] dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800/80 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center focus:outline-none"
+      >
+        Hoy
+      </button>
+
+      <!-- Selector de Meses -->
+      <div class="flex items-center gap-3 bg-white dark:bg-[#16181c] border border-slate-200/60 dark:border-slate-800/80 p-1.5 rounded-2xl shadow-sm">
+        <button 
+          on:click={prevMonth}
+          class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
+        </button>
         
-        <div class="hidden lg:flex items-center gap-4 border-l border-gray-200 dark:border-gray-800 pl-6 mt-1 text-[10px] font-bold uppercase tracking-wider">
-          <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-            <span class="material-symbols-rounded text-sm text-gray-400">radio_button_unchecked</span> <span>Por hacer</span>
-          </div>
-          <div class="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-            <span class="material-symbols-rounded text-sm text-blue-500 animate-pulse">print</span> <span>Imprimiendo</span>
-          </div>
-          <div class="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-            <span class="material-symbols-rounded text-sm text-amber-500">package_2</span> <span>Manipulado</span>
-          </div>
-          <div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-            <span class="material-symbols-rounded text-sm text-emerald-500">check_circle</span> <span>Terminado</span>
-          </div>
-          <div class="flex items-center gap-1 text-red-600 dark:text-red-400 animate-pulse">
-            <span class="material-symbols-rounded text-sm text-red-500">bolt</span> <span>Urgente</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="flex items-center gap-3">
-      <button on:click={irAHoy} class="px-4 py-2 text-xs font-semibold bg-white dark:bg-[#1E2228] border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-xs text-[#1A1D21] dark:text-[#EDF0F3] cursor-pointer">Hoy</button>
-      
-      <div class="flex items-center bg-white dark:bg-[#1E2228] border border-gray-200 dark:border-gray-800 rounded-xl p-0.5 shadow-xs">
-        <button on:click={mesAnterior} class="w-8 h-8 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-all text-gray-600 dark:text-gray-400 cursor-pointer">
-          <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">chevron_left</span>
-        </button>
-        <div class="w-px h-4 bg-gray-200 dark:bg-gray-800 mx-0.5"></div>
-        <button on:click={mesSiguiente} class="w-8 h-8 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-all text-gray-600 dark:text-gray-400 cursor-pointer">
-          <span class="material-symbols-rounded text-lg" style="font-variation-settings: 'wght' 300;">chevron_right</span>
+        <span class="text-sm font-bold text-slate-800 dark:text-slate-100 min-w-[140px] text-center capitalize">
+          {nombresMeses[currentMonth]} {currentYear}
+        </span>
+        
+        <button 
+          on:click={nextMonth}
+          class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
     </div>
   </div>
 
-  <div class="flex-1 bg-white dark:bg-[#16191D] rounded-3xl shadow-sm border border-gray-100 dark:border-[#232830] overflow-hidden flex flex-col transition-colors">
-    
-    <div class="grid grid-cols-7 border-b border-gray-100 dark:border-[#232830] bg-white dark:bg-[#16191D] flex-shrink-0">
-      {#each ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] as d}
-        <div class="py-3 text-center text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{d}</div>
-      {/each}
-    </div>
-
-    <div class="grid grid-cols-7 flex-1 overflow-y-auto bg-white dark:bg-[#0E1114] divide-x divide-y divide-gray-50 dark:divide-[#232830]/40">
-      {#each celdas as dia}
-        {#if dia === null}
-          <div class="min-h-[135px] bg-white dark:bg-[#111418]/40"></div>
-        {:else}
-          {@const fechaString = `${año}-${(mesIndex + 1).toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`}
-          {@const trabajosDelDia = trabajos.filter(t => t.fechaSalida === fechaString)}
-          
-          <div 
-            role="gridcell"
-            class="min-h-[135px] p-2.5 bg-white dark:bg-[#16191D] hover:bg-gray-50/40 dark:hover:bg-[#1E2228]/50 transition-colors flex flex-col group relative"
-            on:dragover|preventDefault
-            on:drop={(e) => soltar(e, fechaString)}
-          >
-            <div class="flex justify-between items-center mb-1.5">
-              <span class="text-xs font-semibold tracking-wide {dia === new Date().getDate() && mesIndex === new Date().getMonth() && año === new Date().getFullYear() ? 'bg-[#5C42FF] text-white w-5 h-5 rounded-md flex items-center justify-center text-[11px]' : 'text-gray-400 dark:text-gray-500'}">{dia}</span>
-            </div>
-
-            <div class="flex-1 space-y-1">
-              {#each trabajosDelDia.slice(0, 4) as trabajo (trabajo.numParte)}
-                <div 
-                  role="button"
-                  tabindex="0"
-                  draggable="true"
-                  on:dragstart={(e) => iniciarArrastre(e, trabajo.numParte)}
-                  on:click={(e) => abrirDetallesTrabajo(e, trabajo)}
-                  class="px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all truncate border flex items-center justify-between {coloresEstado[trabajo.estado] || 'bg-gray-50 text-gray-600 border-gray-100'}"
-                  title="{trabajo.numParte} - {trabajo.cliente}"
-                >
-                  <span class="truncate">#{trabajo.numParte} {trabajo.cliente}</span>
-                  {#if trabajo.subcontrata}
-                    <span class="material-symbols-rounded text-xs text-orange-500 ml-1" style="font-variation-settings: 'wght' 300;">handshake</span>
-                  {/if}
-                </div>
-              {/each}
-
-              {#if trabajosDelDia.length > 4}
-                <button 
-                  on:click|stopPropagation={() => abrirModalMas(fechaString, trabajosDelDia, dia)}
-                  class="w-full text-center py-1 rounded-lg text-[9px] font-semibold bg-gray-50 dark:bg-[#1E2228] hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-800 transition-colors mt-1 cursor-pointer"
-                >
-                  +{trabajosDelDia.length - 4} más
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/if}
-      {/each}
-    </div>
-  </div>
-
-  <!-- MODAL: VER MÁS PARTES DEL DÍA -->
-  {#if modalMasAbierto}
-    <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[250] flex items-center justify-center p-4 animate-fade-in" on:click={cerrarModalMas}>
-      <div class="bg-white dark:bg-[#16191D] border border-gray-100 dark:border-[#232830] rounded-3xl w-full max-w-md p-6 shadow-2xl flex flex-col max-h-[70vh]" on:click|stopPropagation>
-        <div class="flex justify-between items-center mb-4 flex-shrink-0">
-          <div>
-            <p class="text-[9px] font-semibold text-[#5C42FF] dark:text-[#9A85FF] uppercase tracking-widest mb-0.5">Orders Overview</p>
-            <h3 class="text-lg font-semibold text-[#1A1D21] dark:text-[#EDF0F3] capitalize">{fechaModalMasTexto}</h3>
-          </div>
-          <button on:click={cerrarModalMas} class="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-50 dark:bg-[#1E2228] hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 cursor-pointer">
-            <span class="material-symbols-rounded text-lg">close</span>
-          </button>
-        </div>
-
-        <div class="overflow-y-auto space-y-2 flex-1 pr-1">
-          {#each trabajosModalMas as trabajo (trabajo.numParte)}
-            <div 
-              role="button"
-              tabindex="0"
-              on:click={(e) => abrirDetallesTrabajo(e, trabajo)}
-              class="px-4 py-2.5 rounded-xl text-xs font-medium border border-gray-100 dark:border-[#232830] bg-gray-50/30 dark:bg-[#1E2228]/40 hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-all cursor-pointer flex justify-between items-center"
-            >
-              <div class="flex items-center gap-2">
-                <span class="text-gray-400 dark:text-gray-500">#{trabajo.numParte}</span>
-                <span class="font-bold text-[#1A1D21] dark:text-[#EDF0F3]">{trabajo.cliente}</span>
-                {#if trabajo.subcontrata}
-                  <span class="material-symbols-rounded text-sm text-orange-500" style="font-variation-settings: 'wght' 300;">handshake</span>
-                {/if}
-              </div>
-              <span class="px-2 py-0.5 text-[9px] font-extrabold rounded-md uppercase border {coloresEstado[trabajo.estado]}">{trabajo.estado}</span>
-            </div>
-          {/each}
-        </div>
+  <!-- TOAST NOTIFICATION CORREGIDO -->
+  {#if toastMessage}
+    <div class="mb-4 p-4 rounded-2xl border flex items-center justify-between text-xs font-semibold shadow-lg animate-fade-in
+      {toastType === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-150' : ''}
+      {toastType === 'error' ? 'bg-rose-50 text-rose-800 border-rose-150' : ''}
+      {toastType === 'info' ? 'bg-[#5C42FF]/10 text-[#5C42FF] border-[#5C42FF]/20' : ''}">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full {toastType === 'success' ? 'bg-emerald-500' : ''} {toastType === 'error' ? 'bg-rose-500' : ''} {toastType === 'info' ? 'bg-[#5C42FF]' : ''}"></span>
+        <span>{toastMessage}</span>
       </div>
+      <button on:click={() => toastMessage = ""} class="text-slate-400 hover:text-slate-600 font-semibold ml-4">✕</button>
     </div>
   {/if}
 
-  <!-- MODAL: FICHA DETALLADA DEL PEDIDO -->
-  {#if modalDetalleAbierto && trabajoSeleccionado}
-    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[300] flex items-center justify-center p-4 animate-fade-in" on:click={cerrarModalDetalle}>
-      <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl w-full max-w-2xl p-8 shadow-2xl flex flex-col max-h-[90vh] relative animate-scale-up text-[#1A1D21] dark:text-[#EDF0F3] transition-colors overflow-y-auto" on:click|stopPropagation>
-        
-        <div class="flex justify-between items-start mb-2">
-          <div class="flex items-center gap-2">
-            <span class="px-2.5 py-1 bg-black text-white dark:bg-[#1E2228] dark:border dark:border-gray-800 text-[10px] font-bold rounded-lg tracking-wider uppercase">
-              Parte #{trabajoSeleccionado.numParte}
+  <!-- REJILLA SEMANAL -->
+  <div class="grid grid-cols-7 gap-1.5 mb-2">
+    {#each diasSemana as dia}
+      <div class="text-center font-semibold text-[10px] text-slate-400 dark:text-slate-500 uppercase py-2 tracking-wider">
+        {dia}
+      </div>
+    {/each}
+  </div>
+
+  <!-- MATRIZ MENSUAL (DIAS) -->
+  <div class="grid grid-cols-7 border-t border-l border-slate-200 dark:border-slate-800/80 flex-1 min-h-[620px] rounded-2xl overflow-hidden">
+    {#each daysGrid as { day, month, year, currentMonth }}
+      {@const celdaFecha = formatDate(year, month, day)}
+      {@const trabajosEnCelda = trabajosPorFecha[celdaFecha] || []}
+      {@const estaMarcadoDrag = dragOverCellDate === celdaFecha}
+
+      <div 
+        role="gridcell"
+        tabindex="0"
+        on:dragover={(e) => handleDragOver(e, celdaFecha)}
+        on:dragleave={handleDragLeave}
+        on:drop={(e) => handleDrop(e, celdaFecha)}
+        class="bg-white dark:bg-[#131519] border-r border-b border-slate-200 dark:border-slate-800/80 p-2.5 flex flex-col gap-1.5 min-h-[110px] transition-all relative overflow-hidden
+          {currentMonth ? '' : 'opacity-35'}
+          {estaMarcadoDrag ? 'ring-2 ring-indigo-500 bg-indigo-50/25 dark:bg-indigo-950/15 border-indigo-500 scale-[1.01]' : ''}"
+      >
+        <!-- Numero de dia (Resaltado en azul si corresponde al día actual de la imprenta) -->
+        <div class="flex justify-start mb-0.5">
+          {#if esHoy(day, month, year)}
+            <span class="text-xs font-semibold bg-[#5C42FF] text-white w-6 h-6 rounded-lg flex items-center justify-center shadow-sm select-none">
+              {day}
             </span>
-            <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-lg uppercase tracking-wider border {coloresEstado[trabajoSeleccionado.estado]}">
-              {trabajoSeleccionado.estado}
+          {:else}
+            <span class="text-xs font-semibold {currentMonth ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-600'}">
+              {day}
             </span>
+          {/if}
+        </div>
+
+        <!-- Contenedor de Tarjetas (Límite estricto de 2 visible para evitar scrolls internos antiestéticos) -->
+        <div class="flex flex-col gap-1.5 flex-1 overflow-hidden">
+          {#each trabajosEnCelda.slice(0, 2) as trabajo}
+            <!-- 🎨 Tarea coloreada reactivamente según su estado exacto en DB (image_d42d7d.png) -->
+            <div 
+              draggable="true"
+              role="button"
+              tabindex="0"
+              on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
+              on:click={() => openDetails(trabajo)}
+              on:keydown={(e) => handleCardKeydown(e, trabajo)}
+              class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] {getEstadoClases(trabajo.estado)}"
+            >
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[9.5px] font-semibold font-mono tracking-tight shrink-0">
+                  #{trabajo.numParte}
+                </span>
+                <span class="text-[9px] font-semibold px-1.5 py-0.5 bg-white/40 dark:bg-black/20 rounded-md truncate max-w-[85px] capitalize">
+                  {trabajo.area}
+                </span>
+              </div>
+              <p class="text-[10px] font-bold truncate mt-1">
+                {trabajo.cliente}
+              </p>
+            </div>
+          {/each}
+
+          <!-- Botón de saturación de tareas: "+ X más" -->
+          {#if trabajosEnCelda.length > 2}
+            <button 
+              on:click|stopPropagation={() => abrirMasTareas(celdaFecha)}
+              class="w-full text-center py-1 bg-indigo-50/60 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 text-[#5C42FF] dark:text-[#7d68ff] text-[9.5px] font-semibold rounded-lg transition-colors cursor-pointer mt-auto"
+            >
+              + {trabajosEnCelda.length - 2} más
+            </button>
+          {/if}
+        </div>
+      </div>
+    {/each}
+  </div>
+
+  <!-- DRAWER / DETALLES DEL PARTE SELECCIONADO (Apertura lateral premium con barra técnica) -->
+  {#if selectedTrabajo}
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-end z-[99999] animate-fade-in">
+      <div class="w-full max-w-lg bg-white dark:bg-[#16181c] h-full shadow-2xl p-8 flex flex-col gap-6 overflow-y-auto animate-slide-left">
+        <!-- Cabecera -->
+        <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 font-mono">PARTE #{selectedTrabajo.numParte}</span>
+              <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md uppercase {getEstadoClases(selectedTrabajo.estado)}">
+                {selectedTrabajo.estado || 'Por hacer'}
+              </span>
+            </div>
+            <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100 mt-1">{selectedTrabajo.cliente}</h2>
           </div>
-          <button on:click={cerrarModalDetalle} class="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-[#1E2228] hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 cursor-pointer outline-none border border-transparent">
-            <span class="material-symbols-rounded text-lg">close</span>
+          <button 
+            on:click={closeDetails} 
+            class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+          >
+            ✕
           </button>
         </div>
 
-        <h2 class="text-3xl font-extrabold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3] uppercase mb-6">
-          {trabajoSeleccionado.cliente}
-        </h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
-            <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg">account_circle</span>
+        <!-- Ficha técnica -->
+        <div class="flex flex-col gap-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-slate-50 dark:bg-[#1a1d24] p-3.5 rounded-2xl">
+              <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Área de Producción</span>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 block uppercase">{selectedTrabajo.area}</span>
             </div>
-            <div class="min-w-0 flex flex-col">
-              <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Comercial</span>
-              <span class="text-xs font-bold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{trabajoSeleccionado.comercial || 'Sin asignar'}</span>
+            <div class="bg-slate-50 dark:bg-[#1a1d24] p-3.5 rounded-2xl">
+              <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Fecha de Entrega</span>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 block font-mono">{selectedTrabajo.fechaSalida}</span>
             </div>
           </div>
 
-          <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
-            <div class="w-9 h-9 rounded-lg bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-white flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg">layers</span>
-            </div>
-            <div class="min-w-0 flex flex-col">
-              <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Área</span>
-              <span class="text-xs font-bold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{trabajoSeleccionado.area}</span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
-            <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg">palette</span>
-            </div>
-            <div class="min-w-0 flex flex-col">
-              <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Diseñador</span>
-              <span class="text-xs font-bold mt-1 text-emerald-600 dark:text-emerald-400 truncate">{trabajoSeleccionado.diseñador || 'Sin asignar'}</span>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl">
-            <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
-              <span class="material-symbols-rounded text-lg">calendar_today</span>
-            </div>
-            <div class="min-w-0 flex flex-col">
-              <span class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Entrega</span>
-              <span class="text-xs font-bold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate">{trabajoSeleccionado.fechaSalida}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-6">
-          <p class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-            <span class="material-symbols-rounded text-sm">description</span>
-            <span>Descripción General del Pedido</span>
-          </p>
-          <div class="bg-white dark:bg-[#1A1D21] p-4 rounded-2xl border border-[#E9EBF0] dark:border-[#232830] text-xs font-medium text-gray-600 dark:text-gray-400 leading-relaxed shadow-xs">
-            {trabajoSeleccionado.descripcionGeneral || 'Sin descripción general redactada.'}
-          </div>
-        </div>
-
-        <div class="mt-6">
-          <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-            <span class="material-symbols-rounded text-sm">reorder</span>
-            <span>Desglose Técnico de Producción</span>
-          </p>
-          <div class="border border-gray-100 dark:border-[#232830] rounded-2xl overflow-hidden bg-white dark:bg-[#1A1D21] shadow-xs">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="bg-gray-50/80 dark:bg-[#1E2228]/40 border-b border-gray-100 dark:border-[#232830] text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                  <th class="p-3.5 pl-5">Producto / Subtarea</th>
-                  <th class="p-3.5 text-right pr-5">Cantidad</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-50 dark:divide-[#232830]/40 text-xs text-[#1A1D21] dark:text-[#EDF0F3]">
-                {#each desgloses.filter(d => d.numParte === trabajoSeleccionado.numParte) as subItem}
-                  <tr class="hover:bg-gray-50/30 dark:hover:bg-gray-800/20 transition-colors">
-                    <td class="p-3.5 pl-5 font-medium text-gray-600 dark:text-gray-400">{subItem.descripcionProducto}</td>
-                    <td class="p-3.5 text-right pr-5">
-                      <span class="bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] px-2.5 py-1 rounded-md font-bold text-[11px] border border-purple-100/40 dark:border-transparent">
-                        {subItem.cantidad.toLocaleString()} uds
-                      </span>
-                    </td>
-                  </tr>
-                {:else}
-                  <tr>
-                    <td colspan="2" class="p-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center justify-center gap-2">
-                      <span class="material-symbols-rounded text-3xl opacity-30">inventory_2</span>
-                      <span class="text-[11px] font-medium italic">No hay subproductos detallados en este parte.</span>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {#if trabajoSeleccionado.subcontrata}
-          <div class="mt-4 flex items-center gap-2 px-4 py-3 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
-            <span class="material-symbols-rounded text-orange-500 text-base">handshake</span>
-            <p class="text-[11px] font-medium text-orange-600 dark:text-orange-400">
-              Esta orden se encuentra externalizada en: <span class="font-bold uppercase">{trabajoSeleccionado.subcontrata}</span>
-            </p>
-          </div>
-        {/if}
-
-        <div class="mt-8 border-t border-gray-100 dark:border-[#232830] pt-5 space-y-3 flex-shrink-0">
-          
-          {#if trabajoSeleccionado.estado === 'Terminado'}
-            <div class="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-3.5 flex items-center gap-3 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
-              <span class="material-symbols-rounded text-lg text-emerald-600">lock</span>
-              <p>Este parte de trabajo ya está archivado como <strong>Terminado</strong>. Por seguridad de taller, su estado no puede volver a modificarse en frío.</p>
-            </div>
-          {:else}
-            <!-- 🎛️ BOTONERA OPERATIVA DINÁMICA MEJORADA -->
-            <div class="space-y-3">
-              <p class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-center block mb-1">Avanzar o Cambiar Estado de Producción</p>
-              
-              <!-- 🔥 REVOLUCIÓN VISUAL: Usamos Flexbox para agrupar todas las opciones relacionales en una sola fila elástica de ancho equitativo -->
-              <div class="flex w-full gap-2.5">
-                {#each listaEstados.filter(e => e !== 'Terminado') as estadoOpcion}
-                  {#if esTransicionValida(trabajoSeleccionado.estado, estadoOpcion)}
-                    <button 
-                      on:click={() => cambiarEstado(estadoOpcion)} 
-                      class="flex-1 py-3 px-2 border border-[#E9EBF0] dark:border-[#232830] font-bold text-[11px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer outline-none bg-white dark:bg-[#1E2228] truncate
-                        {estadoOpcion === 'Imprimiendo' ? 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10' : ''}
-                        {estadoOpcion === 'Manipulado' ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-500/10' : ''}
-                        {estadoOpcion === 'Por hacer' ? 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700' : ''}
-                        {estadoOpcion === 'Urgente' ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 border-red-200' : ''}"
-                    >
-                      <span class="material-symbols-rounded text-base flex-shrink-0">{iconosEstado[estadoOpcion]}</span>
-                      <span class="truncate">Mover a {estadoOpcion}</span>
-                    </button>
-                  {/if}
-                {/each}
-              </div>
-
-              {#if esTransicionValida(trabajoSeleccionado.estado, 'Terminado')}
-                <button 
-                  on:click={() => cambiarEstado('Terminado')} 
-                  class="w-full py-3.5 bg-[#5C42FF] text-white hover:bg-[#4B33E6] font-bold text-xs rounded-full shadow-lg shadow-[#5C42FF]/10 dark:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer outline-none"
-                >
-                  <span class="material-symbols-rounded text-base">check_circle</span>
-                  <span>Finalizar y Cerrar Orden de Trabajo (Archivar)</span>
-                </button>
-              {/if}
-            </div>
-          {/if}
-
-          <!-- CONFIRMACIÓN DE BORRADO -->
-          <div class="pt-1">
-            {#if !confirmandoEliminar}
-              <button on:click={eliminarTrabajo} class="w-full text-center py-2.5 text-xs font-semibold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full border border-dashed border-red-200/60 dark:border-red-500/20 transition-colors cursor-pointer flex items-center justify-center gap-1.5 outline-none">
-                <span class="material-symbols-rounded text-base">delete</span>
-                <span>Archivar u Ordenar Eliminación del Parte</span>
-              </button>
+          <div class="bg-slate-50 dark:bg-[#1a1d24] p-4 rounded-2xl">
+            <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Líneas de Desglose de Producto</span>
+            {#if desglosesFiltro.length === 0}
+              <p class="text-xs font-semibold text-slate-400 italic">No hay productos desglosados en este parte.</p>
             {:else}
-              <div class="p-4 bg-red-50/40 dark:bg-red-950/20 rounded-2xl border border-red-100 dark:border-red-900/30 flex flex-col items-center animate-scale-up">
-                <p class="text-xs font-medium text-red-600 dark:text-red-400 mb-3 text-center">⚠️ ¿Estás seguro? Esta acción eliminará el registro histórico definitivo del parte.</p>
-                <div class="flex gap-2 w-full max-w-sm">
-                  <button on:click={eliminarTrabajo} class="flex-1 text-center py-2.5 text-xs font-semibold bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors cursor-pointer outline-none">Sí, eliminar</button>
-                  <button on:click={() => confirmandoEliminar = false} class="flex-1 text-center py-2.5 text-xs font-semibold bg-white dark:bg-[#1E2228] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer outline-none">Cancelar</button>
-                </div>
+              <div class="flex flex-col gap-2">
+                {#each desglosesFiltro as d}
+                  <div class="flex justify-between items-center text-xs border-b border-slate-200/40 dark:border-slate-800/40 py-1.5 font-semibold">
+                    <span class="text-slate-700 dark:text-slate-300 uppercase">{d.descripcionProducto}</span>
+                    <span class="font-mono text-[#5C42FF] dark:text-[#7d68ff] bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md">{d.cantidad.toLocaleString()} uds</span>
+                  </div>
+                {/each}
               </div>
             {/if}
           </div>
+
+          <div class="bg-slate-50 dark:bg-[#1a1d24] p-4 rounded-2xl">
+            <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Descripción Técnica</span>
+            <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1.5 leading-relaxed">{selectedTrabajo.descripcionGeneral || 'Sin descripción técnica registrada.'}</p>
+          </div>
         </div>
 
+        <!-- 🛡️ NUEVO BLOQUE DE ACCIONES COMPLETAS DE TRABAJO (image_d47fd4.png) -->
+        <div class="border-t border-slate-100 dark:border-slate-800 pt-5 flex flex-col gap-4">
+          {#if estadoActual === 'terminado'}
+            <div class="p-4 bg-[#F4FBF7] dark:bg-emerald-950/15 border border-[#D1F2E1] dark:border-emerald-900/40 rounded-2xl flex items-start gap-3.5 animate-scale-up">
+              <svg class="w-5 h-5 text-[#00A854] dark:text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
+                Este parte de trabajo ya está archivado como <span class="font-semibold text-[#008F47] dark:text-emerald-400">Terminado</span>. Por seguridad de taller, su estado no puede volver a modificarse en frío.
+              </p>
+            </div>
+          {:else}
+            <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Avanzar o Cambiar Estado de Producción</span>
+            
+            {#if estadoActual === 'por hacer' || estadoActual === 'urgente'}
+              <div class="grid grid-cols-2 gap-2">
+                <button 
+                  on:click={() => cambiarEstado('Imprimiendo')}
+                  class="py-2.5 px-2 border border-indigo-200 dark:border-indigo-900/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 text-[#5C42FF] dark:text-indigo-400 font-semibold text-[10.5px] rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                  <span>Imprimiendo</span>
+                </button>
+
+                <button 
+                  on:click={() => cambiarEstado('Manipulado')}
+                  class="py-2.5 px-2 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-semibold text-[10.5px] rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                  <span>Manipulado</span>
+                </button>
+              </div>
+
+            {:else}
+              <div class="grid grid-cols-1">
+                <button 
+                  on:click={() => cambiarEstado('Manipulado')}
+                  class="py-2.5 px-2 w-full border border-amber-200 dark:border-amber-900/50 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-semibold text-[10.5px] rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                  <span>Avanzar a Manipulado</span>
+                </button>
+              </div>
+            {/if}
+
+            <button 
+              on:click={() => cambiarEstado('Terminado')}
+              class="w-full py-3 bg-[#5C42FF] hover:bg-[#4730D9] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Finalizar y Cerrar Orden de Trabajo (Archivar)
+            </button>
+          {/if}
+
+          <button 
+            on:click={archivarEliminarTarea}
+            class="w-full py-3 bg-white hover:bg-rose-50/30 dark:bg-transparent dark:hover:bg-rose-950/10 border-2 border-dashed {showDeleteConfirmation ? 'border-rose-500 text-rose-750 bg-rose-50/50 dark:bg-rose-950/20' : 'border-rose-250 hover:border-rose-300 text-rose-600 dark:text-rose-400'} font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <span>{showDeleteConfirmation ? '⚠️ ¿SEGURO? Haz clic de nuevo para eliminar' : 'Archivar u Ordenar Eliminación del Parte'}</span>
+          </button>
+        </div>
+
+        <!-- Acciones generales -->
+        <div class="mt-auto border-t border-slate-100 dark:border-slate-800 pt-5 flex gap-3">
+          <a 
+            href={`/w/${selectedTrabajo.workspaceId}/parte/${selectedTrabajo.numParte}/print`}
+            target="_blank"
+            class="flex-1 py-3 px-4 bg-slate-100 dark:bg-[#1a1d24] hover:bg-slate-200 dark:hover:bg-[#202530] text-slate-800 dark:text-slate-200 font-bold text-xs text-center rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+          >
+            🖨️ Imprimir Ficha A3
+          </a>
+          <button 
+            on:click={closeDetails}
+            class="px-5 py-3 bg-slate-100 dark:bg-[#1a1d24] hover:bg-slate-200 dark:hover:bg-[#202530] text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
   {/if}
 
+  <!-- MODAL / VISTA DE TAREAS ACUMULADAS ("+ X más") -->
+  {#if showMoreModal}
+    <div 
+      class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[99999] animate-fade-in"
+      on:click={cerrarMasTareas}
+    >
+      <div 
+        class="bg-white dark:bg-[#16181c] w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-4 max-h-[85vh] overflow-hidden animate-scale-up"
+        on:click|stopPropagation
+      >
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Entregas Planificadas</h3>
+            <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 font-mono mt-0.5">{moreModalDate}</p>
+          </div>
+          <button 
+            on:click={cerrarMasTareas} 
+            class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Listado completo de tareas del día (Con colores por estado) -->
+        <div class="flex flex-col gap-2 overflow-y-auto max-h-[55vh] pr-1">
+          {#each moreModalTrabajos as trabajo}
+            <div 
+              draggable="true"
+              role="button"
+              tabindex="0"
+              on:dragstart={(e) => { handleDragStart(e, trabajo.numParte); cerrarMasTareas(); }}
+              on:click={() => { openDetails(trabajo); cerrarMasTareas(); }}
+              on:keydown={(e) => handleMoreKeydown(e, trabajo)}
+              class="border p-3 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all flex flex-col gap-1.5 {getEstadoClases(trabajo.estado)}"
+            >
+              <div class="flex items-center justify-between gap-1">
+                <span class="text-[10px] font-semibold font-mono tracking-tight shrink-0">
+                  #{trabajo.numParte}
+                </span>
+                <span class="text-[9.5px] font-semibold px-2 py-0.5 bg-white/40 dark:bg-black/20 rounded-md capitalize">
+                  {trabajo.area}
+                </span>
+              </div>
+              <p class="text-xs font-bold">
+                {trabajo.cliente}
+              </p>
+            </div>
+          {/each}
+        </div>
+
+        <button 
+          on:click={cerrarMasTareas}
+          class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#202530] dark:hover:bg-[#2a313d] text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+        >
+          Cerrar Vista
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes scale-up { from { opacity: 0; transform: scale(0.97) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-  .animate-fade-in { animation: fade-in 0.18s ease-out forwards; }
-  .animate-scale-up { animation: scale-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  /* 🛡️ ESTILOS GLOBALES IMPERMEABLES CONTRA NAVEGACIÓN Y DESHIDRATACIÓN ASTRO (image_d42618.png) */
+  :global(.animate-fade-in) { 
+    animation: fadeIn 0.18s ease-out forwards; 
+  }
+  
+  :global(.animate-slide-left) { 
+    animation: slideLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+  }
+  
+  :global(.animate-scale-up) { 
+    animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+  }
+
+  :global(.animate-pulse-slow) {
+    animation: pulseSlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes fadeIn { 
+    from { opacity: 0; } 
+    to { opacity: 1; } 
+  }
+  
+  @keyframes slideLeft { 
+    from { transform: translateX(100%); } 
+    to { transform: translateX(0); } 
+  }
+  
+  @keyframes scaleUp {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes pulseSlow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .7; }
+  }
 </style>
