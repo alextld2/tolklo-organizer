@@ -38,9 +38,10 @@ if (user) {
       <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1.5">Identifícate con tu cuenta corporativa de Google para acceder a los talleres de producción.</p>
     </div>
 
-    <!-- 🔥 CORREGIDO: Redirigimos al endpoint de redirección OAuth de Google que acabamos de crear -->
+    <!-- 🔥 CORREGIDO: Se añade 'data-astro-reload' para forzar navegación real del navegador -->
     <a 
       href="/api/auth/google" 
+      data-astro-reload
       class="w-full py-3.5 px-6 bg-white dark:bg-[#1E2228] hover:bg-gray-50 dark:hover:bg-gray-800 text-[#1A1D21] dark:text-[#EDF0F3] font-semibold text-xs rounded-full border border-[#E9EBF0] dark:border-[#232830] shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer select-none outline-none focus:ring-2 focus:ring-[#5C42FF]/20"
     >
       <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
