@@ -36,8 +36,13 @@ export const GET: APIRoute = async ({ request, cookies }) => {
   const clientId = limpiarVariable(rawClientId);
   const clientSecret = limpiarVariable(rawClientSecret);
   
-  // Formateamos y limpiamos la URL base del sitio
-  let siteUrl = limpiarVariable(import.meta.env.SITE_URL || process.env.SITE_URL || 'http://localhost:4321');
+  // 🛡️ UNIFICACIÓN CRÍTICA: Buscamos en todas las variables posibles declaradas en Render
+  let siteUrl = limpiarVariable(
+    import.meta.env.SITE_URL || process.env.SITE_URL || 
+    import.meta.env.SITE || process.env.SITE ||
+    'http://localhost:4321'
+  );
+  
   if (siteUrl.endsWith('/')) {
     siteUrl = siteUrl.slice(0, -1);
   }
@@ -46,7 +51,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
   // Imprimimos el diagnóstico en tu consola para control del programador
   console.log(' ');
   console.log('--- 🛡️ DIAGNÓSTICO DE CREDENCIALES OAUTH 🛡️ ---');
-  console.log('• URL de Origen (SITE_URL):', siteUrl);
+  console.log('• URL de Origen (SITE_URL/SITE):', siteUrl);
   console.log('• URI de Redirección calculada:', redirectUri);
   console.log('• Client ID leído:', clientId ? `SÍ (Inicia en: ${clientId.substring(0, 15)}...)` : 'NO (¡VACÍO!)');
   console.log('• Client Secret leído:', clientSecret ? 'SÍ (Verificado)' : 'NO (¡VACÍO!)');
@@ -67,7 +72,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       }),
     });
 
-    // Si Google rechaza la llamada, capturamos el JSON detallado del error
+    // Si Google rechaza la llamada, capturamos el JSON del error
     if (!tokenResponse.ok) {
       const errorPayload = await tokenResponse.json().catch(() => ({}));
       console.error('❌ ERROR CRÍTICO DEVUELTO POR GOOGLE:', errorPayload);
@@ -141,13 +146,18 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       console.error('No se pudo escribir la auditoría de acceso:', auditError);
     }
 
-    // Redirigimos al usuario al taller de producción
-    return Response.redirect(`${siteUrl}/w/produccion`, 302);
+    // 🛡️ REDIRECCIÓN ULTRA-COMPATIBLE DE ÉXITO: Evita bloqueos y asegura la escritura de cookies de sesión
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': `${siteUrl}/w/produccion`
+      }
+    });
 
   } catch (error: any) {
     console.error('Error crítico en el flujo:', error.message);
     return new Response(
-      `Error de Autenticación: ${error.message}. Por favor, vuelve a intentar el acceso desde http://localhost:4321/login`, 
+      `Error de Autenticación: ${error.message}. Por favor, vuelve a intentar el acceso desde ${siteUrl}/login`, 
       { status: 500 }
     );
   }
