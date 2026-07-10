@@ -158,7 +158,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
           clientSecret_leido: clientSecret ? "SÍ (Oculto por seguridad)" : "VACÍO",
           calculated_redirectUri: redirectUri,
           resolved_siteUrl: siteUrl,
-          explicacion: "Este error ocurre en el servidor de Render al procesar la respuesta de Google. Si el error es 'redirect_uri_mismatch', comprueba que has configurado https://tolklo-organizer.onrender.com/api/auth/callback en Google Cloud Console."
+          explicacion: "Este error ocurre en el servidor de Render al procesar la respuesta de Google. Si el error es 'redirect_uri_mismatch', comprueba que has configurado https://tolklo-organizer.onrender.com/api/auth/callback in Google Cloud Console."
         }
       }, null, 2),
       {
