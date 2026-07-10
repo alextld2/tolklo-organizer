@@ -20,7 +20,16 @@ export const GET: APIRoute = async ({ request, cookies }) => {
 
   // 1. Validar el state de seguridad contra ataques CSRF
   if (!state || !savedState || state !== savedState) {
-    return new Response('Ataque CSRF detectado o la sesión de login expiró. Por favor intente de nuevo desde /login.', { status: 400 });
+    return new Response(
+      JSON.stringify({
+        status: "error",
+        type: "CSRF_MISMATCH",
+        message: "El state de seguridad recibido no coincide con el guardado en la cookie.",
+        recibido: state || "vacío",
+        guardado: savedState || "vacío"
+      }, null, 2), 
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   if (!code) {
@@ -34,7 +43,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
   const clientId = limpiarVariable(rawClientId);
   const clientSecret = limpiarVariable(rawClientSecret);
   
-  // Unificación robusta de URLs
+  // Unificación de URLs
   let siteUrl = limpiarVariable(
     import.meta.env.SITE_URL || process.env.SITE_URL || 
     import.meta.env.SITE || process.env.SITE ||
@@ -99,8 +108,12 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       }
 
       return new Response(
-        'Acceso denegado: Tolklo+ Organizer es de uso exclusivo para cuentas de correo corporativas de @aeroprint.es.', 
-        { status: 403 }
+        JSON.stringify({
+          status: "denied",
+          message: "Tolklo+ Organizer es de uso exclusivo para cuentas de correo corporativas de @aeroprint.es.",
+          tu_correo: email || "No detectado"
+        }, null, 2), 
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -119,13 +132,11 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       console.error('No se pudo escribir la auditoría de acceso:', auditError);
     }
 
-    // 🛡️ REDIRECCIÓN MUTABLE CON BYPASS DE COOKIES DE ASTRO:
-    // Creamos cabeceras puras y agregamos múltiples 'Set-Cookie' de manera nativa sin pasar por Astro cookies helper.
+    // 🛡️ BYPASS DE COOKIES MUTABLE DE ASTRO
     const headers = new Headers();
     headers.set('Location', `${siteUrl}/w/produccion`);
     
     const secureFlag = process.env.NODE_ENV === 'production' ? 'Secure;' : '';
-    // Borramos oauth_state y escribimos el nuevo session_token de sesión
     headers.append('Set-Cookie', `oauth_state=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; ${secureFlag} SameSite=Lax`);
     headers.append('Set-Cookie', `session_token=${sessionToken}; Path=/; HttpOnly; ${secureFlag} Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`);
 
@@ -135,10 +146,27 @@ export const GET: APIRoute = async ({ request, cookies }) => {
     });
 
   } catch (error: any) {
-    console.error('Error crítico en el flujo:', error.message);
+    // 🛡️ PANTALLA DE DIAGNÓSTICO EN TIEMPO REAL:
+    // Al devolver JSON con un content-type específico, Chrome no puede ocultarlo con su pantalla de error genérica.
     return new Response(
-      `Error de Autenticación: ${error.message}. Por favor, vuelve a intentar el acceso desde ${siteUrl}/login`, 
-      { status: 500 }
+      JSON.stringify({
+        status: "error",
+        error_message: error.message || "Sin mensaje de error",
+        error_stack: error.stack || "Sin traza de pila",
+        diagnostico: {
+          clientId_leido: clientId ? `SÍ (Inicia en: ${clientId.substring(0, 15)}...)` : "VACÍO",
+          clientSecret_leido: clientSecret ? "SÍ (Oculto por seguridad)" : "VACÍO",
+          calculated_redirectUri: redirectUri,
+          resolved_siteUrl: siteUrl,
+          explicacion: "Este error ocurre en el servidor de Render al procesar la respuesta de Google. Si el error es 'redirect_uri_mismatch', comprueba que has configurado https://tolklo-organizer.onrender.com/api/auth/callback en Google Cloud Console."
+        }
+      }, null, 2),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8'
+        }
+      }
     );
   }
 };
