@@ -383,8 +383,7 @@
           📅 Planificación de Entregas
         </h1>
       </div>
-
-      <!-- LEYENDA DE ESTADOS DE COLOR (Estilo exacto image_d42d7d.png) -->
+       <!-- LEYENDA DE ESTADOS DE COLOR -->
       <div class="flex flex-wrap items-center gap-4 border-l border-slate-200 dark:border-slate-800 pl-0 md:pl-6 pt-2 md:pt-0">
         <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
           <span class="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600 bg-white"></span>
@@ -408,9 +407,9 @@
         </div>
       </div>
     </div>
-    
+
     <div class="flex items-center gap-3 self-end md:self-auto">
-      <!-- Botón HOY (Estructura corregida matching image_d421a0.png con bordes armonizados) -->
+      <!-- Botón HOY -->
       <button 
         on:click={irAHoy}
         class="px-4 py-2 bg-white hover:bg-slate-50 dark:bg-[#16181c] dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800/80 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center focus:outline-none"
@@ -439,6 +438,7 @@
         </button>
       </div>
     </div>
+      
   </div>
 
   <!-- TOAST NOTIFICATION CORREGIDO -->
@@ -472,67 +472,111 @@
       {@const estaMarcadoDrag = dragOverCellDate === celdaFecha}
 
       <div 
-        role="gridcell"
-        tabindex="0"
-        on:dragover={(e) => handleDragOver(e, celdaFecha)}
-        on:dragleave={handleDragLeave}
-        on:drop={(e) => handleDrop(e, celdaFecha)}
-        class="bg-white dark:bg-[#131519] border-r border-b border-slate-200 dark:border-slate-800/80 p-2.5 flex flex-col gap-1.5 min-h-[110px] transition-all relative overflow-hidden
-          {currentMonth ? '' : 'opacity-35'}
-          {estaMarcadoDrag ? 'ring-2 ring-indigo-500 bg-indigo-50/25 dark:bg-indigo-950/15 border-indigo-500 scale-[1.01]' : ''}"
-      >
-        <!-- Numero de dia (Resaltado en azul si corresponde al día actual de la imprenta) -->
-        <div class="flex justify-start mb-0.5">
-          {#if esHoy(day, month, year)}
-            <span class="text-xs font-semibold bg-[#5C42FF] text-white w-6 h-6 rounded-lg flex items-center justify-center shadow-sm select-none">
-              {day}
-            </span>
-          {:else}
-            <span class="text-xs font-semibold {currentMonth ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-600'}">
-              {day}
-            </span>
-          {/if}
-        </div>
+          role="gridcell"
+          tabindex="0"
+          on:dragover={(e) => handleDragOver(e, celdaFecha)}
+          on:dragleave={handleDragLeave}
+          on:drop={(e) => handleDrop(e, celdaFecha)}
+          class="bg-white dark:bg-[#131519] border-r border-b border-slate-200 dark:border-slate-800/80 p-2.5 flex flex-col gap-1.5 min-h-[110px] transition-all relative
+            {currentMonth ? '' : 'opacity-35'}
+            {estaMarcadoDrag ? 'ring-2 ring-indigo-500 bg-indigo-50/25 dark:bg-indigo-950/15 border-indigo-500 scale-[1.01]' : ''}
+            {estaExpandido ? 'overflow-visible z-50' : 'overflow-hidden'}"
+        >
+          <!-- Numero de dia -->
+          <div class="flex justify-start mb-0.5">
+            {#if esHoy(day, month, year)}
+              <span class="text-xs font-semibold bg-[#5C42FF] text-white w-6 h-6 rounded-lg flex items-center justify-center shadow-sm select-none">
+                {day}
+              </span>
+            {:else}
+              <span class="text-xs font-semibold {currentMonth ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-600'}">
+                {day}
+              </span>
+            {/if}
+          </div>
 
-        <!-- Contenedor de Tarjetas (Límite estricto de 2 visible para evitar scrolls internos antiestéticos) -->
-        <div class="flex flex-col gap-1.5 flex-1 overflow-hidden">
-          {#each trabajosEnCelda.slice(0, 2) as trabajo}
-            <!-- 🎨 Tarea coloreada reactivamente según su estado exacto en DB (image_d42d7d.png) -->
-            <div 
-              draggable="true"
-              role="button"
-              tabindex="0"
-              on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
-              on:click={() => openDetails(trabajo)}
-              on:keydown={(e) => handleCardKeydown(e, trabajo)}
-              class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] {getEstadoClases(trabajo.estado)}"
-            >
-              <div class="flex items-center justify-between gap-1">
-                <span class="text-[9.5px] font-semibold font-mono tracking-tight shrink-0">
-                  #{trabajo.numParte}
-                </span>
-                <span class="text-[9px] font-semibold px-1.5 py-0.5 bg-white/40 dark:bg-black/20 rounded-md truncate max-w-[85px] capitalize">
-                  {trabajo.area}
-                </span>
+          <!-- Contenedor de Tarjetas Estándar (Límite visual de 2) -->
+          <div class="flex flex-col gap-1.5 flex-1 overflow-hidden">
+            {#each trabajosEnCelda.slice(0, 2) as trabajo}
+              <div 
+                draggable="true"
+                role="button"
+                tabindex="0"
+                on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
+                on:click={() => openDetails(trabajo)}
+                on:keydown={(e) => handleCardKeydown(e, trabajo)}
+                class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] {getEstadoClases(trabajo.estado)}"
+              >
+                <div class="flex items-center justify-between gap-1">
+                  <span class="text-[9.5px] font-semibold font-mono tracking-tight shrink-0">
+                    #{trabajo.numParte}
+                  </span>
+                  <span class="text-[9px] font-semibold px-1.5 py-0.5 bg-white/40 dark:bg-black/20 rounded-md truncate max-w-[85px] capitalize">
+                    {trabajo.area}
+                  </span>
+                </div>
+                <p class="text-[10px] font-bold truncate mt-1">
+                  {trabajo.cliente}
+                </p>
               </div>
-              <p class="text-[10px] font-bold truncate mt-1">
-                {trabajo.cliente}
-              </p>
-            </div>
-          {/each}
+            {/each}
 
-          <!-- Botón de saturación de tareas: "+ X más" -->
-          {#if trabajosEnCelda.length > 2}
-            <button 
-              on:click|stopPropagation={() => abrirMasTareas(celdaFecha)}
-              class="w-full text-center py-1 bg-indigo-50/60 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 text-[#5C42FF] dark:text-[#7d68ff] text-[9.5px] font-semibold rounded-lg transition-colors cursor-pointer mt-auto"
-            >
-              + {trabajosEnCelda.length - 2} más
-            </button>
+            <!-- Botón de saturación de tareas: "+ X más" (Activa la rejilla interactiva) -->
+            {#if trabajosEnCelda.length > 2}
+              <button 
+                on:click|stopPropagation={() => toggleExpander(celdaFecha)}
+                class="btn-expand-tasks w-full text-center py-1 bg-indigo-50/60 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 text-[#5C42FF] dark:text-[#7d68ff] text-[9.5px] font-semibold rounded-lg transition-colors cursor-pointer mt-auto"
+              >
+                + {trabajosEnCelda.length - 2} más
+              </button>
+            {/if}
+          </div>
+
+          <!-- 🛡️ NUEVO CONTENEDOR FLOTANTE INTERACTIVO DE EXPANSION DIRECTA (Bypass de Modales) -->
+          {#if estaExpandido}
+            <div class="absolute inset-x-0 top-0 min-h-full h-auto bg-white dark:bg-[#16181c] border-2 border-[#5C42FF] shadow-2xl rounded-2xl p-2.5 flex flex-col gap-1.5 z-[999] expanded-cell-container animate-scale-up">
+              <!-- Header interior de la celda expandida -->
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-1">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Planificadas ({day})</span>
+                <button 
+                  on:click|stopPropagation={() => expandedCellDate = null}
+                  class="text-slate-400 hover:text-rose-500 font-bold text-xs p-1 rounded-full transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <!-- Listado completo e interactivo (Drap & Drop nativo habilitado) -->
+              <div class="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-0.5">
+                {#each trabajosEnCelda as trabajo}
+                  <div 
+                    draggable="true"
+                    role="button"
+                    tabindex="0"
+                    on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
+                    on:click|stopPropagation={() => openDetails(trabajo)}
+                    on:keydown={(e) => handleCardKeydown(e, trabajo)}
+                    class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] {getEstadoClases(trabajo.estado)}"
+                  >
+                    <div class="flex items-center justify-between gap-1">
+                      <span class="text-[9.5px] font-semibold font-mono tracking-tight shrink-0">
+                        #{trabajo.numParte}
+                      </span>
+                      <span class="text-[9px] font-semibold px-1.5 py-0.5 bg-white/40 dark:bg-black/20 rounded-md truncate max-w-[85px] capitalize">
+                        {trabajo.area}
+                      </span>
+                    </div>
+                    <p class="text-[10px] font-bold truncate mt-1">
+                      {trabajo.cliente}
+                    </p>
+                  </div>
+                {/each}
+              </div>
+            </div>
           {/if}
         </div>
-      </div>
-    {/each}
+      {/each}
+
   </div>
 
   <!-- DRAWER / DETALLES DEL PARTE SELECCIONADO (Apertura lateral premium con barra técnica) -->
@@ -565,9 +609,16 @@
               <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Área de Producción</span>
               <span class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 block uppercase">{selectedTrabajo.area}</span>
             </div>
-            <div class="bg-slate-50 dark:bg-[#1a1d24] p-3.5 rounded-2xl">
-              <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Fecha de Entrega</span>
-              <span class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 block font-mono">{selectedTrabajo.fechaSalida}</span>
+            
+            <!-- 🔥 MEJORA DE USABILIDAD: Selector de fecha interactivo para editar en caliente -->
+            <div class="bg-slate-50 dark:bg-[#1a1d24] p-3.5 rounded-2xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
+              <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Fecha de Entrega (Editar)</span>
+              <input 
+                type="date" 
+                value={selectedTrabajo.fechaSalida} 
+                on:change={(e) => handleDateInputChange(e, selectedTrabajo.numParte)}
+                class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 block font-mono bg-transparent border-none p-0 outline-none w-full focus:ring-0 cursor-pointer dark:[color-scheme:dark]"
+              />
             </div>
           </div>
 
@@ -593,7 +644,7 @@
           </div>
         </div>
 
-        <!-- 🛡️ NUEVO BLOQUE DE ACCIONES COMPLETAS DE TRABAJO (image_d47fd4.png) -->
+        <!-- ACCIONES DE TRABAJO -->
         <div class="border-t border-slate-100 dark:border-slate-800 pt-5 flex flex-col gap-4">
           {#if estadoActual === 'terminado'}
             <div class="p-4 bg-[#F4FBF7] dark:bg-emerald-950/15 border border-[#D1F2E1] dark:border-emerald-900/40 rounded-2xl flex items-start gap-3.5 animate-scale-up">
@@ -674,6 +725,7 @@
         </div>
       </div>
     </div>
+
   {/if}
 
   <!-- MODAL / VISTA DE TAREAS ACUMULADAS ("+ X más") -->
