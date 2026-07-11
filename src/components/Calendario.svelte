@@ -16,6 +16,7 @@
   let currentDate = new Date();
   let currentYear = currentDate.getFullYear();
   let currentMonth = currentDate.getMonth(); // 0-11
+  let expandedCellDate: string | null = null;
 
   // Nombres de meses y días para la maqueta
   const nombresMeses = [
@@ -80,6 +81,66 @@
 
     return grid;
   })();
+
+  function toggleExpander(dateStr: string) {
+    if (expandedCellDate === dateStr) {
+      expandedCellDate = null;
+    } else {
+      expandedCellDate = dateStr;
+    }
+  }
+
+  async function handleDateInputChange(event: Event, numParte: string) {
+    const target = event.target as HTMLInputElement;
+    if (!target) return;
+    const nuevaFecha = target.value;
+    if (!nuevaFecha) return;
+    const jobIndex = trabajos.findIndex((t) => t.numParte === numParte);
+    if (jobIndex === -1) return;
+    const originalDate = trabajos[jobIndex].fechaSalida;
+    if (originalDate === nuevaFecha) return;
+    // Modificación de UI optimista
+    trabajos[jobIndex].fechaSalida = nuevaFecha;
+    trabajos = [...trabajos];
+    if (selectedTrabajo && selectedTrabajo.numParte === numParte) {
+      selectedTrabajo.fechaSalida = nuevaFecha;
+      selectedTrabajo = { ...selectedTrabajo };
+    }
+    showToast(`Actualizando entrega de parte #${numParte}...`, "info");
+    try {
+      const response = await fetch("/api/actualizar-fecha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          numParte,
+          nuevaFecha,
+        }),
+      });
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          resData.message || "Error en la actualización remota de Turso.",
+        );
+      }
+      showToast(
+        `Parte #${numParte} guardado con éxito el ${nuevaFecha}.`,
+        "success",
+      );
+    } catch (error: any) {
+      console.error("❌ Falló la actualización de fecha:", error);
+      // Reversión de UI optimista
+      trabajos[jobIndex].fechaSalida = originalDate;
+      trabajos = [...trabajos];
+      if (selectedTrabajo && selectedTrabajo.numParte === numParte) {
+        selectedTrabajo.fechaSalida = originalDate;
+        selectedTrabajo = { ...selectedTrabajo };
+      }
+      showToast(
+        `Error al mover parte: ${error.message}. Movimiento revertido.`,
+        "error",
+      );
+    }
+  }
 
   // Utilidades auxiliares para fechas
   function formatDate(year: number, month: number, day: number): string {
@@ -621,6 +682,7 @@
   >
     {#each daysGrid as { day, month, year, currentMonth }}
       {@const celdaFecha = formatDate(year, month, day)}
+      {@const estaExpandido = expandedCellDate === celdaFecha}
       {@const trabajosEnCelda = trabajosPorFecha[celdaFecha] || []}
       {@const estaMarcadoDrag = dragOverCellDate === celdaFecha}
 
