@@ -225,6 +225,13 @@
     }
   }
 
+  function handleDragEnd() {
+    draggedParte = null;
+    dragOverCellDate = null;
+    expandedCellDate = null; // Cierra la vista expandida al terminar el arrastre
+    cerrarMasTareas(); // Cierra la vista modal al terminar el arrastre
+  }
+
   function handleDragOver(event: DragEvent, dateStr: string) {
     event.preventDefault();
     dragOverCellDate = dateStr;
@@ -522,7 +529,7 @@
         <h1
           class="text-3xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-3"
         >
-          📅 Planificación de Entregas
+          Planificación de Entregas
         </h1>
       </div>
       <!-- LEYENDA DE ESTADOS DE COLOR -->
@@ -540,37 +547,25 @@
         <div
           class="flex items-center gap-1.5 text-[10px] font-semibold text-[#5C42FF] dark:text-indigo-400 uppercase tracking-wider"
         >
-          <span
-            class="w-3.5 h-3.5 rounded-md bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900/50 flex items-center justify-center text-[8px]"
-            >🖨️</span
-          >
+          <span class="material-symbols-rounded">print</span>
           <span>Imprimiendo</span>
         </div>
         <div
           class="flex items-center gap-1.5 text-[10px] font-semibold text-amber-600 uppercase tracking-wider"
         >
-          <span
-            class="w-3.5 h-3.5 rounded-md bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50 flex items-center justify-center text-[8px]"
-            >📦</span
-          >
+          <span class="material-symbols-rounded">package_2</span>
           <span>Manipulado</span>
         </div>
         <div
           class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 uppercase tracking-wider"
         >
-          <span
-            class="w-3.5 h-3.5 rounded-md bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-center text-[8px]"
-            >✔️</span
-          >
+          <span class="material-symbols-rounded">check_circle</span>
           <span>Terminado</span>
         </div>
         <div
           class="flex items-center gap-1.5 text-[10px] font-semibold text-rose-600 uppercase tracking-wider animate-pulse"
         >
-          <span
-            class="w-3.5 h-3.5 rounded-md bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center text-[8px]"
-            >⚡</span
-          >
+          <span class="material-symbols-rounded">bolt</span>
           <span>Urgente</span>
         </div>
       </div>
@@ -580,7 +575,7 @@
       <!-- Botón HOY -->
       <button
         on:click={irAHoy}
-        class="px-4 py-2 bg-white hover:bg-slate-50 dark:bg-[#16181c] dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800/80 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center focus:outline-none"
+        class="px-4 py-2 bg-white hover:bg-slate-50 dark:bg-[#16181c] dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800/80 text-slate-800 dark:text-slate-200 font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center focus:outline-none"
       >
         Hoy
       </button>
@@ -608,7 +603,7 @@
         </button>
 
         <span
-          class="text-sm font-bold text-slate-800 dark:text-slate-100 min-w-[140px] text-center capitalize"
+          class="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-[140px] text-center capitalize"
         >
           {nombresMeses[currentMonth]}
           {currentYear}
@@ -726,6 +721,7 @@
               role="button"
               tabindex="0"
               on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
+              on:dragend={handleDragEnd}
               on:click={() => openDetails(trabajo)}
               on:keydown={(e) => handleCardKeydown(e, trabajo)}
               class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] {getEstadoClases(
@@ -744,7 +740,7 @@
                   {trabajo.area}
                 </span>
               </div>
-              <p class="text-[10px] font-bold truncate mt-1">
+              <p class="text-[10px] font-semibold truncate mt-1">
                 {trabajo.cliente}
               </p>
             </div>
@@ -776,22 +772,21 @@
               >
               <button
                 on:click|stopPropagation={() => (expandedCellDate = null)}
-                class="text-slate-400 hover:text-rose-500 font-bold text-xs p-1 rounded-full transition-colors cursor-pointer"
+                class="text-slate-400 hover:text-rose-500 font-semibold text-xs p-1 rounded-full transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <!-- Listado completo e interactivo (Drap & Drop nativo habilitado) -->
-            <div
-              class="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-0.5"
-            >
+            <div class="flex flex-col gap-1.5 h-auto overflow-visible pr-0.5">
               {#each trabajosEnCelda as trabajo}
                 <div
                   draggable="true"
                   role="button"
                   tabindex="0"
                   on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
+                  on:dragend={handleDragEnd}
                   on:click|stopPropagation={() => openDetails(trabajo)}
                   on:keydown={(e) => handleCardKeydown(e, trabajo)}
                   class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] {getEstadoClases(
@@ -810,7 +805,7 @@
                       {trabajo.area}
                     </span>
                   </div>
-                  <p class="text-[10px] font-bold truncate mt-1">
+                  <p class="text-[10px] font-semibold truncate mt-1">
                     {trabajo.cliente}
                   </p>
                 </div>
@@ -825,9 +820,11 @@
   <!-- DRAWER / DETALLES DEL PARTE SELECCIONADO (Apertura lateral premium con barra técnica) -->
   {#if selectedTrabajo}
     <div
+      on:click={closeDetails}
       class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-end z-[99999] animate-fade-in"
     >
       <div
+        on:click|stopPropagation
         class="w-full max-w-lg bg-white dark:bg-[#16181c] h-full shadow-2xl p-8 flex flex-col gap-6 overflow-y-auto animate-slide-left"
       >
         <!-- Cabecera -->
@@ -871,7 +868,7 @@
                 >Área de Producción</span
               >
               <span
-                class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 block uppercase"
+                class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 block uppercase"
                 >{selectedTrabajo.area}</span
               >
             </div>
@@ -889,7 +886,7 @@
                 value={selectedTrabajo.fechaSalida}
                 on:change={(e) =>
                   handleDateInputChange(e, selectedTrabajo.numParte)}
-                class="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1 block font-mono bg-transparent border-none p-0 outline-none w-full focus:ring-0 cursor-pointer dark:[color-scheme:dark]"
+                class="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1 block font-mono bg-transparent border-none p-0 outline-none w-full focus:ring-0 cursor-pointer dark:[color-scheme:dark]"
               />
             </div>
           </div>
@@ -1038,7 +1035,7 @@
 
             <button
               on:click={() => cambiarEstado("Terminado")}
-              class="w-full py-3 bg-[#5C42FF] hover:bg-[#4730D9] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              class="w-full py-3 bg-[#5C42FF] hover:bg-[#4730D9] text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg
                 class="w-4 h-4"
@@ -1089,13 +1086,13 @@
           <a
             href={`/w/${selectedTrabajo.workspaceId}/parte/${selectedTrabajo.numParte}/print`}
             target="_blank"
-            class="flex-1 py-3 px-4 bg-slate-100 dark:bg-[#1a1d24] hover:bg-slate-200 dark:hover:bg-[#202530] text-slate-800 dark:text-slate-200 font-bold text-xs text-center rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+            class="flex-1 py-3 px-4 bg-slate-100 dark:bg-[#1a1d24] hover:bg-slate-200 dark:hover:bg-[#202530] text-slate-800 dark:text-slate-200 font-semibold text-xs text-center rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             🖨️ Imprimir Ficha A3
           </a>
           <button
             on:click={closeDetails}
-            class="px-5 py-3 bg-slate-100 dark:bg-[#1a1d24] hover:bg-slate-200 dark:hover:bg-[#202530] text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-colors"
+            class="px-5 py-3 bg-slate-100 dark:bg-[#1a1d24] hover:bg-slate-200 dark:hover:bg-[#202530] text-slate-600 dark:text-slate-300 font-semibold text-xs rounded-xl cursor-pointer transition-colors"
           >
             Cerrar
           </button>
@@ -1146,8 +1143,8 @@
               tabindex="0"
               on:dragstart={(e) => {
                 handleDragStart(e, trabajo.numParte);
-                cerrarMasTareas();
               }}
+              on:dragend={handleDragEnd}
               on:click={() => {
                 openDetails(trabajo);
                 cerrarMasTareas();
@@ -1169,7 +1166,7 @@
                   {trabajo.area}
                 </span>
               </div>
-              <p class="text-xs font-bold">
+              <p class="text-xs font-semibold">
                 {trabajo.cliente}
               </p>
             </div>
@@ -1178,7 +1175,7 @@
 
         <button
           on:click={cerrarMasTareas}
-          class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#202530] dark:hover:bg-[#2a313d] text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+          class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#202530] dark:hover:bg-[#2a313d] text-slate-600 dark:text-slate-300 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
         >
           Cerrar Vista
         </button>

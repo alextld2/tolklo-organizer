@@ -1,81 +1,161 @@
 ---
 // src/components/DashboardEscolar.astro
-import OrdenesActivas from './OrdenesActivas.svelte'; // <-- CORREGIDO: Un solo punto '.'
+import OrdenesActivas from "./OrdenesActivas.svelte"; // <-- CORREGIDO: Un solo punto '.'
 const { trabajosProximos, workspace } = Astro.props;
 
 // Filtros analíticos rápidos para el coordinador de agendas escolares
-const pendientesRevision = trabajosProximos.filter(t => t.estado === 'Pendiente').length;
-const enMaquetacion = trabajosProximos.filter(t => t.estado === 'En proceso').length;
+const pendientesRevision = trabajosProximos.filter(
+  (t) => t.estado === "Pendiente",
+).length;
+const enMaquetacion = trabajosProximos.filter(
+  (t) => t.estado === "En proceso",
+).length;
 ---
 
 <div class="space-y-6 w-full animate-fade-in font-sans">
-  
   <div class="mb-2">
-    <h1 class="text-3xl font-bold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]">Campañas de Agendas Escolares</h1>
-    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1">Gestión de centros educativos, orlas y lotes de diseño editorial.</p>
+    <h1
+      class="text-3xl font-semibold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]"
+    >
+      Campañas de Agendas Escolares
+    </h1>
+    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1">
+      Gestión de centros educativos, orlas y lotes de diseño editorial.
+    </p>
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-    
-    <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors">
-      <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-        <span class="material-symbols-rounded text-2xl" style="font-variation-settings: 'wght' 300;">school</span>
+    <div
+      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors"
+    >
+      <div
+        class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"
+      >
+        <span
+          class="material-symbols-rounded text-2xl"
+          style="font-variation-settings: 'wght' 300;">school</span
+        >
       </div>
       <div>
-        <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none">Colegios Contratados</span>
-        <h3 class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] mt-1.5">{trabajosProximos.length.toString().padStart(2, '0')}</h3>
+        <span
+          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none"
+          >Colegios Contratados</span
+        >
+        <h3
+          class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] mt-1.5"
+        >
+          {trabajosProximos.length.toString().padStart(2, "0")}
+        </h3>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors">
-      <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
-        <span class="material-symbols-rounded text-2xl" style="font-variation-settings: 'wght' 300;">rate_review</span>
+    <div
+      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors"
+    >
+      <div
+        class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"
+      >
+        <span
+          class="material-symbols-rounded text-2xl"
+          style="font-variation-settings: 'wght' 300;">rate_review</span
+        >
       </div>
       <div>
-        <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none">Portadas en Revisión</span>
-        <h3 class="text-2xl font-semibold text-amber-600 dark:text-amber-400 mt-1.5">{pendientesRevision.toString().padStart(2, '0')}</h3>
+        <span
+          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none"
+          >Portadas en Revisión</span
+        >
+        <h3
+          class="text-2xl font-semibold text-amber-600 dark:text-amber-400 mt-1.5"
+        >
+          {pendientesRevision.toString().padStart(2, "0")}
+        </h3>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors sm:col-span-2 lg:col-span-1">
-      <div class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] flex items-center justify-center flex-shrink-0">
-        <span class="material-symbols-rounded text-2xl" style="font-variation-settings: 'wght' 300;">menu_book</span>
+    <div
+      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors sm:col-span-2 lg:col-span-1"
+    >
+      <div
+        class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] flex items-center justify-center flex-shrink-0"
+      >
+        <span
+          class="material-symbols-rounded text-2xl"
+          style="font-variation-settings: 'wght' 300;">menu_book</span
+        >
       </div>
       <div>
-        <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none">En Maquetación</span>
-        <h3 class="text-2xl font-semibold text-[#5C42FF] dark:text-[#9A85FF] mt-1.5">{enMaquetacion.toString().padStart(2, '0')}</h3>
+        <span
+          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none"
+          >En Maquetación</span
+        >
+        <h3
+          class="text-2xl font-semibold text-[#5C42FF] dark:text-[#9A85FF] mt-1.5"
+        >
+          {enMaquetacion.toString().padStart(2, "0")}
+        </h3>
       </div>
     </div>
-
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
     <div class="lg:col-span-2 flex flex-col">
-      <OrdenesActivas trabajosProximos={trabajosProximos} workspace={workspace} client:load />
+      <OrdenesActivas
+        trabajosProximos={trabajosProximos}
+        workspace={workspace}
+        client:load
+      />
     </div>
 
-    <div class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-6 flex flex-col shadow-xs transition-colors">
+    <div
+      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-6 flex flex-col shadow-xs transition-colors"
+    >
       <div class="mb-4">
-        <h3 class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight">Hitos de Campaña</h3>
-        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Control de entregas críticas antes del inicio del curso.</p>
+        <h3
+          class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight"
+        >
+          Hitos de Campaña
+        </h3>
+        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+          Control de entregas críticas antes del inicio del curso.
+        </p>
       </div>
 
       <div class="space-y-3 flex-1 overflow-y-auto text-xs font-semibold">
-        <div class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
-          <span class="text-gray-600 dark:text-gray-400">Fotografías de alumnos</span>
-          <span class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] rounded font-semibold uppercase">Listo</span>
+        <div
+          class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between"
+        >
+          <span class="text-gray-600 dark:text-gray-400"
+            >Fotografías de alumnos</span
+          >
+          <span
+            class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] rounded font-semibold uppercase"
+            >Listo</span
+          >
         </div>
-        <div class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
-          <span class="text-gray-600 dark:text-gray-400">Pruebas de color retiradas</span>
-          <span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] rounded font-semibold uppercase">90%</span>
+        <div
+          class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between"
+        >
+          <span class="text-gray-600 dark:text-gray-400"
+            >Pruebas de color retiradas</span
+          >
+          <span
+            class="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] rounded font-semibold uppercase"
+            >90%</span
+          >
         </div>
-        <div class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between">
-          <span class="text-gray-600 dark:text-gray-400">Cierre de imprenta (Lote A)</span>
-          <span class="px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] rounded font-semibold uppercase">12 Jul</span>
+        <div
+          class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between"
+        >
+          <span class="text-gray-600 dark:text-gray-400"
+            >Cierre de imprenta (Lote A)</span
+          >
+          <span
+            class="px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] rounded font-semibold uppercase"
+            >12 Jul</span
+          >
         </div>
       </div>
     </div>
-
   </div>
 </div>
