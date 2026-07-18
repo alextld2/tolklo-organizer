@@ -1,6 +1,149 @@
 <script lang="ts">
-  import { fly, slide } from "svelte/transition";
+  import { fly, slide, fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+
+  // --- GESTIÓN DE DIRECCIONES (MODAL) ---
+  let mostrarModalDirecciones = false;
+  let direcciones: Array<{
+    id: number;
+    cliente: string;
+    calle: string;
+    ciudad: string;
+    provincia: string | null;
+    codigoPostal: string;
+    pais: string;
+    telefono: string | null;
+    notas: string | null;
+  }> = [];
+
+  let cargandoDirecciones = false;
+  let confirmandoEliminarId: number | null = null;
+  let eliminandoDireccionId: number | null = null;
+  let errorDirecciones = "";
+
+  async function cargarDirecciones() {
+    cargandoDirecciones = true;
+    errorDirecciones = "";
+    try {
+      const resp = await fetch(
+        `/api/direcciones/list?cliente=${encodeURIComponent(nombreCliente)}`,
+      );
+      if (resp.ok) {
+        direcciones = await resp.json();
+      } else {
+        const errorData = await resp.json().catch(() => ({}));
+        errorDirecciones = errorData.error || "Error al cargar direcciones.";
+      }
+    } catch (err: any) {
+      errorDirecciones = err.message || "Error al cargar direcciones.";
+    } finally {
+      cargandoDirecciones = false;
+    }
+  }
+
+  function abrirModalDirecciones() {
+    mostrarModalDirecciones = true;
+    confirmandoEliminarId = null;
+    errorDirecciones = "";
+    cargarDirecciones();
+  }
+
+  function cerrarModalDirecciones() {
+    mostrarModalDirecciones = false;
+  }
+
+  async function eliminarDireccion(id: number) {
+    eliminandoDireccionId = id;
+    errorDirecciones = "";
+    try {
+      const resp = await fetch("/api/direcciones/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      if (resp.ok) {
+        confirmandoEliminarId = null;
+        await cargarDirecciones();
+      } else {
+        const errorData = await resp.json().catch(() => ({}));
+        errorDirecciones = errorData.error || "Error al eliminar la dirección.";
+      }
+    } catch (err: any) {
+      errorDirecciones = err.message || "Error al eliminar la dirección.";
+    } finally {
+      eliminandoDireccionId = null;
+    }
+  }
+
+  // --- SUBMODAL DE NUEVA DIRECCIÓN ---
+  let mostrarModalNuevaDireccion = false;
+  let nuevaDireccion = {
+    calle: "",
+    ciudad: "",
+    provincia: "",
+    codigoPostal: "",
+    pais: "España",
+    telefono: "",
+    notas: "",
+  };
+  let guardandoDireccion = false;
+  let errorNuevaDireccion = "";
+
+  function abrirModalNuevaDireccion() {
+    mostrarModalNuevaDireccion = true;
+    errorNuevaDireccion = "";
+    nuevaDireccion = {
+      calle: "",
+      ciudad: "",
+      provincia: "",
+      codigoPostal: "",
+      pais: "España",
+      telefono: "",
+      notas: "",
+    };
+  }
+
+  function cerrarModalNuevaDireccion() {
+    mostrarModalNuevaDireccion = false;
+  }
+
+  async function guardarNuevaDireccion() {
+    if (
+      !nuevaDireccion.calle ||
+      !nuevaDireccion.ciudad ||
+      !nuevaDireccion.codigoPostal
+    ) {
+      errorNuevaDireccion = "Por favor, completa los campos requeridos (*).";
+      return;
+    }
+
+    guardandoDireccion = true;
+    errorNuevaDireccion = "";
+    try {
+      const resp = await fetch(`/api/direcciones/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cliente: nombreCliente,
+          ...nuevaDireccion,
+        }),
+      });
+
+      if (resp.ok) {
+        await cargarDirecciones();
+        cerrarModalNuevaDireccion();
+      } else {
+        const errorData = await resp.json().catch(() => ({}));
+        errorNuevaDireccion =
+          errorData.error || "Error al guardar la dirección.";
+      }
+    } catch (err: any) {
+      errorNuevaDireccion = err.message || "Error al guardar la dirección.";
+    } finally {
+      guardandoDireccion = false;
+    }
+  }
 
   export let nombreCliente: string = "";
   export let trabajos: Array<{
@@ -162,19 +305,31 @@
       </div>
     </div>
 
-    <!-- MÉTRICA TOTAL TIPOGRÁFICA -->
-    <div
-      class="bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-[#232830] px-6 py-2.5 rounded-2xl flex flex-col items-end justify-center sm:self-center transition-colors"
-    >
-      <span
-        class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none"
-        >Historial Total</span
+    <div class="flex items-center gap-3 sm:self-center">
+      <!-- BOTÓN DE DIRECCIONES -->
+      <button
+        type="button"
+        on:click={abrirModalDirecciones}
+        class="bg-[#5C42FF]/5 hover:bg-[#4a32e0]/10 text-[#5C42FF] px-5 py-3 rounded-2xl font-semibold text-xs tracking-wide transition-all flex items-center gap-2 cursor-pointer border-none h-[49px] self-center"
       >
-      <span
-        class="text-base font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] tabular-nums leading-none"
+        <span class="material-symbols-rounded text-base">location_on</span>
+        <span>Direcciones</span>
+      </button>
+
+      <!-- MÉTRICA TOTAL TIPOGRÁFICA -->
+      <div
+        class="bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-[#232830] px-6 py-2.5 rounded-2xl flex flex-col items-end justify-center transition-colors h-[49px] justify-center"
       >
-        {totalTrabajosHistoricos.toString().padStart(2, "0")} órdenes
-      </span>
+        <span
+          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none"
+          >Historial Total</span
+        >
+        <span
+          class="text-base font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] tabular-nums leading-none"
+        >
+          {totalTrabajosHistoricos.toString().padStart(2, "0")} órdenes
+        </span>
+      </div>
     </div>
   </div>
 
@@ -401,8 +556,348 @@
   </div>
 </div>
 
+<!-- MODAL DIRECCIONES -->
+{#if mostrarModalDirecciones}
+  <!-- Overlay principal -->
+  <div
+    transition:fade={{ duration: 150 }}
+    class="fixed inset-0 bg-[#000]/60 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+    on:click|self={cerrarModalDirecciones}
+  >
+    <div
+      transition:fly={{ y: 20, duration: 250, easing: cubicOut }}
+      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] w-full max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[85vh] text-[#1A1D21] dark:text-[#EDF0F3]"
+      on:click|stopPropagation
+    >
+      <!-- Cabecera del Modal -->
+      <div
+        class="px-6 py-5 border-b border-gray-100 dark:border-[#232830] flex items-center justify-between"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="material-symbols-rounded text-xl text-[#5C42FF] dark:text-[#9A85FF]"
+            >location_on</span
+          >
+          <h2 class="text-base font-semibold">
+            Direcciones de {nombreCliente}
+          </h2>
+        </div>
+        <button
+          type="button"
+          on:click={cerrarModalDirecciones}
+          class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 bg-transparent border-none cursor-pointer p-1 rounded-lg flex items-center justify-center focus:outline-none"
+        >
+          <span class="material-symbols-rounded text-lg">close</span>
+        </button>
+      </div>
+
+      <!-- Contenido / Lista de Direcciones -->
+      <div class="px-6 py-5 overflow-y-auto flex-1 space-y-3">
+        {#if errorDirecciones}
+          <div
+            class="p-3 bg-rose-500/10 text-rose-600 border border-rose-500/20 rounded-xl font-semibold text-xs transition-colors"
+          >
+            {errorDirecciones}
+          </div>
+        {/if}
+        {#if cargandoDirecciones}
+          <div
+            class="flex flex-col items-center justify-center py-10 space-y-2 text-gray-400"
+          >
+            <span class="material-symbols-rounded animate-spin text-2xl"
+              >progress_activity</span
+            >
+            <span class="text-xs">Cargando direcciones...</span>
+          </div>
+        {:else if direcciones.length === 0}
+          <div
+            class="text-center py-10 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl text-gray-400"
+          >
+            <span class="material-symbols-rounded text-3xl opacity-30 mb-2"
+              >map</span
+            >
+            <p class="text-xs font-semibold">
+              No hay direcciones registradas para este cliente.
+            </p>
+          </div>
+        {:else}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {#each direcciones as dir}
+              <div
+                class="p-4 bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-[#232830] rounded-2xl flex flex-col space-y-1 hover:border-[#5C42FF]/30 transition-colors"
+              >
+                <div class="flex justify-between items-start gap-2">
+                  <span
+                    class="font-semibold text-xs text-[#1A1D21] dark:text-[#EDF0F3] flex-1 break-words"
+                    >{dir.calle}</span
+                  >
+                  <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <span
+                      class="bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                    >
+                      {dir.pais}
+                    </span>
+                    {#if confirmandoEliminarId === dir.id}
+                      <div class="flex items-center gap-1">
+                        <button
+                          type="button"
+                          on:click={() => eliminarDireccion(dir.id)}
+                          disabled={eliminandoDireccionId === dir.id}
+                          class="bg-red-500 hover:bg-red-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded cursor-pointer border-none flex items-center gap-0.5 shadow-xs"
+                          title="Confirmar"
+                        >
+                          {#if eliminandoDireccionId === dir.id}
+                            <span
+                              class="material-symbols-rounded text-[10px] animate-spin"
+                              >progress_activity</span
+                            >
+                          {:else}
+                            <span>Sí</span>
+                          {/if}
+                        </button>
+                        <button
+                          type="button"
+                          on:click={() => (confirmandoEliminarId = null)}
+                          class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded cursor-pointer border-none"
+                          title="Cancelar"
+                        >
+                          No
+                        </button>
+                      </div>
+                    {:else}
+                      <button
+                        type="button"
+                        on:click={() => (confirmandoEliminarId = dir.id)}
+                        class="text-gray-400 hover:text-red-500 dark:hover:text-red-400 bg-transparent border-none cursor-pointer p-0.5 rounded flex items-center justify-center transition-colors focus:outline-none"
+                        title="Eliminar dirección"
+                      >
+                        <span class="material-symbols-rounded text-sm"
+                          >delete</span
+                        >
+                      </button>
+                    {/if}
+                  </div>
+                </div>
+                <span class="text-[11px] text-gray-500 dark:text-gray-400"
+                  >{dir.codigoPostal}
+                  {dir.ciudad}{dir.provincia ? `, ${dir.provincia}` : ""}</span
+                >
+                {#if dir.telefono}
+                  <span
+                    class="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5 pt-1"
+                  >
+                    <span class="material-symbols-rounded text-[13px]"
+                      >phone</span
+                    >
+                    {dir.telefono}
+                  </span>
+                {/if}
+                {#if dir.notas}
+                  <span
+                    class="text-[10px] text-orange-500/90 dark:text-orange-400/90 mt-1 bg-orange-500/5 px-2.5 py-1.5 rounded-xl border border-orange-500/10"
+                  >
+                    <strong>Instrucciones:</strong>
+                    {dir.notas}
+                  </span>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Pie del Modal -->
+      <div
+        class="px-6 py-4 bg-gray-50 dark:bg-[#121418]/50 border-t border-gray-100 dark:border-[#232830] flex items-center justify-between gap-3"
+      >
+        <button
+          type="button"
+          on:click={cerrarModalDirecciones}
+          class="px-4 py-2.5 rounded-xl border border-[#E9EBF0] dark:border-[#232830] font-semibold text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer bg-transparent"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          on:click={abrirModalNuevaDireccion}
+          class="bg-[#5C42FF] hover:bg-[#4a32e0] text-white px-4 py-2.5 rounded-xl font-semibold text-xs tracking-wide transition-all flex items-center gap-1.5 cursor-pointer border-none"
+        >
+          <span class="material-symbols-rounded text-sm">add_location_alt</span>
+          <span>Añadir Dirección</span>
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- MODAL CREACIÓN DIRECCIÓN -->
+{#if mostrarModalNuevaDireccion}
+  <!-- Overlay Nueva Dirección con Z-Index mayor para que flote encima -->
+  <div
+    transition:fade={{ duration: 150 }}
+    class="fixed inset-0 bg-[#000]/70 backdrop-blur-xs flex items-center justify-center z-55 p-4"
+    on:click|self={cerrarModalNuevaDireccion}
+  >
+    <div
+      transition:fly={{ y: 20, duration: 250, easing: cubicOut }}
+      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] w-full max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[#1A1D21] dark:text-[#EDF0F3]"
+      on:click|stopPropagation
+    >
+      <!-- Cabecera -->
+      <div
+        class="px-6 py-5 border-b border-gray-100 dark:border-[#232830] flex items-center justify-between"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="material-symbols-rounded text-xl text-[#5C42FF] dark:text-[#9A85FF]"
+            >add_location_alt</span
+          >
+          <h2 class="text-base font-semibold">Nueva Dirección de Entrega</h2>
+        </div>
+        <button
+          type="button"
+          on:click={cerrarModalNuevaDireccion}
+          class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 bg-transparent border-none cursor-pointer p-1 rounded-lg flex items-center justify-center focus:outline-none"
+        >
+          <span class="material-symbols-rounded text-lg">close</span>
+        </button>
+      </div>
+
+      <!-- Formulario -->
+      <div
+        class="px-6 py-5 overflow-y-auto flex-1 space-y-4 font-semibold text-xs"
+      >
+        {#if errorNuevaDireccion}
+          <div
+            class="p-3 bg-rose-500/10 text-rose-600 border border-rose-500/20 rounded-xl font-medium"
+          >
+            {errorNuevaDireccion}
+          </div>
+        {/if}
+
+        <div class="flex flex-col space-y-1.5">
+          <label class="text-gray-400 uppercase tracking-wider text-[10px]"
+            >Calle y Número *</label
+          >
+          <input
+            type="text"
+            bind:value={nuevaDireccion.calle}
+            placeholder="Ej: Calle Gran Vía, 12, 3º Izq"
+            class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] dark:focus:border-[#9A85FF] transition-colors"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col space-y-1.5">
+            <label class="text-gray-400 uppercase tracking-wider text-[10px]"
+              >Ciudad *</label
+            >
+            <input
+              type="text"
+              bind:value={nuevaDireccion.ciudad}
+              placeholder="Ej: Granada"
+              class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] dark:focus:border-[#9A85FF] transition-colors"
+            />
+          </div>
+          <div class="flex flex-col space-y-1.5">
+            <label class="text-gray-400 uppercase tracking-wider text-[10px]"
+              >Provincia</label
+            >
+            <input
+              type="text"
+              bind:value={nuevaDireccion.provincia}
+              placeholder="Ej: Granada"
+              class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] dark:focus:border-[#9A85FF] transition-colors"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col space-y-1.5">
+            <label class="text-gray-400 uppercase tracking-wider text-[10px]"
+              >Código Postal *</label
+            >
+            <input
+              type="text"
+              bind:value={nuevaDireccion.codigoPostal}
+              placeholder="Ej: 18001"
+              class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] dark:focus:border-[#9A85FF] transition-colors"
+            />
+          </div>
+          <div class="flex flex-col space-y-1.5">
+            <label class="text-gray-400 uppercase tracking-wider text-[10px]"
+              >País</label
+            >
+            <input
+              type="text"
+              bind:value={nuevaDireccion.pais}
+              placeholder="Ej: España"
+              class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] dark:focus:border-[#9A85FF] transition-colors"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-col space-y-1.5">
+          <label class="text-gray-400 uppercase tracking-wider text-[10px]"
+            >Teléfono de Contacto</label
+          >
+          <input
+            type="text"
+            bind:value={nuevaDireccion.telefono}
+            placeholder="Ej: +34 600 000 000"
+            class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] dark:focus:border-[#9A85FF] transition-colors"
+          />
+        </div>
+
+        <div class="flex flex-col space-y-1.5">
+          <label class="text-gray-400 uppercase tracking-wider text-[10px]"
+            >Notas o Instrucciones</label
+          >
+          <textarea
+            bind:value={nuevaDireccion.notas}
+            placeholder="Ej: Entregar por las mañanas..."
+            rows="3"
+            class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] dark:focus:border-[#9A85FF] transition-colors resize-none"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Pie -->
+      <div
+        class="px-6 py-4 bg-gray-50 dark:bg-[#121418]/50 border-t border-gray-100 dark:border-[#232830] flex items-center justify-end gap-3"
+      >
+        <button
+          type="button"
+          on:click={cerrarModalNuevaDireccion}
+          class="px-4 py-2.5 rounded-xl border border-[#E9EBF0] dark:border-[#232830] font-semibold text-xs text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer bg-transparent"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          on:click={guardarNuevaDireccion}
+          disabled={guardandoDireccion}
+          class="bg-[#5C42FF] hover:bg-[#4a32e0] text-white px-5 py-2.5 rounded-xl font-semibold text-xs tracking-wide shadow-md transition-all flex items-center gap-1.5 cursor-pointer border-none disabled:opacity-50"
+        >
+          {#if guardandoDireccion}
+            <span class="material-symbols-rounded animate-spin text-sm"
+              >progress_activity</span
+            >
+            <span>Guardando...</span>
+          {:else}
+            <span>Guardar Dirección</span>
+          {/if}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .walk-in-animation {
     will-change: transform, opacity;
+  }
+  .z-55 {
+    z-index: 55;
   }
 </style>

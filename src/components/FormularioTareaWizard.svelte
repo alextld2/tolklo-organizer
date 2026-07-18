@@ -21,6 +21,49 @@
   let direccionEntrega = "";
   let albaranAnonimo = false;
 
+  // --- DIRECCIONES REGISTRADAS DEL CLIENTE ---
+  let direccionesCliente: Array<{
+    id: number;
+    cliente: string;
+    calle: string;
+    ciudad: string;
+    provincia: string | null;
+    codigoPostal: string;
+    pais: string;
+    telefono: string | null;
+    notas: string | null;
+  }> = [];
+  let cargandoDirecciones = false;
+  let ultimoClienteBuscado = "";
+
+  $: if (cliente && cliente.trim().length > 1) {
+    buscarDireccionesCliente(cliente.trim());
+  } else {
+    direccionesCliente = [];
+    ultimoClienteBuscado = "";
+  }
+
+  async function buscarDireccionesCliente(nombre: string) {
+    if (nombre === ultimoClienteBuscado) return;
+    ultimoClienteBuscado = nombre;
+    cargandoDirecciones = true;
+    try {
+      const resp = await fetch(
+        `/api/direcciones/list?cliente=${encodeURIComponent(nombre)}`,
+      );
+      if (resp.ok) {
+        direccionesCliente = await resp.json();
+      } else {
+        direccionesCliente = [];
+      }
+    } catch (err) {
+      console.error(err);
+      direccionesCliente = [];
+    } finally {
+      cargandoDirecciones = false;
+    }
+  }
+
   // Buscador predictivo de clientes
   let mostrarSugerencias = false;
   $: sugerenciasFiltradas =
@@ -704,9 +747,63 @@
           </div>
           {#if tipoEntrega === "envio"}
             <div class="flex flex-col space-y-2" transition:slide>
+              {#if cargandoDirecciones}
+                <div
+                  class="flex items-center gap-1.5 text-xs text-gray-400 py-1"
+                >
+                  <span class="material-symbols-rounded animate-spin text-sm"
+                    >progress_activity</span
+                  >
+                  <span>Buscando direcciones del cliente...</span>
+                </div>
+              {:else if direccionesCliente.length > 0}
+                <div
+                  class="flex flex-col space-y-1 bg-gray-50/50 dark:bg-[#1E2228]/30 border border-dashed border-gray-200 dark:border-gray-800 p-3 rounded-2xl mb-1"
+                >
+                  <span
+                    class="text-gray-400 uppercase tracking-wider text-[9px] flex items-center gap-1"
+                  >
+                    <span class="material-symbols-rounded text-xs"
+                      >room_service</span
+                    >
+                    Direcciones registradas para {cliente}
+                  </span>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                    {#each direccionesCliente as dir}
+                      <button
+                        type="button"
+                        on:click={() => {
+                          const formateada = `${dir.calle}, ${dir.codigoPostal} ${dir.ciudad}${dir.provincia ? ` (${dir.provincia})` : ""}, ${dir.pais}`;
+                          direccionEntrega = formateada;
+                        }}
+                        class="p-2.5 rounded-xl border text-left flex flex-col justify-start transition-all cursor-pointer bg-white dark:bg-[#16191D] hover:border-[#5C42FF] hover:ring-1 hover:ring-[#5C42FF]/30 select-none
+                          {direccionEntrega.startsWith(dir.calle)
+                          ? 'border-[#5C42FF] ring-2 ring-[#5C42FF]/20 bg-[#5C42FF]/5 text-[#5C42FF]'
+                          : 'border-[#E9EBF0] dark:border-[#232830] text-gray-500'}"
+                      >
+                        <span
+                          class="font-bold text-[11px] text-[#1A1D21] dark:text-[#EDF0F3] truncate w-full"
+                          >{dir.calle}</span
+                        >
+                        <span
+                          class="text-[10px] text-gray-500 dark:text-gray-400 truncate w-full"
+                          >{dir.codigoPostal} {dir.ciudad}</span
+                        >
+                        {#if dir.notas}
+                          <span
+                            class="text-[9px] text-orange-500 mt-1 truncate w-full italic"
+                            >*{dir.notas}</span
+                          >
+                        {/if}
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
               <label
                 for="direccion"
-                class="text-gray-400 uppercase tracking-wider text-[10px]"
+                class="text-gray-400 uppercase tracking-wider text-[10px] mt-2"
                 >Dirección de Entrega Completa</label
               >
               <input
@@ -714,7 +811,7 @@
                 type="text"
                 bind:value={direccionEntrega}
                 placeholder="Calle, Número, Localidad..."
-                class="p-3 bg-gray-50 dark:bg-[#1E2228] border rounded-xl outline-none"
+                class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] transition-colors"
               />
             </div>
           {/if}

@@ -68,7 +68,7 @@
 </script>
 
 <header
-  class="h-20 w-full flex items-center px-10 justify-center relative z-40 bg-[#F8F9FB] dark:bg-[#0E1114] transition-colors duration-200 font-sans"
+  class="h-20 w-full flex items-center px-10 justify-center relative z-40 bg-[#F6F6F6] dark:bg-[#0E1114] transition-colors duration-200 font-sans"
 >
   <div class="relative w-full max-w-md">
     <span
@@ -229,7 +229,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div
-          class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
         >
           <div
             class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"
@@ -252,7 +252,7 @@
         </div>
 
         <div
-          class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
         >
           <div
             class="w-9 h-9 rounded-lg bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-white flex items-center justify-center flex-shrink-0"
@@ -275,7 +275,7 @@
         </div>
 
         <div
-          class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
         >
           <div
             class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0"
@@ -298,7 +298,7 @@
         </div>
 
         <div
-          class="flex items-center gap-3 bg-[#F8F9FB] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
         >
           <div
             class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"

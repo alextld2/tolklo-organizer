@@ -1,6 +1,7 @@
 <script lang="ts">
   // src/components/Calendario.svelte
   import { onMount } from "svelte";
+  import { fly } from "svelte/transition";
 
   export let trabajosIniciales: any[] = [];
   export let desglosesIniciales: any[] = [];
@@ -208,13 +209,16 @@
   // Mensajes flotantes (Toasts integrados de control para no usar alert)
   let toastMessage = "";
   let toastType = "success"; // "success" | "error" | "info"
+  let toastTimeout: any = null;
 
   function showToast(msg: string, type = "success") {
     toastMessage = msg;
     toastType = type;
-    setTimeout(() => {
-      if (toastMessage === msg) toastMessage = "";
-    }, 5000);
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      toastMessage = "";
+      toastTimeout = null;
+    }, 4500);
   }
 
   function handleDragStart(event: DragEvent, numParte: string) {
@@ -630,32 +634,44 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION CORREGIDO -->
+  <!-- TOAST NOTIFICATION FLOTANTE -->
   {#if toastMessage}
     <div
-      class="mb-4 p-4 rounded-2xl border flex items-center justify-between text-xs font-semibold shadow-lg animate-fade-in
+      transition:fly={{ y: 16, duration: 250 }}
+      class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[999999] w-[calc(100%-2rem)] max-w-md p-4 rounded-2xl flex items-center justify-between text-sm font-semibold shadow-xl backdrop-blur-md transition-all duration-300
       {toastType === 'success'
-        ? 'bg-emerald-50 text-emerald-800 border-emerald-150'
+        ? 'bg-white dark:bg-[#112419]/95 text-dark-800 dark:text-emerald-300 border-emerald-150'
         : ''}
-      {toastType === 'error' ? 'bg-rose-50 text-rose-800 border-rose-150' : ''}
+      {toastType === 'error'
+        ? 'bg-rose-50/95 dark:bg-[#2e1517]/95 text-rose-800 dark:text-rose-300 border-rose-150 dark:border-rose-900/50'
+        : ''}
       {toastType === 'info'
-        ? 'bg-[#5C42FF]/10 text-[#5C42FF] border-[#5C42FF]/20'
+        ? 'bg-blue-50/95 dark:bg-[#121c38]/95 text-[#5C42FF] dark:text-[#9A85FF] border-[#5C42FF]/30 dark:border-blue-900/50'
         : ''}"
     >
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2.5">
         <span
-          class="w-2 h-2 rounded-full {toastType === 'success'
-            ? 'bg-emerald-500'
-            : ''} {toastType === 'error' ? 'bg-rose-500' : ''} {toastType ===
+          class="material-symbols-rounded text-lg flex-shrink-0 {toastType ===
+          'success'
+            ? 'text-emerald-500'
+            : ''} {toastType === 'error' ? 'text-rose-500' : ''} {toastType ===
           'info'
-            ? 'bg-[#5C42FF]'
+            ? 'text-[#5C42FF] dark:text-[#9A85FF]'
             : ''}"
-        ></span>
-        <span>{toastMessage}</span>
+        >
+          {toastType === "success" ? "check_circle" : ""}
+          {toastType === "error" ? "error" : ""}
+          {toastType === "info" ? "info" : ""}
+        </span>
+        <span class="leading-relaxed">{toastMessage}</span>
       </div>
       <button
-        on:click={() => (toastMessage = "")}
-        class="text-slate-400 hover:text-slate-600 font-semibold ml-4">✕</button
+        on:click={() => {
+          toastMessage = "";
+          if (toastTimeout) clearTimeout(toastTimeout);
+        }}
+        class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 font-semibold ml-4 p-1 cursor-pointer select-none"
+        >✕</button
       >
     </div>
   {/if}

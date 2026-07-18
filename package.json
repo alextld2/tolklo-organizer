@@ -3,18 +3,18 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-  "dev": "astro dev",
-  "start": "astro dev",
-  "build": "astro build --remote", 
-  "preview": "astro preview",
-  "astro": "astro"
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build --remote",
+    "preview": "astro preview",
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/db": "latest",
-    "@astrojs/node": "^11.0.0",
+    "@astrojs/node": "^11.0.2",
     "@astrojs/svelte": "latest",
     "@tailwindcss/vite": "^4.0.0",
-    "astro": "^6.1.9",
+    "astro": "^7.1.1",
     "svelte": "latest",
     "tailwindcss": "^4.0.0"
   }

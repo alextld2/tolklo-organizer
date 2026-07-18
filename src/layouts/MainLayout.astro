@@ -2,10 +2,10 @@
 // src/layouts/MainLayout.astro
 
 // 1. IMPORTACIONES DE ESTILOS Y COMPONENTES MARCO
-import '../styles/global.css';
-import Sidebar from '../components/Sidebar.astro';
-import Header from '../components/Header.svelte'; // Tu buscador inteligente
-import { ClientRouter } from 'astro:transitions';
+import "../styles/global.css";
+import Sidebar from "../components/Sidebar.astro";
+import Header from "../components/Header.svelte"; // Tu buscador inteligente
+import { ClientRouter } from "astro:transitions";
 
 interface Props {
   title: string;
@@ -14,15 +14,22 @@ const { title } = Astro.props;
 
 // 🛠️ DETECTOR DE ENTORNO PARA EL DOCK INFERIOR RESPONSIVE
 const currentPath = Astro.url.pathname;
-const workspace = currentPath.split('/')[2] || 'produccion';
-const alternarWorkspace = workspace === 'produccion' ? 'escolar' : 'produccion';
-const urlAlternativa = currentPath.replace(`/w/${workspace}`, `/w/${alternarWorkspace}`);
+const workspace = currentPath.split("/")[2] || "produccion";
+const alternarWorkspace = workspace === "produccion" ? "escolar" : "produccion";
+const urlAlternativa = currentPath.replace(
+  `/w/${workspace}`,
+  `/w/${alternarWorkspace}`,
+);
 
 const enlacesNav = [
-  { nombre: 'Inicio', ruta: `/w/${workspace}`, icono: 'home' },
-  { nombre: 'Tareas', ruta: `/w/${workspace}/tasks`, icono: 'assignment' },
-  { nombre: 'Calendario', ruta: `/w/${workspace}/calendar`, icono: 'calendar_today' },
-  { nombre: 'Clientes', ruta: `/w/${workspace}/clients`, icono: 'badge' },
+  { nombre: "Inicio", ruta: `/w/${workspace}`, icono: "home" },
+  { nombre: "Tareas", ruta: `/w/${workspace}/tasks`, icono: "assignment" },
+  {
+    nombre: "Calendario",
+    ruta: `/w/${workspace}/calendar`,
+    icono: "calendar_today",
+  },
+  { nombre: "Clientes", ruta: `/w/${workspace}/clients`, icono: "badge" },
 ];
 ---
 
@@ -32,99 +39,134 @@ const enlacesNav = [
     <link rel="icon" type="image/svg+xml" href="/favicon-app.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    
+
     <ClientRouter />
-    
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300..400,0..1,0" />
+
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300..400,0..1,0"
+    />
 
     <script is:inline>
       const aplicarTema = () => {
-        const theme = localStorage.getItem('theme');
-        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark');
+        const theme = localStorage.getItem("theme");
+        if (
+          theme === "dark" ||
+          (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          document.documentElement.classList.add("dark");
         } else {
-          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.remove("dark");
         }
       };
       aplicarTema();
-      document.addEventListener('astro:after-swap', aplicarTema);
+      document.addEventListener("astro:after-swap", aplicarTema);
     </script>
   </head>
-  
-  <body class="bg-[#F8F9FB] dark:bg-[#0E1114] text-[#1A1D21] dark:text-[#EDF0F3] transition-colors duration-200 min-h-screen overflow-hidden">
-    
+
+  <body
+    class="bg-[#F6F6F6] dark:bg-[#0E1114] text-[#1A1D21] dark:text-[#EDF0F3] transition-colors duration-200 min-h-screen overflow-hidden"
+  >
     <div class="flex h-screen w-screen overflow-hidden">
-      
       <!-- 🔄 Quitamos el persist de aquí para que Astro actualice qué botón está activo en cada página -->
       <div class="hidden lg:block h-full flex-shrink-0">
         <Sidebar />
       </div>
 
       <div class="flex-1 flex flex-col min-w-0 h-full">
-        
         <!-- 🔍 El buscador del Header sí conserva lo que tengas escrito al cambiar de sección -->
         <Header client:load transition:persist="header" />
 
-        <main class="flex-1 overflow-y-auto px-6 lg:px-10 pb-32 lg:pb-10 min-h-0">
+        <main
+          class="flex-1 overflow-y-auto px-6 lg:px-10 pb-32 lg:pb-10 min-h-0"
+        >
           <slot />
         </main>
-
       </div>
     </div>
 
     <!-- 📱 También quitamos el persist del menú móvil para que recalcule la ruta activa en el teléfono -->
-    <div class="fixed bottom-6 inset-x-0 z-[250] flex justify-center pointer-events-none lg:hidden">
-      <nav class="bg-white/90 dark:bg-[#16191D]/90 backdrop-blur-xl border border-[#E9EBF0] dark:border-[#232830] rounded-2xl px-2 py-2.5 shadow-xl flex items-center justify-around w-[94%] max-w-md pointer-events-auto animate-slide-up">
-        
-        <a 
+    <div
+      class="fixed bottom-6 inset-x-0 z-[250] flex justify-center pointer-events-none lg:hidden"
+    >
+      <nav
+        class="bg-white/90 dark:bg-[#16191D]/90 backdrop-blur-xl border border-[#E9EBF0] dark:border-[#232830] rounded-2xl px-2 py-2.5 shadow-xl flex items-center justify-around w-[94%] max-w-md pointer-events-auto animate-slide-up"
+      >
+        <a
           href={urlAlternativa}
           class="flex flex-col items-center justify-center flex-1 py-1 px-0.5 text-gray-400 hover:text-[#5C42FF] transition-all relative"
           title={`Cambiar a espacio ${alternarWorkspace}`}
         >
           <span class="material-symbols-rounded text-xl">
-            {workspace === 'produccion' ? 'school' : 'factory'}
+            {workspace === "produccion" ? "school" : "factory"}
           </span>
-          <span class="text-[9px] font-semibold text-gray-400 uppercase tracking-tighter mt-0.5">
-            {workspace === 'produccion' ? 'Escolar' : 'Taller'}
+          <span
+            class="text-[9px] font-semibold text-gray-400 uppercase tracking-tighter mt-0.5"
+          >
+            {workspace === "produccion" ? "Escolar" : "Taller"}
           </span>
-          <span class="absolute top-0.5 right-4 w-1.5 h-1.5 bg-[#5C42FF] rounded-full animate-pulse"></span>
+          <span
+            class="absolute top-0.5 right-4 w-1.5 h-1.5 bg-[#5C42FF] rounded-full animate-pulse"
+          ></span>
         </a>
 
-        <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-0.5 flex-shrink-0"></div>
+        <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-0.5 flex-shrink-0">
+        </div>
 
-        {enlacesNav.map(item => {
-          const esActivo = currentPath === item.ruta || currentPath.startsWith(item.ruta + '/');
-          return (
-            <a 
-              href={item.ruta}
-              class={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 rounded-xl transition-all ${esActivo ? 'text-[#5C42FF] dark:text-[#9A85FF]' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <span class="material-symbols-rounded text-xl" style={esActivo ? "font-variation-settings: 'FILL' 1" : ""}>{item.icono}</span>
-              <span class="text-[9px] font-semibold tracking-tight mt-0.5 max-w-full truncate">{item.nombre}</span>
-            </a>
-          );
-        })}
-        
-        <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-0.5 flex-shrink-0"></div>
+        {
+          enlacesNav.map((item) => {
+            const esActivo =
+              currentPath === item.ruta ||
+              currentPath.startsWith(item.ruta + "/");
+            return (
+              <a
+                href={item.ruta}
+                class={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 rounded-xl transition-all ${esActivo ? "text-[#5C42FF] dark:text-[#9A85FF]" : "text-gray-400 hover:text-gray-600"}`}
+              >
+                <span
+                  class="material-symbols-rounded text-xl"
+                  style={esActivo ? "font-variation-settings: 'FILL' 1" : ""}
+                >
+                  {item.icono}
+                </span>
+                <span class="text-[9px] font-semibold tracking-tight mt-0.5 max-w-full truncate">
+                  {item.nombre}
+                </span>
+              </a>
+            );
+          })
+        }
 
-        <a 
-          href="/login" 
+        <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-0.5 flex-shrink-0">
+        </div>
+
+        <a
+          href="/login"
           class="w-9 h-9 rounded-xl bg-gray-50 dark:bg-[#1E2228] text-gray-400 hover:text-red-500 flex items-center justify-center transition-colors flex-shrink-0"
         >
           <span class="material-symbols-rounded text-lg">logout</span>
         </a>
-
       </nav>
     </div>
-
   </body>
 </html>
 
 <style>
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .animate-slide-up {
+    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 </style>
