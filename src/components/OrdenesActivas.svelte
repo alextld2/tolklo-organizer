@@ -70,7 +70,7 @@
 
     <a
       href="/w/{workspace}/calendar"
-      class="text-xs font-medium text-[#5C42FF] dark:text-[#9A85FF] border border-dashed border-[#5C42FF]/40 dark:border-[#5C42FF]/30 px-3 py-1.5 rounded-xl hover:bg-purple-50 dark:hover:bg-[#5C42FF]/10 transition-colors flex items-center gap-1 cursor-pointer select-none"
+      class="text-xs font-medium text-gray-900 dark:text-gray-200 border border-dashed border-gray-900/40 dark:border-gray-200/30 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 cursor-pointer select-none"
     >
       <span
         class="material-symbols-rounded text-sm"
@@ -86,11 +86,11 @@
     <div class="space-y-3 flex-1">
       {#each trabajosVisibles as trabajo (trabajo.numParte)}
         <div
-          class="bg-white dark:bg-[#16191D] rounded-2xl p-4 border border-[#E9EBF0] dark:border-[#232830] flex items-center justify-between shadow-xs hover:shadow-sm transition-all group"
+          class="bg-white dark:bg-[#16191D] rounded-2xl p-4 dark:border-[#232830] flex items-center justify-between transition-all group"
         >
           <div class="flex items-center gap-4 min-w-0">
             <div
-              class="w-20 h-15 bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] rounded-xl flex flex-col items-center justify-center font-semibold text-xs border border-purple-100/60 dark:border-[#5C42FF]/20 transition-colors group-hover:bg-purple-100/50 dark:group-hover:bg-[#5C42FF]/20 flex-shrink-0"
+              class="w-20 h-15 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 rounded-xl flex flex-col items-center justify-center font-semibold text-xs border border-gray-200 dark:border-gray-700 transition-colors group-hover:bg-gray-100 dark:group-hover:bg-gray-800 flex-shrink-0"
             >
               <span
                 class="text-[10px] uppercase tracking-tighter opacity-50 font-medium"
@@ -154,7 +154,7 @@
             on:click={() => irAPagina(i)}
             class="h-2 rounded-full transition-all duration-300 cursor-pointer outline-none
               {paginaActual === i
-              ? 'w-5 bg-[#5C42FF] dark:bg-[#7A62FF]'
+              ? 'w-5 bg-gray-900 dark:bg-gray-200'
               : 'w-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700'}"
             aria-label="Ir a página {i + 1}"
           ></button>

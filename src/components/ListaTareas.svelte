@@ -163,7 +163,10 @@
   function eliminarFilaDesgloseEdicion(index: number) {
     if (tareaEnEdicion.desgloses.length > 1) {
       tareaEnEdicion.desgloses = tareaEnEdicion.desgloses.filter(
-        (_, i) => i !== index,
+        (
+          _: { descripcionProducto: string; cantidad: number | null },
+          i: number,
+        ) => i !== index,
       );
     }
   }
@@ -356,7 +359,9 @@
 
 <div
   class="w-full font-sans flex flex-col h-full space-y-6"
+  role="presentation"
   on:click={cerrarMenus}
+  on:keydown={(e) => e.key === "Escape" && cerrarMenus()}
 >
   <div class="flex justify-between items-center flex-shrink-0">
     <div>
@@ -367,7 +372,7 @@
           Listado de partes
         </h1>
         <span
-          class="bg-[#5C42FF]/10 dark:bg-[#5C42FF]/20 text-[#5C42FF] dark:text-[#9A85FF] text-[11px] font-semibold px-2.5 py-1 rounded-full"
+          class="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-[#a4f4cf] text-[11px] font-semibold px-2.5 py-1 rounded-full"
         >
           {porcentajeEficiencia}% Eficiencia
         </span>
@@ -484,7 +489,7 @@
                     type="button"
                     on:click={() => abrirModalEditar(tarea)}
                     title="Editar Tarea"
-                    class="text-gray-400 hover:text-[#5C42FF] dark:hover:text-[#9A85FF] transition-all cursor-pointer flex items-center justify-center"
+                    class="text-gray-400 hover:text-gray-900 dark:hover:text-[#a4f4cf] transition-all cursor-pointer flex items-center justify-center"
                   >
                     <span class="material-symbols-rounded text-lg">edit</span>
                   </button>
@@ -601,7 +606,7 @@
           >‹ Ant</button
         >
         <span
-          class="text-xs font-semibold px-3 py-1 bg-purple-50 dark:bg-purple-500/10 text-[#5C42FF] dark:text-[#9A85FF] rounded-lg"
+          class="text-xs font-semibold px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-[#a4f4cf] rounded-lg"
           >{paginaActual} / {totalPaginas}</span
         >
         <button
@@ -676,39 +681,50 @@
                 >
               </div>
             </div>
-            <button
-              type="button"
-              on:click|stopPropagation={() => exportarListadoAreaPDF(area.id)}
-              disabled={contarIncompletasPorArea(area.id) === 0}
-              class="text-[10px] font-semibold tracking-wider px-2.5 py-1.5 rounded-xl border border-purple-100/40 dark:border-purple-900/40 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1
-                    {contarIncompletasPorArea(area.id) > 0
-                ? 'bg-purple-50 dark:bg-purple-500/10 text-[#5C42FF] dark:text-[#9A85FF] hover:bg-[#5C42FF] hover:text-white dark:hover:bg-[#5C42FF] dark:hover:text-white'
-                : 'bg-gray-50 text-gray-400'}"
-            >
-              <span class="material-symbols-rounded text-sm">apk_document</span>
-              <span>PDF</span>
-            </button>
+            {#if contarIncompletasPorArea(area.id) > 0}
+              <button
+                type="button"
+                on:click|stopPropagation={() => exportarListadoAreaPDF(area.id)}
+                class="text-[10px] font-semibold tracking-wider px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 transition-all flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-300 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer"
+              >
+                <span class="material-symbols-rounded text-sm"
+                  >apk_document</span
+                >
+                <span>PDF</span>
+              </button>
+            {:else}
+              <button
+                type="button"
+                disabled
+                class="text-[10px] font-semibold tracking-wider px-2.5 py-1.5 rounded-xl border border-transparent transition-all flex items-center gap-1 bg-gray-50 text-gray-400 opacity-50 cursor-not-allowed"
+              >
+                <span class="material-symbols-rounded text-sm"
+                  >apk_document</span
+                >
+                <span>PDF</span>
+              </button>
+            {/if}
           </div>
         </div>
       {/each}
     </div>
 
     <div
-      class="bg-[#5C42FF] rounded-3xl p-6 text-white shadow-xs flex flex-col justify-between border border-[#5C42FF]"
+      class="bg-gray-900 dark:bg-black rounded-3xl p-6 text-white shadow-xs flex flex-col justify-between border border-gray-800 dark:border-[#232830]"
     >
       <div>
         <span
-          class="text-[9px] font-semibold text-purple-200 uppercase tracking-widest block mb-1"
+          class="text-[9px] font-semibold text-gray-400 dark:text-[#a4f4cf]/70 uppercase tracking-widest block mb-1"
           >Resumen rápido</span
         >
-        <h3 class="text-lg font-semibold tracking-tight">
+        <h3 class="text-lg font-semibold tracking-tight dark:text-[#a4f4cf]">
           Finalizados completamente
         </h3>
         <div class="mt-4 space-y-2">
           <div
             class="flex justify-between items-center border-b border-white/10 pb-1.5"
           >
-            <span class="text-xs font-semibold text-purple-100"
+            <span class="text-xs font-semibold text-gray-400 dark:text-gray-300"
               >Completados</span
             >
             <span class="text-base font-semibold"
@@ -716,7 +732,8 @@
             >
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-xs font-semibold text-purple-100">Pendientes</span
+            <span class="text-xs font-semibold text-gray-400 dark:text-gray-300"
+              >Pendientes</span
             >
             <span class="text-base font-semibold"
               >{(totalTareasGlobal - completadas)
@@ -728,7 +745,7 @@
       </div>
       <button
         type="button"
-        class="w-full bg-white text-[#5C42FF] font-semibold text-xs py-3 rounded-xl mt-5 hover:bg-purple-50 transition-colors shadow-xs"
+        class="w-full bg-white dark:bg-[#a4f4cf] text-gray-900 dark:text-black font-semibold text-xs py-3 rounded-xl mt-5 hover:bg-gray-100 dark:hover:bg-[#8fdbb8] transition-colors shadow-xs"
         >Revisión mensual</button
       >
     </div>
@@ -736,10 +753,12 @@
 
   {#if modalEditarAbierto && tareaEnEdicion}
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
+      <button
+        type="button"
+        aria-label="Cerrar modal de edición"
         class="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
         on:click={() => (modalEditarAbierto = false)}
-      ></div>
+      ></button>
       <div
         class="bg-white dark:bg-[#16191D] rounded-3xl border border-[#E9EBF0] dark:border-[#232830] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 p-8 space-y-6 relative text-[#1A1D21] dark:text-[#EDF0F3]"
       >
@@ -771,10 +790,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label
+              for="edit-cliente"
               class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
               >Cliente</label
             >
             <input
+              id="edit-cliente"
               type="text"
               bind:value={tareaEnEdicion.cliente}
               class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none"
@@ -782,10 +803,12 @@
           </div>
           <div>
             <label
+              for="edit-fecha-salida"
               class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
               >Fecha de Salida</label
             >
             <input
+              id="edit-fecha-salida"
               type="date"
               bind:value={tareaEnEdicion.fechaSalida}
               class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
@@ -795,10 +818,12 @@
 
         <div>
           <label
+            for="edit-descripcion"
             class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
             >Descripción General del Trabajo</label
           >
           <input
+            id="edit-descripcion"
             type="text"
             bind:value={tareaEnEdicion.descripcionGeneral}
             class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none"
@@ -808,13 +833,14 @@
         <div class="border-t border-gray-100 dark:border-[#232830] pt-5">
           <div class="flex justify-between items-center mb-3">
             <label
+              for="edit-desglose-placeholder"
               class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
               >Líneas de Production / Cantidades</label
             >
             <button
               type="button"
               on:click={añadirFilaDesgloseEdicion}
-              class="text-xs font-semibold text-[#5C42FF] dark:text-[#9A85FF] bg-purple-50 dark:bg-purple-500/10 px-4 py-2 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+              class="text-xs font-semibold text-gray-900 dark:text-[#a4f4cf] bg-gray-100 dark:bg-[#a4f4cf]/10 hover:bg-gray-200 dark:hover:bg-[#a4f4cf]/20 px-4 py-2 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
             >
               <span class="material-symbols-rounded text-base">add</span> Añadir
               Producto
@@ -856,10 +882,12 @@
         >
           <div>
             <label
+              for="edit-comercial"
               class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
               >Comercial</label
             >
             <select
+              id="edit-comercial"
               bind:value={tareaEnEdicion.comercial}
               class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
             >
@@ -869,10 +897,12 @@
           </div>
           <div>
             <label
+              for="edit-area"
               class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
               >Área de Production</label
             >
             <select
+              id="edit-area"
               bind:value={tareaEnEdicion.area}
               class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
             >
@@ -881,10 +911,12 @@
           </div>
           <div>
             <label
+              for="edit-estado"
               class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
               >Estado del Parte</label
             >
             <select
+              id="edit-estado"
               bind:value={tareaEnEdicion.estado}
               class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
             >
@@ -903,13 +935,16 @@
 
         <div>
           <label
+            for="edit-subcontrata"
             class="text-[10px] font-semibold text-orange-500 uppercase tracking-widest mb-1.5 block flex items-center gap-1"
           >
             <span class="material-symbols-rounded text-sm text-orange-500"
               >handshake</span
-            > Taller Externo (Subcontrata)
+            >
+            Taller Externo (Subcontrata)
           </label>
           <input
+            id="edit-subcontrata"
             type="text"
             bind:value={tareaEnEdicion.subcontrata}
             placeholder="Fabricación interna de Aeroprint"
@@ -929,7 +964,7 @@
           <button
             type="button"
             on:click={guardarEdicion}
-            class="px-6 py-3 bg-[#5C42FF] text-white font-semibold text-xs rounded-full shadow-md shadow-[#5C42FF]/10 cursor-pointer"
+            class="px-6 py-3 bg-gray-900 dark:bg-[#a4f4cf] text-white dark:text-gray-900 font-semibold text-xs rounded-full shadow-md cursor-pointer hover:bg-black dark:hover:bg-white"
             >Guardar Cambios ➔</button
           >
         </div>
@@ -939,10 +974,12 @@
 
   {#if modalEliminarAbierto}
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
+      <button
+        type="button"
+        aria-label="Cerrar modal de confirmación"
         class="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
         on:click={() => (modalEliminarAbierto = false)}
-      ></div>
+      ></button>
       <div
         class="bg-white dark:bg-[#16191D] rounded-3xl border border-[#E9EBF0] dark:border-[#232830] shadow-2xl w-full max-w-md z-10 p-6 space-y-4 text-center text-[#1A1D21] dark:text-[#EDF0F3]"
       >

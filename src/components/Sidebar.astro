@@ -6,17 +6,28 @@ import ThemeSelector from "./ThemeSelector.svelte";
 const { workspace = "produccion" } = Astro.params;
 const pathname = Astro.url.pathname;
 
+const isPathActive = (targetPath: string, strict = false) => {
+  return strict
+    ? pathname === targetPath
+    : pathname === targetPath || pathname.startsWith(targetPath + "/");
+};
+
 // SISTEMA DE LUCES EN ENLACES: Ahora muta de color perfectamente de noche
 const getLinkClass = (targetPath: string, strict = false) => {
   const baseClass =
     "flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all group outline-none select-none";
-  const isActive = strict
-    ? pathname === targetPath
-    : pathname === targetPath || pathname.startsWith(targetPath + "/");
+  const isActive = isPathActive(targetPath, strict);
 
   return isActive
-    ? `${baseClass} text-[#5C42FF] dark:text-[#9A85FF] bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 font-semibold`
-    : `${baseClass} text-gray-400 dark:text-gray-500 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-[#1E2228]`;
+    ? `${baseClass} text-black dark:text-[#a4f4cf] bg-gray-100 dark:bg-[#a4f4cf]/10 font-semibold`
+    : `${baseClass} text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-[#a4f4cf] hover:bg-gray-50 dark:hover:bg-[#1E2228]`;
+};
+
+const getIconStyle = (targetPath: string, strict = false) => {
+  const isActive = isPathActive(targetPath, strict);
+  return isActive
+    ? "font-variation-settings: 'FILL' 1, 'wght' 300;"
+    : "font-variation-settings: 'wght' 300;";
 };
 ---
 
@@ -44,8 +55,8 @@ const getLinkClass = (targetPath: string, strict = false) => {
     <nav class="flex flex-col px-4 pt-2 space-y-1">
       <a href={`/w/${workspace}`} class={getLinkClass(`/w/${workspace}`, true)}>
         <span
-          class="material-symbols-rounded text-lg"
-          style="font-variation-settings: 'wght' 300;">home</span
+          class="material-symbols-rounded text-lg transition-all"
+          style={getIconStyle(`/w/${workspace}`, true)}>home</span
         >
         <span>Inicio</span>
       </a>
@@ -55,8 +66,8 @@ const getLinkClass = (targetPath: string, strict = false) => {
         class={getLinkClass(`/w/${workspace}/tasks`)}
       >
         <span
-          class="material-symbols-rounded text-lg"
-          style="font-variation-settings: 'wght' 300;">assignment</span
+          class="material-symbols-rounded text-lg transition-all"
+          style={getIconStyle(`/w/${workspace}/tasks`)}>assignment</span
         >
         <span>Tareas</span>
       </a>
@@ -66,8 +77,8 @@ const getLinkClass = (targetPath: string, strict = false) => {
         class={getLinkClass(`/w/${workspace}/calendar`)}
       >
         <span
-          class="material-symbols-rounded text-lg"
-          style="font-variation-settings: 'wght' 300;">calendar_today</span
+          class="material-symbols-rounded text-lg transition-all"
+          style={getIconStyle(`/w/${workspace}/calendar`)}>calendar_today</span
         >
         <span>Calendario</span>
       </a>
@@ -77,8 +88,8 @@ const getLinkClass = (targetPath: string, strict = false) => {
         class={getLinkClass(`/w/${workspace}/clients`)}
       >
         <span
-          class="material-symbols-rounded text-lg"
-          style="font-variation-settings: 'wght' 300;">group</span
+          class="material-symbols-rounded text-lg transition-all"
+          style={getIconStyle(`/w/${workspace}/clients`)}>group</span
         >
         <span>Clientes</span>
       </a>
@@ -88,7 +99,7 @@ const getLinkClass = (targetPath: string, strict = false) => {
   <div class="p-4 space-y-4 flex flex-col">
     <a
       href={`/w/${workspace}/nueva-tarea`}
-      class="w-full bg-[#5C42FF] text-white font-semibold text-xs py-3 rounded-xl hover:bg-[#472ee6] transition-all shadow-sm flex items-center justify-center gap-2 outline-none text-center select-none"
+      class="w-full bg-gray-900 dark:bg-black text-[#a4f4cf] font-semibold text-xs py-3 rounded-xl hover:bg-black dark:hover:bg-gray-900 border border-transparent dark:border-[#232830] transition-all shadow-sm flex items-center justify-center gap-2 outline-none text-center select-none"
     >
       <span
         class="material-symbols-rounded text-base"

@@ -4,6 +4,17 @@ import { verifySessionToken } from './utils/auth';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
+
+  // 🧑‍💻 DEV BYPASS: Solo activo en `npm run dev`. En producción (Render) nunca se ejecuta.
+  if (import.meta.env.DEV) {
+    context.locals.user = {
+      email: 'dev@local.dev',
+      name: 'Dev Local',
+      picture: '',
+    };
+    return next();
+  }
+
   const token = context.cookies.get('session_token')?.value;
 
   let user = null;

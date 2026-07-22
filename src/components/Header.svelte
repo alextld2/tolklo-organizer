@@ -70,26 +70,26 @@
 <header
   class="h-20 w-full flex items-center px-10 justify-center relative z-40 bg-[#F6F6F6] dark:bg-[#0E1114] transition-colors duration-200 font-sans"
 >
-  <div class="relative w-full max-w-md">
-    <span
-      class="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center select-none pointer-events-none"
+  <div class="relative w-full max-w-2xl">
+    <div
+      class="w-full flex items-center gap-3 bg-[#F1F3F6] dark:bg-[#1E2228] border border-transparent rounded-2xl pl-5 pr-5 py-3.5 shadow-xs transition-all focus-within:bg-white dark:focus-within:bg-[#16191D] focus-within:border-black dark:focus-within:border-[#a4f4cf]"
     >
       <span
-        class="material-symbols-rounded text-gray-400 dark:text-gray-500 text-lg"
-        style="font-variation-settings: 'wght' 300;"
+        class="material-symbols-rounded text-gray-400 dark:text-gray-500 text-xl transition-all pointer-events-none select-none flex-shrink-0"
+        style="font-variation-settings: 'FILL' {tieneFoco ? 1 : 0}, 'wght' 300;"
       >
-        search
+        tab_search
       </span>
-    </span>
 
-    <input
-      type="text"
-      placeholder="Buscar por nº parte, cliente o trabajo..."
-      bind:value={$busquedaGlobal}
-      on:focus={() => (tieneFoco = true)}
-      on:blur={() => setTimeout(() => (tieneFoco = false), 250)}
-      class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] border border-transparent focus:border-[#5C42FF] dark:focus:border-[#7A62FF] pl-11 pr-4 py-2.5 rounded-2xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none focus:bg-[#F1F3F6] dark:focus:bg-[#1E2228] transition-all placeholder-gray-400/80 dark:placeholder-gray-500 shadow-xs"
-    />
+      <input
+        type="text"
+        placeholder="Buscar por nº parte, cliente o trabajo..."
+        bind:value={$busquedaGlobal}
+        on:focus={() => (tieneFoco = true)}
+        on:blur={() => setTimeout(() => (tieneFoco = false), 250)}
+        class="w-full bg-transparent border-none text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none placeholder-gray-400/80 dark:placeholder-gray-500 flex-1 p-0 m-0 focus:ring-0"
+      />
+    </div>
 
     {#if mostrarResultados}
       <div

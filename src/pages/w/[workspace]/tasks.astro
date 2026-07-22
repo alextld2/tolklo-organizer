@@ -1,24 +1,15 @@
 ---
 // src/pages/w/[workspace]/tasks.astro
 
-// 1. DECLARACIÓN DE ENTORNOS PERMITIDOS PARA EL COMPILADOR
-export async function getStaticPaths() {
-  return [
-    { params: { workspace: 'produccion' } },
-    { params: { workspace: 'escolar' } },
-    { params: { workspace: 'profesional' } },
-  ];
-}
-
-import MainLayout from '../../../layouts/MainLayout.astro';
-import ListaTareas from '../../../components/ListaTareas.svelte';
-import { db, Trabajo, DesgloseTrabajo, eq } from 'astro:db';
+import MainLayout from "../../../layouts/MainLayout.astro";
+import ListaTareas from "../../../components/ListaTareas.svelte";
+import { db, Trabajo, DesgloseTrabajo, eq } from "astro:db";
 
 // 2. CAPTURAMOS EL WORKSPACE DESDE LA URL
 const { workspace } = Astro.params;
 
 if (!workspace) {
-  return Astro.redirect('/w/produccion');
+  return Astro.redirect("/w/produccion");
 }
 
 // 3. CONSULTA RELACIONAL FILTRADA: Traemos solo las filas que corresponden a este espacio
@@ -46,7 +37,7 @@ filasBD.forEach((fila) => {
       fechaSalida: t.fechaSalida,
       area: t.area,
       subcontrata: t.subcontrata,
-      desgloses: [] // Inicializamos el array donde meteremos sus productos
+      desgloses: [], // Inicializamos el array donde meteremos sus productos
     });
   }
 
@@ -54,7 +45,7 @@ filasBD.forEach((fila) => {
   if (d && d.descripcionProducto) {
     tareasAgrupadas.get(t.numParte).desgloses.push({
       descripcionProducto: d.descripcionProducto,
-      cantidad: d.cantidad
+      cantidad: d.cantidad,
     });
   }
 });
@@ -63,10 +54,10 @@ filasBD.forEach((fila) => {
 const trabajosOrdenados = Array.from(tareasAgrupadas.values()).reverse();
 
 // Título dinámico para la pestaña del navegador
-const nombresEspacios = {
-  "produccion": "Imprenta",
-  "escolar": "Agendas Escolares",
-  "profesional": "Agendas Profesionales"
+const nombresEspacios: Record<string, string> = {
+  produccion: "Imprenta",
+  escolar: "Agendas Escolares",
+  profesional: "Agendas Profesionales",
 };
 const tituloPagina = nombresEspacios[workspace] || "Tasks";
 ---

@@ -143,7 +143,7 @@ const meses = [
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
           ></path>
           <path
-            class="text-[#5C42FF] dark:text-[#7A62FF]"
+            class="text-gray-900 dark:text-gray-200"
             stroke-dasharray={`${porcentajeProgreso}, 100`}
             stroke-width="3"
             stroke-linecap="round"
@@ -156,7 +156,7 @@ const meses = [
     </div>
 
     <div
-      class="bg-gradient-to-r from-[#5C42FF] to-[#7A62FF] rounded-3xl p-5 text-white flex justify-between items-center md:col-span-2 overflow-hidden relative"
+      class="bg-gradient-to-r from-gray-900 to-black dark:from-gray-700 dark:to-gray-800 rounded-3xl p-5 text-white flex justify-between items-center md:col-span-2 overflow-hidden relative"
     >
       <div>
         <span
@@ -197,7 +197,7 @@ const meses = [
         </h3>
       </div>
       <div
-        class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"
+        class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 flex items-center justify-center flex-shrink-0"
       >
         <span
           class="material-symbols-rounded text-lg"
@@ -226,9 +226,8 @@ const meses = [
         class="flex items-center gap-4 text-[10px] font-semibold uppercase tracking-wider text-gray-400"
       >
         <div class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-[#5C42FF]"></span> Año Actual ({
-            totales
-          })
+          <span class="w-2 h-2 rounded-full bg-gray-900 dark:bg-gray-200"
+          ></span> Año Actual ({totales})
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-200 dark:bg-emerald-800"
@@ -256,7 +255,7 @@ const meses = [
                   <>
                     <div
                       style={`height: ${alturaBarra}%`}
-                      class="w-1.5 bg-[#5C42FF] dark:bg-[#7A62FF] rounded-t-sm shadow-xs shadow-[#5C42FF]/20 animate-scale-up transition-all duration-500"
+                      class="w-1.5 bg-gray-900 dark:bg-gray-200 rounded-t-sm shadow-xs shadow-gray-900/20 dark:shadow-white/10 animate-scale-up transition-all duration-500"
                       title={`${volumenMes} órdenes registradas`}
                     />
                     <div class="w-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-t-sm h-[20%]" />

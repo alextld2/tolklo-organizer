@@ -1,23 +1,15 @@
 ---
 // src/pages/w/[workspace]/index.astro
-import MainLayout from '../../../layouts/MainLayout.astro';
+import MainLayout from "../../../layouts/MainLayout.astro";
 
 // Si los tienes directamente en la carpeta components, quita "/dashboards"
-import DashboardProduccion from '../../../components/DashboardProduccion.astro';
-import DashboardEscolar from '../../../components/DashboardEscolar.astro';
-import { db, Trabajo, eq } from 'astro:db';
-
-export async function getStaticPaths() {
-  return [
-    { params: { workspace: 'produccion' } },
-    { params: { workspace: 'escolar' } },
-    { params: { workspace: 'profesional' } },
-  ];
-}
+import DashboardProduccion from "../../../components/DashboardProduccion.astro";
+import DashboardEscolar from "../../../components/DashboardEscolar.astro";
+import { db, Trabajo, eq } from "astro:db";
 
 const { workspace } = Astro.params;
 
-// Traemos de la base de datos únicamente los partes del entorno activo
+if (!workspace) return Astro.redirect("/w/produccion");
 const trabajosProximos = await db
   .select()
   .from(Trabajo)
@@ -25,17 +17,29 @@ const trabajosProximos = await db
 ---
 
 <MainLayout title={`Panel de Control — ${workspace.toUpperCase()}`}>
-  
-  {workspace === 'produccion' && (
-    <DashboardProduccion trabajosProximos={trabajosProximos} workspace={workspace} />
-  )}
+  {
+    workspace === "produccion" && (
+      <DashboardProduccion
+        trabajosProximos={trabajosProximos}
+        workspace={workspace}
+      />
+    )
+  }
 
-  {workspace === 'escolar' && (
-    <DashboardEscolar trabajosProximos={trabajosProximos} workspace={workspace} />
-  )}
-  
-  {workspace === 'profesional' && (
-    <div class="p-8 text-center text-gray-400">Panel Profesional en desarrollo...</div>
-  )}
+  {
+    workspace === "escolar" && (
+      <DashboardEscolar
+        trabajosProximos={trabajosProximos}
+        workspace={workspace}
+      />
+    )
+  }
 
+  {
+    workspace === "profesional" && (
+      <div class="p-8 text-center text-gray-400">
+        Panel Profesional en desarrollo...
+      </div>
+    )
+  }
 </MainLayout>

@@ -1,6 +1,7 @@
 // src/pages/api/nueva-tarea.ts
-// Importamos 'RegistroActividad' para el historial de auditoría
 import { db, Trabajo, DesgloseTrabajo, RegistroActividad, eq } from 'astro:db';
+import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 
 // 1. COLOCACIÓN DE LA FUNCIÓN: Herramienta de limpieza formal
 const aTipoTitulo = (texto: string): string => {
@@ -11,15 +12,14 @@ const aTipoTitulo = (texto: string): string => {
     .join(' ');
 };
 
-// 🔥 AÑADIDO: 'locals' en los parámetros para poder capturar al operario real
-export async function POST({ request, locals }) {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
 
     // Validamos campos críticos obligatorios
     if (!body.numParte || !body.workspaceId || !body.cliente || !body.fechaSalida) {
       return new Response(
-        JSON.stringify({ message: 'Por favor, rellena todos los campos marcados con asterisco (*).' }), 
+        JSON.stringify({ message: 'Por favor, rellena todos los campos marcados con asterisco (*).' }),
         { status: 400 }
       );
     }
@@ -32,29 +32,31 @@ export async function POST({ request, locals }) {
 
     if (parteExistente.length > 0) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           code: 'DUPLICATE_NUM_PARTE',
-          message: `El número de parte #${body.numParte} ya está asignado a otro trabajo en el taller. Por favor, revisa el número.` 
-        }), 
+          message: `El número de parte #${body.numParte} ya está asignado a otro trabajo en el taller. Por favor, revisa el número.`
+        }),
         { status: 409 }
       );
     }
 
     const clienteFormateado = aTipoTitulo(body.cliente.trim());
-    const descripcionFormateada = body.descripcionGeneral ? aTipoTitulo(body.descripcionGeneral.trim()) : 'Sin descripción';
     const areaTecnica = body.area || 'Digital';
+    const descripcionFormateada = body.descripcionGeneral
+      ? aTipoTitulo(body.descripcionGeneral.trim())
+      : null;
 
     // 2. APLICACIÓN DE LA FUNCIÓN: Guardamos la cabecera limpia en la tabla máster
     await db.insert(Trabajo).values({
       numParte: Number(body.numParte),
       workspaceId: body.workspaceId,
-      cliente: clienteFormateado, 
-      descripcionGeneral: body.descripcionGeneral ? aTipoTitulo(body.descripcionGeneral.trim()) : null,
+      cliente: clienteFormateado,
+      descripcionGeneral: descripcionFormateada,
       comercial: body.comercial || null,
       diseñador: body.diseñador || null,
       fechaSalida: body.fechaSalida,
-      estado: body.estado || 'Por hacer', // Sincronizado con vuestra nueva matriz de estados
-      area: areaTecnica, 
+      estado: body.estado || 'Por hacer',
+      area: areaTecnica,
       subcontrata: (body.subcontrata && body.subcontrata.trim() !== '') ? aTipoTitulo(body.subcontrata.trim()) : null,
     });
 
@@ -64,9 +66,9 @@ export async function POST({ request, locals }) {
       for (const item of body.desgloses) {
         if (item.descripcionProducto && item.cantidad !== null) {
           await db.insert(DesgloseTrabajo).values({
-            id: Date.now() + index++, // Genera un ID numérico secuencial exacto
+            id: parseInt(crypto.randomUUID().replace(/-/g, '').slice(0, 13), 16), // ID único sin race conditions
             numParte: Number(body.numParte),
-            descripcionProducto: aTipoTitulo(item.descripcionProducto.trim()), 
+            descripcionProducto: aTipoTitulo(item.descripcionProducto.trim()),
             cantidad: Number(item.cantidad)
           });
         }
@@ -74,8 +76,8 @@ export async function POST({ request, locals }) {
     }
 
     // 4. 🔥 REGISTRO DE AUDITORÍA: Estampamos la creación del registro en el log
-    const usuarioActivo = locals.user ? locals.user.nombre : "Alex"; // Captura tu sesión en la demo
-    
+    const usuarioActivo = locals.user?.name || locals.user?.email || 'Sistema';
+
     await db.insert(RegistroActividad).values({
       usuario: usuarioActivo,
       workspaceId: body.workspaceId,
@@ -85,11 +87,12 @@ export async function POST({ request, locals }) {
     });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Error desconocido';
     console.error("❌ ERROR EN API [nueva-tarea]:", error);
     return new Response(
-      JSON.stringify({ message: 'Ha ocurrido un error inesperado en el taller. Inténtalo de nuevo.' }), 
+      JSON.stringify({ message: 'Ha ocurrido un error inesperado en el taller. Inténtalo de nuevo.' }),
       { status: 500 }
     );
   }
-}
+};

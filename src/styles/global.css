@@ -1,12 +1,23 @@
 @import "tailwindcss";
 
+/* 🛡️ SAFELIST TAILWIND v4: Fuerza la generación de clases de color dinámicas usadas en ESTADOS_ESTILOS (constants.ts) y dots del Calendario.
+   Sin esto, el scanner de Vite+Svelte ignora las clases dentro de ternarios JS en tiempo de HMR. */
+/* Clases de fondo / border de ESTADOS_ESTILOS (paleta desaturada monocromática) */
+@source inline("{bg-gray-100,bg-gray-900,bg-white,border-gray-200,border-gray-900,border-white}");
+@source inline("{dark:bg-white,dark:bg-transparent,text-gray-500,text-gray-700,text-white,text-gray-900}");
+@source inline("{dark:text-gray-300,dark:text-gray-400,dark:text-gray-900,dark:border-white}");
+@source inline("{dark:bg-white/5,dark:bg-white/8,dark:border-white/10,dark:border-white/15}");
+/* Dots del Calendario (clases dinámicas de color de estado) */
+@source inline("{bg-indigo-300,bg-indigo-400,bg-amber-300,bg-amber-400,bg-teal-300,bg-rose-300,bg-rose-400,bg-gray-300,bg-gray-500}");
+@source inline("{dark:bg-indigo-400/90,dark:bg-amber-400/90,dark:bg-rose-400/90,dark:bg-gray-500/80,dark:bg-[#a4f4cf]/80}");
+
 /* 1. Importamos Google Sans Flex original directamente desde los servidores de Google */
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..900&display=swap');
 
 @theme {
   /* 2. Le indicamos a Tailwind v4 que aplique la tipografía oficial */
   --font-sans: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  
+
   --color-brand-purple: #7B61FF;
   --color-bg-main: #F6F6F6;
   --color-sidebar-text: #8A8D91;
@@ -18,6 +29,7 @@
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #E2E8F0;
   border-radius: 10px;

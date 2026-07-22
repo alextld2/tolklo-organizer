@@ -338,21 +338,13 @@
     moreModalTrabajos = [];
   }
 
-  // 🎨 Retorna las clases de estilo por color exactas asociadas a cada estado (image_d42d7d.png)
+  // 🎨 Retorna las clases generales de la tarjeta
   function getEstadoClases(estado: string): string {
     const est = (estado || "Por hacer").toLowerCase();
-
-    if (est === "imprimiendo") {
-      return "bg-indigo-50/75 text-indigo-700 border-indigo-200/80 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-900/50";
-    } else if (est === "manipulado") {
-      return "bg-amber-50/75 text-amber-800 border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50";
-    } else if (est === "terminado") {
-      return "bg-emerald-50/75 text-emerald-800 border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/50";
-    } else if (est === "urgente") {
-      return "bg-rose-50/90 text-rose-800 border-rose-200/80 animate-pulse-slow dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50";
+    if (est === "urgente") {
+      return "bg-white dark:bg-[#1E2228] text-gray-900 dark:text-gray-200 border-gray-100 dark:border-[#232830] animate-pulse-slow shadow-sm";
     }
-    // "Por hacer" o por defecto
-    return "bg-white text-slate-700 border-slate-200 dark:bg-[#1a1d24] dark:text-slate-200 dark:border-slate-850/80";
+    return "bg-white dark:bg-[#1E2228] text-gray-900 dark:text-gray-200 border-gray-100 dark:border-[#232830] shadow-sm";
   }
 
   // 🛡️ ACCIONES DEL CONJUNTO TÉCNICO DE TRABAJO (image_d47fd4.png)
@@ -524,6 +516,10 @@
 </svelte:head>
 
 <div class="flex flex-col h-full select-none">
+  <!-- 🛡️ HMR SAFELIST GHOST ELEMENT: Garantiza compilación en caliente perfecta en Vite de colr dinámico -->
+  <div
+    class="hidden bg-[#a4f4cf] bg-indigo-500 bg-amber-500 bg-rose-500 bg-gray-300 dark:bg-gray-600 animate-pulse"
+  ></div>
   <!-- CABECERA DEL CALENDARIO -->
   <div
     class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6"
@@ -541,35 +537,41 @@
         class="flex flex-wrap items-center gap-4 border-l border-slate-200 dark:border-slate-800 pl-0 md:pl-6 pt-2 md:pt-0"
       >
         <div
-          class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wider"
+          class="flex items-center gap-1.5 text-[10px] font-semibold text-gray-800 dark:text-gray-300 uppercase tracking-wider"
         >
-          <span
-            class="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600 bg-white"
+          <span class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-500"
           ></span>
           <span>Por Hacer</span>
         </div>
         <div
-          class="flex items-center gap-1.5 text-[10px] font-semibold text-[#5C42FF] dark:text-indigo-400 uppercase tracking-wider"
+          class="flex items-center gap-1.5 text-[10px] font-semibold text-gray-800 dark:text-gray-300 uppercase tracking-wider"
         >
-          <span class="material-symbols-rounded">print</span>
+          <span
+            class="w-2.5 h-2.5 rounded-full bg-indigo-300 dark:bg-indigo-400"
+          ></span>
           <span>Imprimiendo</span>
         </div>
         <div
-          class="flex items-center gap-1.5 text-[10px] font-semibold text-amber-600 uppercase tracking-wider"
+          class="flex items-center gap-1.5 text-[10px] font-semibold text-gray-800 dark:text-gray-300 uppercase tracking-wider"
         >
-          <span class="material-symbols-rounded">package_2</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-300 dark:bg-amber-400"
+          ></span>
           <span>Manipulado</span>
         </div>
         <div
-          class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 uppercase tracking-wider"
+          class="flex items-center gap-1.5 text-[10px] font-semibold text-gray-800 dark:text-gray-300 uppercase tracking-wider"
         >
-          <span class="material-symbols-rounded">check_circle</span>
+          <span
+            class="w-2.5 h-2.5 rounded-full bg-teal-300 dark:bg-[#a4f4cf]/80"
+          ></span>
           <span>Terminado</span>
         </div>
         <div
-          class="flex items-center gap-1.5 text-[10px] font-semibold text-rose-600 uppercase tracking-wider animate-pulse"
+          class="flex items-center gap-1.5 text-[10px] font-semibold text-gray-800 dark:text-gray-300 uppercase tracking-wider"
         >
-          <span class="material-symbols-rounded">bolt</span>
+          <span
+            class="w-2.5 h-2.5 rounded-full bg-rose-300 dark:bg-rose-400 animate-pulse-slow"
+          ></span>
           <span>Urgente</span>
         </div>
       </div>
@@ -590,6 +592,7 @@
       >
         <button
           on:click={prevMonth}
+          aria-label="Mes anterior"
           class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
         >
           <svg
@@ -615,6 +618,7 @@
 
         <button
           on:click={nextMonth}
+          aria-label="Mes siguiente"
           class="p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
         >
           <svg
@@ -646,7 +650,7 @@
         ? 'bg-rose-50/95 dark:bg-[#2e1517]/95 text-rose-800 dark:text-rose-300 border-rose-150 dark:border-rose-900/50'
         : ''}
       {toastType === 'info'
-        ? 'bg-blue-50/95 dark:bg-[#121c38]/95 text-[#5C42FF] dark:text-[#9A85FF] border-[#5C42FF]/30 dark:border-blue-900/50'
+        ? 'bg-gray-100/95 dark:bg-gray-900/95 text-gray-900 dark:text-[#a4f4cf] border-gray-200 dark:border-[#a4f4cf]/30'
         : ''}"
     >
       <div class="flex items-center gap-2.5">
@@ -656,7 +660,7 @@
             ? 'text-emerald-500'
             : ''} {toastType === 'error' ? 'text-rose-500' : ''} {toastType ===
           'info'
-            ? 'text-[#5C42FF] dark:text-[#9A85FF]'
+            ? 'text-gray-900 dark:text-[#a4f4cf]'
             : ''}"
         >
           {toastType === "success" ? "check_circle" : ""}
@@ -706,7 +710,7 @@
         class="bg-white dark:bg-[#131519] border-r border-b border-slate-200 dark:border-slate-800/80 p-2.5 flex flex-col gap-1.5 min-h-[110px] transition-all relative
             {currentMonth ? '' : 'opacity-35'}
             {estaMarcadoDrag
-          ? 'ring-2 ring-indigo-500 bg-indigo-50/25 dark:bg-indigo-950/15 border-indigo-500 scale-[1.01]'
+          ? 'ring-2 ring-gray-900 dark:ring-[#a4f4cf] bg-gray-50 dark:bg-[#a4f4cf]/5 border-gray-900 dark:border-[#a4f4cf] scale-[1.01]'
           : ''}
             {estaExpandido ? 'overflow-visible z-50' : 'overflow-hidden'}"
       >
@@ -714,7 +718,7 @@
         <div class="flex justify-start mb-0.5">
           {#if esHoy(day, month, year)}
             <span
-              class="text-xs font-semibold bg-[#5C42FF] text-white w-6 h-6 rounded-lg flex items-center justify-center shadow-sm select-none"
+              class="text-xs font-semibold bg-gray-900 dark:bg-[#a4f4cf] text-white dark:text-black w-6 h-6 rounded-lg flex items-center justify-center shadow-sm select-none"
             >
               {day}
             </span>
@@ -744,12 +748,30 @@
                 trabajo.estado,
               )}"
             >
-              <div class="flex items-center justify-between gap-1">
-                <span
-                  class="text-[9.5px] font-semibold font-mono tracking-tight shrink-0"
-                >
-                  #{trabajo.numParte}
-                </span>
+              <div class="flex items-center justify-between gap-1 min-w-0">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span
+                    class="w-2 h-2 shrink-0 rounded-full {(
+                      trabajo.estado || 'por hacer'
+                    ).toLowerCase() === 'imprimiendo'
+                      ? 'bg-indigo-300 dark:bg-indigo-400/90'
+                      : (trabajo.estado || 'por hacer').toLowerCase() ===
+                          'manipulado'
+                        ? 'bg-amber-300 dark:bg-amber-400/90'
+                        : (trabajo.estado || 'por hacer').toLowerCase() ===
+                            'terminado'
+                          ? 'bg-teal-300 dark:bg-[#a4f4cf]/80'
+                          : (trabajo.estado || 'por hacer').toLowerCase() ===
+                              'urgente'
+                            ? 'bg-rose-300 dark:bg-rose-400/90 animate-pulse-slow'
+                            : 'bg-gray-300 dark:bg-gray-500/80'}"
+                  ></span>
+                  <span
+                    class="text-[9.5px] font-semibold font-mono tracking-tight shrink-0 text-gray-600 dark:text-gray-400"
+                  >
+                    #{trabajo.numParte}
+                  </span>
+                </div>
                 <span
                   class="text-[9px] font-semibold px-1.5 py-0.5 bg-white/40 dark:bg-black/20 rounded-md truncate max-w-[85px] capitalize"
                 >
@@ -766,7 +788,7 @@
           {#if trabajosEnCelda.length > 2}
             <button
               on:click|stopPropagation={() => toggleExpander(celdaFecha)}
-              class="btn-expand-tasks w-full text-center py-1 bg-indigo-50/60 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/50 text-[#5C42FF] dark:text-[#7d68ff] text-[9.5px] font-semibold rounded-lg transition-colors cursor-pointer mt-auto"
+              class="btn-expand-tasks w-full text-center py-1 bg-gray-100 hover:bg-gray-200 dark:bg-[#1E2228] dark:hover:bg-[#232830] text-gray-900 dark:text-[#a4f4cf] text-[9.5px] font-semibold rounded-lg transition-colors cursor-pointer mt-auto"
             >
               + {trabajosEnCelda.length - 2} más
             </button>
@@ -776,14 +798,14 @@
         <!-- 🛡️ NUEVO CONTENEDOR FLOTANTE INTERACTIVO DE EXPANSION DIRECTA (Bypass de Modales) -->
         {#if estaExpandido}
           <div
-            class="absolute inset-x-0 top-0 min-h-full h-auto bg-white dark:bg-[#16181c] border-2 border-[#5C42FF] shadow-2xl rounded-2xl p-2.5 flex flex-col gap-1.5 z-[999] expanded-cell-container animate-scale-up"
+            class="absolute inset-x-0 top-0 min-h-full h-auto bg-white dark:bg-[#16181c] border-2 border-gray-900 dark:border-[#a4f4cf] shadow-2xl rounded-2xl p-2.5 flex flex-col gap-1.5 z-[999] expanded-cell-container animate-scale-up"
           >
             <!-- Header interior de la celda expandida -->
             <div
               class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-1"
             >
               <span
-                class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500"
+                class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:border-slate-500"
                 >Planificadas ({day})</span
               >
               <button
@@ -810,11 +832,30 @@
                   )}"
                 >
                   <div class="flex items-center justify-between gap-1">
-                    <span
-                      class="text-[9.5px] font-semibold font-mono tracking-tight shrink-0"
-                    >
-                      #{trabajo.numParte}
-                    </span>
+                    <div class="flex items-center gap-1.5">
+                      <span
+                        class="w-2.5 h-2.5 shrink-0 rounded-full {(
+                          trabajo.estado || 'por hacer'
+                        ).toLowerCase() === 'imprimiendo'
+                          ? 'bg-indigo-300 dark:bg-indigo-400/90'
+                          : (trabajo.estado || 'por hacer').toLowerCase() ===
+                              'manipulado'
+                            ? 'bg-amber-300 dark:bg-amber-400/90'
+                            : (trabajo.estado || 'por hacer').toLowerCase() ===
+                                'terminado'
+                              ? 'bg-teal-300 dark:bg-[#a4f4cf]/80'
+                              : (
+                                    trabajo.estado || 'por hacer'
+                                  ).toLowerCase() === 'urgente'
+                                ? 'bg-rose-300 dark:bg-rose-400/90 animate-pulse-slow'
+                                : 'bg-gray-300 dark:bg-gray-500/80'}"
+                      ></span>
+                      <span
+                        class="text-[10px] font-semibold font-mono tracking-tight shrink-0 text-gray-600 dark:text-gray-400"
+                      >
+                        #{trabajo.numParte}
+                      </span>
+                    </div>
                     <span
                       class="text-[9px] font-semibold px-1.5 py-0.5 bg-white/40 dark:bg-black/20 rounded-md truncate max-w-[85px] capitalize"
                     >
@@ -836,12 +877,21 @@
   <!-- DRAWER / DETALLES DEL PARTE SELECCIONADO (Apertura lateral premium con barra técnica) -->
   {#if selectedTrabajo}
     <div
-      on:click={closeDetails}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Detalle del parte"
       class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-end z-[99999] animate-fade-in"
     >
+      <button
+        type="button"
+        aria-label="Cerrar panel de detalles"
+        on:click={closeDetails}
+        class="absolute inset-0 w-full h-full cursor-default"
+      ></button>
       <div
+        role="presentation"
         on:click|stopPropagation
-        class="w-full max-w-lg bg-white dark:bg-[#16181c] h-full shadow-2xl p-8 flex flex-col gap-6 overflow-y-auto animate-slide-left"
+        class="w-full max-w-lg bg-white dark:bg-[#16181c] h-full shadow-2xl p-8 flex flex-col gap-6 overflow-y-auto animate-slide-left relative z-10"
       >
         <!-- Cabecera -->
         <div
@@ -850,16 +900,34 @@
           <div>
             <div class="flex items-center gap-2">
               <span
-                class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 font-mono"
+                class="text-xs font-semibold text-gray-600 dark:text-gray-400 font-mono"
                 >PARTE #{selectedTrabajo.numParte}</span
               >
-              <span
-                class="text-[9px] font-semibold px-2 py-0.5 rounded-md uppercase {getEstadoClases(
-                  selectedTrabajo.estado,
-                )}"
-              >
-                {selectedTrabajo.estado || "Por hacer"}
-              </span>
+              <div class="flex items-center gap-1.5 ml-2">
+                <span
+                  class="w-2.5 h-2.5 shrink-0 rounded-full {(
+                    selectedTrabajo.estado || 'por hacer'
+                  ).toLowerCase() === 'imprimiendo'
+                    ? 'bg-indigo-300 dark:bg-indigo-400/90'
+                    : (selectedTrabajo.estado || 'por hacer').toLowerCase() ===
+                        'manipulado'
+                      ? 'bg-amber-300 dark:bg-amber-400/90'
+                      : (
+                            selectedTrabajo.estado || 'por hacer'
+                          ).toLowerCase() === 'terminado'
+                        ? 'bg-teal-300 dark:bg-[#a4f4cf]/80'
+                        : (
+                              selectedTrabajo.estado || 'por hacer'
+                            ).toLowerCase() === 'urgente'
+                          ? 'bg-rose-300 dark:bg-rose-400/90 animate-pulse-slow'
+                          : 'bg-gray-300 dark:bg-gray-500/80'}"
+                ></span>
+                <span
+                  class="text-[9px] font-bold text-gray-900 dark:text-white uppercase"
+                >
+                  {selectedTrabajo.estado || "Por hacer"}
+                </span>
+              </div>
             </div>
             <h2
               class="text-xl font-semibold text-slate-800 dark:text-slate-100 mt-1"
@@ -926,7 +994,7 @@
                       >{d.descripcionProducto}</span
                     >
                     <span
-                      class="font-mono text-[#5C42FF] dark:text-[#7d68ff] bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md"
+                      class="font-mono text-gray-900 dark:text-[#a4f4cf] bg-gray-100 dark:bg-[#a4f4cf]/10 px-2 py-0.5 rounded-md"
                       >{d.cantidad.toLocaleString()} uds</span
                     >
                   </div>
@@ -1051,7 +1119,7 @@
 
             <button
               on:click={() => cambiarEstado("Terminado")}
-              class="w-full py-3 bg-[#5C42FF] hover:bg-[#4730D9] text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              class="w-full py-3 bg-gray-900 dark:bg-[#a4f4cf] hover:bg-black dark:hover:bg-white text-white dark:text-gray-900 font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg
                 class="w-4 h-4"
@@ -1120,12 +1188,21 @@
   <!-- MODAL / VISTA DE TAREAS ACUMULADAS ("+ X más") -->
   {#if showMoreModal}
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Tareas adicionales del día"
       class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[99999] animate-fade-in"
-      on:click={cerrarMasTareas}
     >
+      <button
+        type="button"
+        aria-label="Cerrar modal de tareas"
+        on:click={cerrarMasTareas}
+        class="absolute inset-0 w-full h-full cursor-default"
+      ></button>
       <div
-        class="bg-white dark:bg-[#16181c] w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-4 max-h-[85vh] overflow-hidden animate-scale-up"
+        role="presentation"
         on:click|stopPropagation
+        class="bg-white dark:bg-[#16181c] w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-4 max-h-[85vh] overflow-hidden animate-scale-up relative z-10"
       >
         <div
           class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3"
@@ -1171,11 +1248,29 @@
               )}"
             >
               <div class="flex items-center justify-between gap-1">
-                <span
-                  class="text-[10px] font-semibold font-mono tracking-tight shrink-0"
-                >
-                  #{trabajo.numParte}
-                </span>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span
+                    class="w-2.5 h-2.5 shrink-0 rounded-full {(
+                      trabajo.estado || 'por hacer'
+                    ).toLowerCase() === 'imprimiendo'
+                      ? 'bg-indigo-300 dark:bg-indigo-400/90'
+                      : (trabajo.estado || 'por hacer').toLowerCase() ===
+                          'manipulado'
+                        ? 'bg-amber-300 dark:bg-amber-400/90'
+                        : (trabajo.estado || 'por hacer').toLowerCase() ===
+                            'terminado'
+                          ? 'bg-teal-300 dark:bg-[#a4f4cf]/80'
+                          : (trabajo.estado || 'por hacer').toLowerCase() ===
+                              'urgente'
+                            ? 'bg-rose-300 dark:bg-rose-400/90 animate-pulse-slow'
+                            : 'bg-gray-300 dark:bg-gray-500/80'}"
+                  ></span>
+                  <span
+                    class="text-[10px] font-semibold font-mono tracking-tight shrink-0 text-gray-600 dark:text-gray-400"
+                  >
+                    #{trabajo.numParte}
+                  </span>
+                </div>
                 <span
                   class="text-[9.5px] font-semibold px-2 py-0.5 bg-white/40 dark:bg-black/20 rounded-md capitalize"
                 >

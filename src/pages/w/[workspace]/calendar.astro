@@ -1,24 +1,15 @@
 ---
 // src/pages/w/[workspace]/calendar.astro
 
-// 1. DECLARACIÓN DE ENTORNOS PERMITIDOS PARA EL COMPILADOR
-export async function getStaticPaths() {
-  return [
-    { params: { workspace: 'produccion' } },
-    { params: { workspace: 'escolar' } },
-    { params: { workspace: 'profesional' } },
-  ];
-}
-
-import MainLayout from '../../../layouts/MainLayout.astro';
-import Calendario from '../../../components/Calendario.svelte';
-import { db, Trabajo, DesgloseTrabajo, eq } from 'astro:db';
+import MainLayout from "../../../layouts/MainLayout.astro";
+import Calendario from "../../../components/Calendario.svelte";
+import { db, Trabajo, DesgloseTrabajo, eq } from "astro:db";
 
 // 2. CAPTURAMOS EL WORKSPACE DESDE LA URL
 const { workspace } = Astro.params;
 
 if (!workspace) {
-  return Astro.redirect('/w/produccion');
+  return Astro.redirect("/w/produccion");
 }
 
 // 3. EXTRAEMOS LOS REGISTROS REALES FILTRADOS POR WORKSPACE
@@ -33,28 +24,28 @@ const desglosesDB = await db
     id: DesgloseTrabajo.id,
     numParte: DesgloseTrabajo.numParte,
     descripcionProducto: DesgloseTrabajo.descripcionProducto,
-    cantidad: DesgloseTrabajo.cantidad
+    cantidad: DesgloseTrabajo.cantidad,
   })
   .from(DesgloseTrabajo)
   .innerJoin(Trabajo, eq(DesgloseTrabajo.numParte, Trabajo.numParte))
   .where(eq(Trabajo.workspaceId, workspace));
 
 // Título dinámico adaptado para la pestaña del navegador
-const nombresEspacios = {
-  "produccion": "Producción Industrial",
-  "escolar": "Agendas Escolares",
-  "profesional": "Agendas Profesionales"
+const nombresEspacios: Record<string, string> = {
+  produccion: "Producción Industrial",
+  escolar: "Agendas Escolares",
+  profesional: "Agendas Profesionales",
 };
 const tituloPagina = nombresEspacios[workspace] || "Calendario";
 ---
 
 <MainLayout title={`Calendario de Entregas // ${tituloPagina}`}>
   <div class="flex flex-col h-full bg-[#fcfdfe] dark:bg-[#0c0d0f] p-6">
-    <Calendario 
-  client:load 
-  transition:persist="calendario-produccion"
-  trabajosIniciales={trabajosDB} 
-  desglosesIniciales={desglosesDB} 
-/>
+    <Calendario
+      client:load
+      transition:persist="calendario-produccion"
+      trabajosIniciales={trabajosDB}
+      desglosesIniciales={desglosesDB}
+    />
   </div>
 </MainLayout>
