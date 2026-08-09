@@ -1,6 +1,5 @@
-// src/pages/api/search.json.ts
 import type { APIRoute } from 'astro';
-import { db, Trabajo, like, or, eq, and, sql } from 'astro:db'; // 🔥 IMPORTANTE: Importamos 'sql'
+import { db, Trabajo, like, or, eq, and, sql } from 'astro:db';
 
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
@@ -17,19 +16,12 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    // Condiciones base de texto para el buscador
+    // Condiciones base de texto para el buscador (cliente, descripción o numParte)
     const condicionesBusqueda = [
-      like(Trabajo.cliente, `%${query}%`),
-      like(Trabajo.descripcionGeneral, `%${query}%`)
+      like(Trabajo.numParte, `%${queryClean}%`),
+      like(Trabajo.cliente, `%${queryClean}%`),
+      like(Trabajo.descripcionGeneral, `%${queryClean}%`)
     ];
-
-    // 🔥 LA MEJORA INTELIGENTE: Si escribe números, transformamos el entero a texto en la query.
-    // Esto permite que al escribir "18" o "181" encuentre "1817", "1818", "1819"... de forma parcial.
-    if (!isNaN(Number(queryClean))) {
-      condicionesBusqueda.push(
-        like(sql`cast(${Trabajo.numParte} as text)`, `%${queryClean}%`)
-      );
-    }
 
     // Ejecutamos una sola query controlada filtrando por el entorno activo
     const resultados = await db

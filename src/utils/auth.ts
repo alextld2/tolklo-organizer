@@ -9,22 +9,21 @@ if (!JWT_SECRET && !import.meta.env.DEV) {
 }
 
 const SECRET = JWT_SECRET || 'dev-secret-local-no-usar-en-produccion';
+const MASTER_KEY = crypto.createHash('sha256').update(SECRET).digest();
 
 /**
- * Genera un token de sesión cifrado dinámicamente con AES-256-CBC
+ * Genera un token de sesión cifrado dinámicamente con AES-256-CBC de alta velocidad
  */
 export function createSessionToken(user: { email: string; name: string; picture: string }): string {
-  const salt = crypto.randomBytes(16); // 🔐 Salt aleatorio único por sesión
-  const key = crypto.scryptSync(SECRET, salt, 32);
   const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  const cipher = crypto.createCipheriv('aes-256-cbc', MASTER_KEY, iv);
 
   const payload = JSON.stringify({ user, exp: Date.now() + 1000 * 60 * 60 * 24 * 7 }); // 7 días
   let encrypted = cipher.update(payload, 'utf8', 'hex');
   encrypted += cipher.final('hex');
 
-  // Formato: salt:iv:encrypted (los 3 componentes necesarios para descifrar)
-  return `${salt.toString('hex')}:${iv.toString('hex')}:${encrypted}`;
+  // Formato rápido v2: v2:iv:encrypted
+  return `v2:${iv.toString('hex')}:${encrypted}`;
 }
 
 /**
@@ -33,12 +32,23 @@ export function createSessionToken(user: { email: string; name: string; picture:
 export function verifySessionToken(token: string): { email: string; name: string; picture: string } | null {
   try {
     const parts = token.split(':');
-    // Soporte para tokens nuevos (3 partes: salt:iv:data) y legacy (2 partes: iv:data)
+    
+    // ⚡ V2 súper veloz sin bloqueo de CPU
+    if (parts.length === 3 && parts[0] === 'v2') {
+      const iv = Buffer.from(parts[1], 'hex');
+      const decipher = crypto.createDecipheriv('aes-256-cbc', MASTER_KEY, iv);
+      let decrypted = decipher.update(parts[2], 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      const parsed = JSON.parse(decrypted);
+      if (parsed.exp < Date.now()) return null;
+      return parsed.user;
+    }
+
+    // Soporte legacy para tokens antiguos (salt:iv:data o iv:data)
     let saltHex: string, ivHex: string, encrypted: string;
     if (parts.length === 3) {
       [saltHex, ivHex, encrypted] = parts;
     } else if (parts.length === 2) {
-      // Tokens legacy sin salt variable — usar salt estático de compatibilidad
       saltHex = 'legacy';
       [ivHex, encrypted] = parts;
     } else {

@@ -28,13 +28,13 @@ if (user) {
     />
   </head>
   <body
-    class="bg-[#F6F6F6] dark:bg-[#0E1114] min-h-screen flex items-center justify-center p-4 font-sans transition-colors duration-200"
+    class="bg-background text-foreground min-h-screen flex items-center justify-center p-4 font-sans transition-colors duration-200"
   >
     <div
-      class="w-full max-w-md bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-[32px] p-10 shadow-2xl shadow-gray-200/40 dark:shadow-none text-center flex flex-col items-center animate-scale-up"
+      class="w-full max-w-md bg-card text-card-foreground border border-border rounded-3xl p-10 shadow-2xl text-center flex flex-col items-center animate-scale-up"
     >
       <div
-        class="mb-8 flex items-center gap-1 text-2xl font-semibold tracking-tighter text-[#1A1D21] dark:text-[#EDF0F3] select-none"
+        class="mb-8 flex items-center gap-1 text-2xl font-semibold tracking-tighter select-none"
       >
         <img
           src="/logotipo-app.svg"
@@ -45,21 +45,21 @@ if (user) {
 
       <div class="mb-8">
         <h2
-          class="text-xl font-semibold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]"
+          class="text-xl font-semibold tracking-tight text-foreground"
         >
           Bienvenido de nuevo
         </h2>
-        <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1.5">
+        <p class="text-xs font-medium text-muted-foreground mt-1.5">
           Identifícate con tu cuenta corporativa de Google para acceder a los
           talleres de producción.
         </p>
       </div>
 
-      <!-- 🔥 CORREGIDO: Se añade 'data-astro-reload' para forzar navegación real del navegador -->
+      <!-- 🔥 Botón con estética Shadcn Button -->
       <a
         href="/api/auth/google"
         data-astro-reload
-        class="w-full py-3.5 px-6 bg-white dark:bg-[#1E2228] hover:bg-gray-50 dark:hover:bg-gray-800 text-[#1A1D21] dark:text-[#EDF0F3] font-semibold text-xs rounded-full border border-[#E9EBF0] dark:border-[#232830] shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer select-none outline-none focus:ring-2 focus:ring-[#5C42FF]/20"
+        class="w-full py-3.5 px-6 bg-card hover:bg-accent text-foreground font-semibold text-xs rounded-xl border border-input shadow-xs transition-all flex items-center justify-center gap-3 cursor-pointer select-none outline-none focus:ring-2 focus:ring-ring"
       >
         <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
           <path
@@ -83,7 +83,7 @@ if (user) {
       </a>
 
       <div
-        class="mt-12 flex items-center gap-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-t border-gray-50 dark:border-[#232830] pt-5 w-full justify-center"
+        class="mt-12 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-t border-border pt-5 w-full justify-center"
       >
         <span
           class="material-symbols-rounded text-xs"

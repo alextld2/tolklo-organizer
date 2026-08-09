@@ -1,9 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { busquedaGlobal } from "../stores/busqueda";
+  import SidebarTrigger from "./SidebarTrigger.svelte";
+  import { FolderSearch } from "lucide-svelte";
+  import * as Kbd from "./ui/kbd";
 
   let tieneFoco = false;
   let workspace = "produccion";
+  let searchInput: HTMLInputElement;
 
   // Almacenes de respuesta de la API SQL
   let clientesEncontrados: any[] = [];
@@ -19,23 +23,41 @@
     if (segmentos[1] === "w" && segmentos[2]) {
       workspace = segmentos[2];
     }
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInput?.focus();
+        searchInput?.select();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeydown);
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+    };
   });
 
-  // Escucha reactiva para interrogar al motor SQL predictor
+  let searchTimer: ReturnType<typeof setTimeout>;
+
+  // Escucha reactiva con debounce de 250ms para optimizar la red y la base de datos
   $: {
     const query = $busquedaGlobal.trim();
+    clearTimeout(searchTimer);
     if (query.length >= 2) {
-      fetch(
-        `/api/search.json?q=${encodeURIComponent(query)}&workspace=${workspace}`,
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          clientesEncontrados = data.clientes || [];
-          tareasEncontradas = data.tareas || [];
-        })
-        .catch((err) =>
-          console.error("Error en la consulta del buscador:", err),
-        );
+      searchTimer = setTimeout(() => {
+        fetch(
+          `/api/search.json?q=${encodeURIComponent(query)}&workspace=${workspace}`,
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            clientesEncontrados = data.clientes || [];
+            tareasEncontradas = data.tareas || [];
+          })
+          .catch((err) =>
+            console.error("Error en la consulta del buscador:", err),
+          );
+      }, 250);
     } else {
       clientesEncontrados = [];
       tareasEncontradas = [];
@@ -51,9 +73,12 @@
     desglosesTarea = []; // Limpieza inicial
 
     try {
-      const res = await fetch(`/api/desglose-tarea?numParte=${tarea.numParte}`);
+      const res = await fetch(
+        `/api/tarea/${encodeURIComponent(tarea.numParte)}.json`,
+      );
       if (res.ok) {
-        desglosesTarea = await res.json();
+        const data = await res.json();
+        desglosesTarea = data.desgloses || [];
       }
     } catch (e) {
       console.error("Error cargando líneas de producción:", e);
@@ -68,48 +93,50 @@
 </script>
 
 <header
-  class="h-20 w-full flex items-center px-10 justify-center relative z-40 bg-[#F6F6F6] dark:bg-[#0E1114] transition-colors duration-200 font-sans"
+  class="h-14 w-full flex items-center justify-between px-4 sm:px-6 relative z-40 bg-transparent transition-colors duration-200 font-sans flex-shrink-0"
 >
-  <div class="relative w-full max-w-2xl">
+  <SidebarTrigger />
+
+  <div class="relative w-full max-w-md ml-auto">
     <div
-      class="w-full flex items-center gap-3 bg-[#F1F3F6] dark:bg-[#1E2228] border border-transparent rounded-2xl pl-5 pr-5 py-3.5 shadow-xs transition-all focus-within:bg-white dark:focus-within:bg-[#16191D] focus-within:border-black dark:focus-within:border-[#a4f4cf]"
+      class="w-full flex items-center gap-2.5 bg-card border border-border/70 rounded-xl px-3.5 py-1.5 shadow-2xs transition-all focus-within:border-ring focus-within:ring-1 focus-within:ring-ring"
     >
-      <span
-        class="material-symbols-rounded text-gray-400 dark:text-gray-500 text-xl transition-all pointer-events-none select-none flex-shrink-0"
-        style="font-variation-settings: 'FILL' {tieneFoco ? 1 : 0}, 'wght' 300;"
-      >
-        tab_search
-      </span>
+      <FolderSearch class="w-4 h-4 text-muted-foreground flex-shrink-0" />
 
       <input
+        bind:this={searchInput}
         type="text"
         placeholder="Buscar por nº parte, cliente o trabajo..."
         bind:value={$busquedaGlobal}
         on:focus={() => (tieneFoco = true)}
         on:blur={() => setTimeout(() => (tieneFoco = false), 250)}
-        class="w-full bg-transparent border-none text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none placeholder-gray-400/80 dark:placeholder-gray-500 flex-1 p-0 m-0 focus:ring-0"
+        class="w-full bg-transparent border-none text-xs font-medium text-foreground outline-none placeholder:text-muted-foreground flex-1 p-0 m-0 focus:ring-0"
       />
+
+      <Kbd.Group>
+        <Kbd.Root>Ctrl + K</Kbd.Root>
+      </Kbd.Group>
     </div>
 
     {#if mostrarResultados}
       <div
-        class="absolute top-[calc(100%+8px)] left-0 right-0 bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-2xl shadow-xl p-4 z-50 animate-scale-up text-[#1A1D21] dark:text-[#EDF0F3] transition-colors max-h-[380px] overflow-y-auto"
+        class="absolute top-[calc(100%+8px)] left-0 right-0 bg-popover text-popover-foreground border border-border rounded-2xl shadow-xl p-4 z-50 animate-scale-up transition-colors max-h-[380px] overflow-y-auto"
       >
         {#if clientesEncontrados.length > 0}
           <div class="mb-4">
             <p
-              class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 block"
+              class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 block"
             >
               Clientes
             </p>
             <div class="space-y-1">
               {#each clientesEncontrados as cl}
                 <div
-                  class="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-colors group"
+                  class="flex items-center justify-between p-2 rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors group"
                 >
                   <div class="flex items-center gap-3">
                     <span
-                      class="material-symbols-rounded text-gray-400 dark:text-gray-500 text-lg"
+                      class="material-symbols-rounded text-muted-foreground text-lg"
                       style="font-variation-settings: 'wght' 300;">badge</span
                     >
                     <span class="text-xs font-semibold">{cl.nombre}</span>
@@ -118,7 +145,7 @@
                     href="/w/{workspace}/clients?search={encodeURIComponent(
                       cl.nombre,
                     )}"
-                    class="text-[10px] font-semibold text-[#5C42FF] dark:text-[#9A85FF] bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 px-2.5 py-1 rounded-lg border border-[#5C42FF]/10 hover:bg-[#5C42FF]/10 transition-colors"
+                    class="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary/20 transition-colors"
                   >
                     Ver Ficha
                   </a>
@@ -131,27 +158,25 @@
         {#if tareasEncontradas.length > 0}
           <div>
             <p
-              class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 block"
+              class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 block"
             >
               Órdenes de producción
             </p>
             <div class="space-y-1">
               {#each tareasEncontradas as trabajo}
                 <div
-                  class="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-colors group"
+                  class="flex items-center justify-between p-2 rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors group"
                 >
                   <div class="flex items-center gap-3 min-w-0">
                     <div
-                      class="w-2 h-2 rounded-full bg-[#5C42FF] dark:bg-[#7A62FF] flex-shrink-0"
+                      class="w-2 h-2 rounded-full bg-primary flex-shrink-0"
                     ></div>
                     <div class="flex flex-col min-w-0">
-                      <span
-                        class="text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3]"
-                      >
+                      <span class="text-xs font-semibold text-foreground">
                         #{trabajo.numParte} — {trabajo.cliente}
                       </span>
                       <span
-                        class="text-[10px] font-medium text-gray-400 dark:text-gray-500 truncate"
+                        class="text-[10px] font-medium text-muted-foreground truncate"
                       >
                         {trabajo.descripcionGeneral || "Sin descripción"}
                       </span>
@@ -161,7 +186,7 @@
                   <button
                     type="button"
                     on:click={() => abrirResumen(trabajo)}
-                    class="text-gray-400 dark:text-gray-500 hover:text-[#5C42FF] dark:hover:text-[#9A85FF] p-1 rounded-lg transition-colors cursor-pointer outline-none flex items-center justify-center"
+                    class="text-muted-foreground hover:text-primary p-1 rounded-lg transition-colors cursor-pointer outline-none flex items-center justify-center"
                   >
                     <span
                       class="material-symbols-rounded text-lg"
@@ -176,9 +201,7 @@
         {/if}
 
         {#if clientesEncontrados.length === 0 && tareasEncontradas.length === 0}
-          <p
-            class="text-xs text-center py-4 text-gray-400 dark:text-gray-500 font-medium"
-          >
+          <p class="text-xs text-center py-4 text-muted-foreground font-medium">
             No hay resultados para la búsqueda.
           </p>
         {/if}
@@ -189,25 +212,33 @@
 
 {#if modalAbierto && tareaSeleccionada}
   <div
-    class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-sans animate-fade-in"
-    on:click={cerrarModal}
+    class="fixed inset-0 z-[300] flex items-center justify-center p-4 font-sans"
   >
+    <button
+      type="button"
+      aria-label="Cerrar modal"
+      class="absolute inset-0 bg-background/80 backdrop-blur-xs animate-fade-in border-none cursor-default"
+      on:click={cerrarModal}
+    ></button>
+
     <div
-      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-8 w-full max-w-2xl shadow-2xl relative text-[#1A1D21] dark:text-[#EDF0F3] transition-colors max-h-[90vh] overflow-y-auto animate-scale-up"
-      on:click|stopPropagation
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-8 w-full max-w-2xl shadow-2xl relative transition-colors max-h-[90vh] overflow-y-auto animate-scale-up z-10"
     >
       <div class="flex justify-between items-start mb-2">
         <div class="flex items-center gap-2">
           <span
-            class="px-2.5 py-1 bg-black text-white dark:bg-[#1E2228] dark:border dark:border-gray-800 text-[10px] font-semibold rounded-lg tracking-wider uppercase"
+            class="px-2.5 py-1 bg-primary text-primary-foreground text-[10px] font-semibold rounded-lg tracking-wider uppercase"
           >
             Parte #{tareaSeleccionada.numParte}
           </span>
           <span
             class="px-2.5 py-1 text-[10px] font-semibold rounded-lg uppercase tracking-wider border
             {tareaSeleccionada.estado === 'En proceso'
-              ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
-              : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'}"
+              ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+              : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}"
           >
             {tareaSeleccionada.estado}
           </span>
@@ -215,24 +246,24 @@
         <button
           type="button"
           on:click={cerrarModal}
-          class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-all cursor-pointer flex items-center justify-center outline-none border border-transparent"
+          class="text-muted-foreground hover:text-foreground p-1.5 rounded-xl hover:bg-accent transition-all cursor-pointer flex items-center justify-center outline-none border border-transparent"
         >
           <span class="material-symbols-rounded text-lg">close</span>
         </button>
       </div>
 
       <h2
-        class="text-3xl font-semibold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3] uppercase mb-6"
+        class="text-3xl font-semibold tracking-tight text-foreground uppercase mb-6"
       >
         {tareaSeleccionada.cliente}
       </h2>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div
-          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-muted/60 border border-border p-3 rounded-xl"
         >
           <div
-            class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"
+            class="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"
           >
             <span
               class="material-symbols-rounded text-lg"
@@ -241,21 +272,20 @@
           </div>
           <div class="min-w-0 flex flex-col">
             <span
-              class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none"
+              class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest leading-none"
               >Comercial</span
             >
-            <span
-              class="text-xs font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate"
+            <span class="text-xs font-semibold mt-1 text-foreground truncate"
               >{tareaSeleccionada.comercial || "Sin asignar"}</span
             >
           </div>
         </div>
 
         <div
-          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-muted/60 border border-border p-3 rounded-xl"
         >
           <div
-            class="w-9 h-9 rounded-lg bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-white flex items-center justify-center flex-shrink-0"
+            class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0"
           >
             <span
               class="material-symbols-rounded text-lg"
@@ -264,21 +294,20 @@
           </div>
           <div class="min-w-0 flex flex-col">
             <span
-              class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none"
+              class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest leading-none"
               >Área</span
             >
-            <span
-              class="text-xs font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate"
+            <span class="text-xs font-semibold mt-1 text-foreground truncate"
               >{tareaSeleccionada.area}</span
             >
           </div>
         </div>
 
         <div
-          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-muted/60 border border-border p-3 rounded-xl"
         >
           <div
-            class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0"
+            class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0"
           >
             <span
               class="material-symbols-rounded text-lg"
@@ -287,7 +316,7 @@
           </div>
           <div class="min-w-0 flex flex-col">
             <span
-              class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none"
+              class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest leading-none"
               >Diseñador</span
             >
             <span
@@ -298,10 +327,10 @@
         </div>
 
         <div
-          class="flex items-center gap-3 bg-[#F6F6F6] dark:bg-[#1E2228]/60 border border-[#E9EBF0]/60 dark:border-[#232830] p-3 rounded-xl"
+          class="flex items-center gap-3 bg-muted/60 border border-border p-3 rounded-xl"
         >
           <div
-            class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"
+            class="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"
           >
             <span
               class="material-symbols-rounded text-lg"
@@ -310,11 +339,10 @@
           </div>
           <div class="min-w-0 flex flex-col">
             <span
-              class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none"
+              class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest leading-none"
               >Entrega</span
             >
-            <span
-              class="text-xs font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] truncate"
+            <span class="text-xs font-semibold mt-1 text-foreground truncate"
               >{tareaSeleccionada.fechaSalida}</span
             >
           </div>
@@ -323,7 +351,7 @@
 
       <div class="mt-6">
         <p
-          class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 flex items-center gap-1"
+          class="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1"
         >
           <span
             class="material-symbols-rounded text-sm"
@@ -332,7 +360,7 @@
           <span>Descripción General del Pedido</span>
         </p>
         <div
-          class="bg-white dark:bg-[#1A1D21] p-4 rounded-2xl border border-[#E9EBF0] dark:border-[#232830] text-xs font-medium text-gray-600 dark:text-gray-400 leading-relaxed shadow-xs"
+          class="bg-card p-4 rounded-2xl border border-border text-xs font-medium text-muted-foreground leading-relaxed shadow-xs"
         >
           {tareaSeleccionada.descripcionGeneral ||
             "Sin descripción general redactada."}
@@ -341,7 +369,7 @@
 
       <div class="mt-6">
         <p
-          class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-1"
+          class="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1"
         >
           <span
             class="material-symbols-rounded text-sm"
@@ -350,31 +378,26 @@
           <span>Desglose Técnico de Producción</span>
         </p>
         <div
-          class="border border-gray-100 dark:border-[#232830] rounded-2xl overflow-hidden bg-white dark:bg-[#1A1D21] shadow-xs"
+          class="border border-border rounded-2xl overflow-hidden bg-card shadow-xs"
         >
           <table class="w-full text-left border-collapse">
             <thead>
               <tr
-                class="bg-gray-50/80 dark:bg-[#1E2228]/40 border-b border-gray-100 dark:border-[#232830] text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                class="bg-muted/50 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wider"
               >
                 <th class="p-3.5 pl-5">Producto / Subtarea</th>
                 <th class="p-3.5 text-right pr-5">Cantidad</th>
               </tr>
             </thead>
-            <tbody
-              class="divide-y divide-gray-50 dark:divide-[#232830]/40 text-xs text-[#1A1D21] dark:text-[#EDF0F3]"
-            >
+            <tbody class="divide-y divide-border text-xs text-foreground">
               {#each desglosesTarea as subItem}
-                <tr
-                  class="hover:bg-gray-50/30 dark:hover:bg-gray-800/20 transition-colors"
-                >
-                  <td
-                    class="p-3.5 pl-5 font-medium text-gray-600 dark:text-gray-400"
+                <tr class="hover:bg-accent/40 transition-colors">
+                  <td class="p-3.5 pl-5 font-medium text-muted-foreground"
                     >{subItem.descripcionProducto}</td
                   >
                   <td class="p-3.5 text-right pr-5">
                     <span
-                      class="bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] px-2.5 py-1 rounded-md font-semibold text-[11px] border border-purple-100/40 dark:border-transparent"
+                      class="bg-primary/10 text-primary px-2.5 py-1 rounded-md font-semibold text-[11px] border border-primary/20"
                     >
                       {subItem.cantidad.toLocaleString()} uds
                     </span>
@@ -384,7 +407,7 @@
                 <tr>
                   <td
                     colspan="2"
-                    class="p-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center justify-center gap-2"
+                    class="p-8 text-center text-muted-foreground flex flex-col items-center justify-center gap-2"
                   >
                     <span
                       class="material-symbols-rounded text-3xl opacity-30"
@@ -404,15 +427,13 @@
 
       {#if tareaSeleccionada.subcontrata}
         <div
-          class="mt-4 flex items-center gap-2 px-4 py-3 bg-orange-500/5 border border-orange-500/10 rounded-2xl"
+          class="mt-4 flex items-center gap-2 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl"
         >
           <span
-            class="material-symbols-rounded text-orange-500 text-base"
+            class="material-symbols-rounded text-amber-600 text-base"
             style="font-variation-settings: 'wght' 300;">handshake</span
           >
-          <p
-            class="text-[11px] font-medium text-orange-600 dark:text-orange-400"
-          >
+          <p class="text-[11px] font-medium text-amber-600">
             Esta orden se encuentra externalizada en: <span
               class="font-semibold uppercase"
               >{tareaSeleccionada.subcontrata}</span

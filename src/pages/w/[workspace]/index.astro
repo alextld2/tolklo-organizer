@@ -1,19 +1,14 @@
 ---
 // src/pages/w/[workspace]/index.astro
 import MainLayout from "../../../layouts/MainLayout.astro";
-
-// Si los tienes directamente en la carpeta components, quita "/dashboards"
 import DashboardProduccion from "../../../components/DashboardProduccion.astro";
 import DashboardEscolar from "../../../components/DashboardEscolar.astro";
-import { db, Trabajo, eq } from "astro:db";
+import { getTrabajosWorkspace } from "../../../lib/db-utils";
 
 const { workspace } = Astro.params;
 
 if (!workspace) return Astro.redirect("/w/produccion");
-const trabajosProximos = await db
-  .select()
-  .from(Trabajo)
-  .where(eq(Trabajo.workspaceId, workspace));
+const trabajosProximos = await getTrabajosWorkspace(workspace);
 ---
 
 <MainLayout title={`Panel de Control — ${workspace.toUpperCase()}`}>

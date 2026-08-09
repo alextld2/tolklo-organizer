@@ -255,14 +255,14 @@
 </script>
 
 <div
-  class="w-full font-sans flex flex-col h-full space-y-5 text-[#1A1D21] dark:text-[#EDF0F3]"
+  class="w-full font-sans flex flex-col h-full space-y-5 text-foreground"
 >
   <!-- BOTÓN DE RETORNO AL PANEL GLOBAL -->
   <div class="flex items-center flex-shrink-0 pt-1">
     <button
       type="button"
       on:click={() => window.history.back()}
-      class="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#5C42FF] dark:hover:text-[#9A85FF] transition-colors group cursor-pointer bg-transparent border-none p-0 outline-none"
+      class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors group cursor-pointer bg-transparent border-none p-0 outline-none"
     >
       <span
         class="material-symbols-rounded text-lg transition-transform group-hover:-translate-x-1"
@@ -272,16 +272,15 @@
     </button>
   </div>
 
-  <!-- CABECERA DE SOCIO COMERCIAL (CON SU ETIQUETA DE TRANSICIÓN ASIGNADA) -->
+  <!-- CABECERA DE SOCIO COMERCIAL -->
   <div
     style="view-transition-name: cliente-card-{clienteSlug};"
-    class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] p-6 rounded-3xl shadow-xs flex-shrink-0 transition-colors"
+    class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card border border-border p-6 rounded-3xl shadow-xs flex-shrink-0 transition-colors"
   >
     <div class="flex items-center gap-4">
-      <!-- 🔥 ICONO MÓRFICO: Le asignamos su propia firma visual única -->
       <div
         style="view-transition-name: cliente-avatar-{clienteSlug};"
-        class="w-14 h-14 rounded-2xl flex items-center justify-center font-semibold text-xl border shadow-xs flex-shrink-0 transition-transform hover:scale-105 duration-300 {avatar.bg} {avatar.texto} {avatar.borde}"
+        class="w-14 h-14 rounded-2xl flex items-center justify-center font-semibold text-xl border border-primary/20 bg-primary/10 text-primary shadow-xs flex-shrink-0 transition-transform hover:scale-105 duration-300"
       >
         {nombreCliente.charAt(0).toUpperCase()}
       </div>
@@ -289,17 +288,17 @@
       <div class="space-y-0.5">
         <div class="flex items-center gap-2.5 flex-wrap">
           <h1
-            class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight"
+            class="text-2xl font-semibold text-foreground tracking-tight"
           >
             {nombreCliente}
           </h1>
           <span
-            class="bg-[#5C42FF]/5 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] text-[9px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-md border border-[#5C42FF]/10 dark:border-transparent"
+            class="bg-primary/10 text-primary text-[9px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-md border border-primary/20"
           >
             Aeroprint Partner
           </span>
         </div>
-        <p class="text-xs font-medium text-gray-400 dark:text-gray-500">
+        <p class="text-xs font-medium text-muted-foreground">
           Cuenta corporativa activa en el gestor de asignaciones de taller.
         </p>
       </div>
@@ -310,7 +309,7 @@
       <button
         type="button"
         on:click={abrirModalDirecciones}
-        class="bg-[#5C42FF]/5 hover:bg-[#4a32e0]/10 text-[#5C42FF] px-5 py-3 rounded-2xl font-semibold text-xs tracking-wide transition-all flex items-center gap-2 cursor-pointer border-none h-[49px] self-center"
+        class="bg-primary/10 hover:bg-primary/20 text-primary px-5 py-3 rounded-2xl font-semibold text-xs tracking-wide transition-all flex items-center gap-2 cursor-pointer border border-primary/20 h-[49px] self-center"
       >
         <span class="material-symbols-rounded text-base">location_on</span>
         <span>Direcciones</span>
@@ -318,14 +317,14 @@
 
       <!-- MÉTRICA TOTAL TIPOGRÁFICA -->
       <div
-        class="bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-[#232830] px-6 py-2.5 rounded-2xl flex flex-col items-end justify-center transition-colors h-[49px] justify-center"
+        class="bg-muted border border-border px-6 py-2.5 rounded-2xl flex flex-col items-end justify-center transition-colors h-[49px]"
       >
         <span
-          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none"
+          class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest leading-none"
           >Historial Total</span
         >
         <span
-          class="text-base font-semibold mt-1 text-[#1A1D21] dark:text-[#EDF0F3] tabular-nums leading-none"
+          class="text-base font-semibold mt-1 text-foreground tabular-nums leading-none"
         >
           {totalTrabajosHistoricos.toString().padStart(2, "0")} órdenes
         </span>
@@ -336,7 +335,7 @@
   <!-- SELECTOR DE ANNALES CRONOLÓGICOS -->
   {#if añosDisponibles.length > 1}
     <div
-      class="flex items-center gap-1.5 flex-shrink-0 bg-gray-100/60 dark:bg-[#16191D] p-1 rounded-xl w-fit border border-[#E9EBF0] dark:border-[#232830] transition-colors"
+      class="flex items-center gap-1.5 flex-shrink-0 bg-muted p-1 rounded-xl w-fit border border-border transition-colors"
     >
       {#each añosDisponibles as año}
         <button
@@ -344,8 +343,8 @@
           on:click={() => (añoSeleccionado = año)}
           class="px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer relative overflow-hidden duration-200
                  {añoSeleccionado === año
-            ? 'bg-[#5C42FF] text-white shadow-md shadow-[#5C42FF]/20 scale-102'
-            : 'text-gray-400 dark:text-gray-500 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] hover:bg-gray-200/40 dark:hover:bg-[#1E2228]'}"
+            ? 'bg-primary text-primary-foreground shadow-md scale-102 font-semibold'
+            : 'text-muted-foreground hover:text-foreground hover:bg-card'}"
         >
           {año}
         </button>
@@ -360,13 +359,13 @@
 
       <div
         in:fly={{ y: 16, duration: 300, delay: i * 40, easing: cubicOut }}
-        class="bg-white dark:bg-[#16191D] border rounded-2xl flex flex-col shadow-xs overflow-hidden transition-all duration-300 transform walk-in-animation
+        class="bg-card text-card-foreground border rounded-2xl flex flex-col shadow-xs overflow-hidden transition-all duration-300 transform walk-in-animation
           {estaAbierto
-          ? 'border-[#5C42FF] ring-1 ring-[#5C42FF]/20 dark:ring-[#9A85FF]/20 bg-gray-50/20 dark:bg-[#1E2228]/10'
-          : 'border-[#E9EBF0] dark:border-[#232830]'}
+          ? 'border-primary ring-1 ring-ring bg-muted/30'
+          : 'border-border'}
           {trabajo.estado === 'Terminado' && !estaAbierto
-          ? 'opacity-55 dark:opacity-45 bg-gray-50/40 dark:bg-[#111418]/20'
-          : 'hover:shadow-md hover:-translate-y-0.5 dark:hover:bg-[#1E2228]/20'}"
+          ? 'opacity-60 bg-muted/40'
+          : 'hover:shadow-md hover:-translate-y-0.5 hover:bg-accent/20'}"
       >
         <!-- FILA DE INFORMACIÓN PRINCIPAL -->
         <div

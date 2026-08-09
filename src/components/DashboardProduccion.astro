@@ -1,6 +1,7 @@
 ---
 // src/components/DashboardProduccion.astro
 import OrdenesActivas from "./OrdenesActivas.svelte";
+import ChartBarLabel from "./ui/chart/chart-bar-label.svelte";
 
 const { trabajosProximos, workspace } = Astro.props;
 
@@ -36,9 +37,10 @@ const porcentajeProgreso =
   totales > 0 ? Math.round((terminados / totales) * 100) : 0;
 
 // ==========================================
-// 📊 PROCESAMIENTO DEL GRÁFICO MENSUAL DINÁMICO
+// 📊 PROCESAMIENTO DEL GRÁFICO MENSUAL
 // ==========================================
 const volumenMensualActual = Array(12).fill(0);
+
 const mesesNombresLargos = [
   "Enero",
   "Febrero",
@@ -55,19 +57,34 @@ const mesesNombresLargos = [
 ];
 
 trabajosProximos.forEach((t) => {
-  if (t.fechaSalida && t.fechaSalida.includes("-")) {
-    // Rompemos por string para blindar el conteo frente a desajustes de franja horaria del servidor
-    const mesIndex = parseInt(t.fechaSalida.split("-")[1], 10) - 1;
-    if (mesIndex >= 0 && mesIndex < 12) {
-      volumenMensualActual[mesIndex]++;
-    }
+  if (!t.fechaSalida) return;
+  const str = String(t.fechaSalida).trim();
+  let mesIndex = -1;
+
+  if (str.includes("-")) {
+    const parts = str.split("-");
+    mesIndex =
+      parts[0].length === 4
+        ? parseInt(parts[1], 10) - 1 // YYYY-MM-DD
+        : parseInt(parts[1], 10) - 1; // DD-MM-YYYY
+  } else if (str.includes("/")) {
+    const parts = str.split("/");
+    mesIndex =
+      parts[0].length === 4
+        ? parseInt(parts[1], 10) - 1
+        : parseInt(parts[1], 10) - 1;
+  } else {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) mesIndex = d.getMonth();
   }
+
+  if (mesIndex >= 0 && mesIndex < 12) volumenMensualActual[mesIndex]++;
 });
 
-// Calculamos el mes récord para escalar las alturas vectoriales de las barras
-const maxVolumen = Math.max(...volumenMensualActual, 1);
+const partesAñoActual = volumenMensualActual.reduce((a, b) => a + b, 0);
 
-let mejorMesIdx = 5; // Junio como valor por defecto histórico si la base de datos está a cero
+// Mes récord
+let mejorMesIdx = 0;
 let maxMesVolumen = 0;
 volumenMensualActual.forEach((v, idx) => {
   if (v > maxMesVolumen) {
@@ -75,14 +92,11 @@ volumenMensualActual.forEach((v, idx) => {
     mejorMesIdx = idx;
   }
 });
-
 const nombreMejorMes =
   maxMesVolumen > 0 ? mesesNombresLargos[mejorMesIdx] : "Sin registros";
 const puntosMejorMes = maxMesVolumen;
 
-// ==========================================
-// 🛠️ FILTRADO EN TIEMPO REAL PARA "ACTIVIDAD DE MÁQUINAS"
-// ==========================================
+// Filtrado actividad máquinas
 const maquinasEnActividad = trabajosProximos.filter((t) =>
   estadosActivos.includes(t.estado),
 );
@@ -103,30 +117,26 @@ const meses = [
 ];
 ---
 
-<div
-  class="space-y-6 w-full animate-fade-in font-sans text-[#1A1D21] dark:text-[#EDF0F3]"
->
+<div class="space-y-6 w-full animate-fade-in font-sans text-foreground">
   <div class="mb-5">
-    <h1
-      class="text-3xl font-semibold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]"
-    >
+    <h1 class="text-3xl font-semibold tracking-tight text-foreground">
       {saludo}, {user ? user.name : "compañero"}.
     </h1>
-    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1">
+    <p class="text-xs font-medium text-muted-foreground mt-1">
       Indica el flujo operativo de producción actual y los marcadores generales.
     </p>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
     <div
-      class="bg-white dark:bg-[#16191D] rounded-3xl p-5 flex items-center justify-between transition-colors"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-5 flex items-center justify-between transition-colors shadow-xs"
     >
       <div class="space-y-1">
         <span
-          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block"
+          class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest block"
           >Progreso de Año</span
         >
-        <h3 class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3]">
+        <h3 class="text-2xl font-semibold text-foreground">
           {porcentajeProgreso}%
         </h3>
       </div>
@@ -136,14 +146,14 @@ const meses = [
       >
         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
           <path
-            class="text-gray-100 dark:text-gray-800"
+            class="text-muted"
             stroke-width="3"
             stroke="currentColor"
             fill="none"
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
           ></path>
           <path
-            class="text-gray-900 dark:text-gray-200"
+            class="text-primary"
             stroke-dasharray={`${porcentajeProgreso}, 100`}
             stroke-width="3"
             stroke-linecap="round"
@@ -156,11 +166,11 @@ const meses = [
     </div>
 
     <div
-      class="bg-gradient-to-r from-gray-900 to-black dark:from-gray-700 dark:to-gray-800 rounded-3xl p-5 text-white flex justify-between items-center md:col-span-2 overflow-hidden relative"
+      class="bg-primary text-primary-foreground rounded-3xl p-5 flex justify-between items-center md:col-span-2 overflow-hidden relative shadow-md"
     >
       <div>
         <span
-          class="text-[9px] font-semibold uppercase tracking-widest text-white/70 block leading-none"
+          class="text-[9px] font-semibold uppercase tracking-widest text-primary-foreground/70 block leading-none"
           >Partes Totales</span
         >
         <h3 class="text-4xl font-semibold mt-2">
@@ -168,36 +178,34 @@ const meses = [
         </h3>
       </div>
       <div
-        class="text-right border-l border-white/10 pl-6 h-10 flex flex-col justify-center"
+        class="text-right border-l border-primary-foreground/20 pl-6 h-10 flex flex-col justify-center"
       >
         <span
-          class="text-[9px] font-semibold uppercase tracking-widest text-white/60 block leading-none"
+          class="text-[9px] font-semibold uppercase tracking-widest text-primary-foreground/70 block leading-none"
           >Mejor Mes</span
         >
         <span class="text-xs font-semibold mt-1 capitalize"
           >{nombreMejorMes}
-          <span class="opacity-70 font-normal">({puntosMejorMes} Partes)</span
+          <span class="opacity-80 font-normal">({puntosMejorMes} Partes)</span
           ></span
         >
       </div>
     </div>
 
     <div
-      class="bg-white dark:bg-[#16191D] rounded-3xl p-5 flex items-center justify-between transition-colors"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-5 flex items-center justify-between transition-colors shadow-xs"
     >
       <div class="space-y-0.5">
         <span
-          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none"
+          class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest block leading-none"
           >En cola activa</span
         >
-        <h3
-          class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] mt-1"
-        >
+        <h3 class="text-2xl font-semibold text-foreground mt-1">
           {enColaActiva.toString().padStart(2, "0")}
         </h3>
       </div>
       <div
-        class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 flex items-center justify-center flex-shrink-0"
+        class="w-9 h-9 rounded-xl bg-muted text-foreground flex items-center justify-center flex-shrink-0"
       >
         <span
           class="material-symbols-rounded text-lg"
@@ -208,71 +216,12 @@ const meses = [
     </div>
   </div>
 
-  <div class="bg-white dark:bg-[#16191D] rounded-3xl p-6 transition-colors">
-    <div
-      class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 mb-6"
-    >
-      <div>
-        <h3
-          class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight"
-        >
-          Comparativa de Volumen Mensual
-        </h3>
-        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
-          Relación cuantitativa de partes registrados a lo largo del año actual.
-        </p>
-      </div>
-      <div
-        class="flex items-center gap-4 text-[10px] font-semibold uppercase tracking-wider text-gray-400"
-      >
-        <div class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-gray-900 dark:bg-gray-200"
-          ></span> Año Actual ({totales})
-        </div>
-        <div class="flex items-center gap-1.5">
-          <span class="w-2 h-2 rounded-full bg-emerald-200 dark:bg-emerald-800"
-          ></span> Base Limpia
-        </div>
-      </div>
-    </div>
-
-    <div
-      class="h-44 w-full flex items-end justify-between px-4 pt-2 relative border-b border-gray-100 dark:border-[#232830]/60"
-    >
-      {
-        meses.map((mes, i) => {
-          const volumenMes = volumenMensualActual[i];
-          // Calculamos de forma matemática la altura porcentual de la barra
-          const alturaBarra = (volumenMes / maxVolumen) * 100;
-
-          return (
-            <div
-              class="flex flex-col items-center gap-2 flex-1 group"
-              key={mes}
-            >
-              <div class="w-full flex items-end justify-center gap-1 h-32 relative">
-                {volumenMes > 0 ? (
-                  <>
-                    <div
-                      style={`height: ${alturaBarra}%`}
-                      class="w-1.5 bg-gray-900 dark:bg-gray-200 rounded-t-sm shadow-xs shadow-gray-900/20 dark:shadow-white/10 animate-scale-up transition-all duration-500"
-                      title={`${volumenMes} órdenes registradas`}
-                    />
-                    <div class="w-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-t-sm h-[20%]" />
-                  </>
-                ) : (
-                  <div class="w-1.5 bg-emerald-200 dark:bg-[#1E2228]/40 rounded-t-sm h-1" />
-                )}
-              </div>
-              <span class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">
-                {mes}
-              </span>
-            </div>
-          );
-        })
-      }
-    </div>
-  </div>
+  <ChartBarLabel
+    datos={volumenMensualActual}
+    meses={meses}
+    totales={partesAñoActual}
+    client:load
+  />
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2">
@@ -284,15 +233,13 @@ const meses = [
     </div>
 
     <div
-      class="bg-white dark:bg-[#16191D] rounded-3xl p-6 flex flex-col transition-colors"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-6 flex flex-col transition-colors shadow-xs"
     >
       <div class="mb-4">
-        <h3
-          class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight"
-        >
+        <h3 class="text-sm font-semibold text-foreground tracking-tight">
           Actividad de Máquinas
         </h3>
-        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+        <p class="text-[11px] text-muted-foreground mt-0.5">
           Monitoreo en tiempo real de los lotes activos en el taller.
         </p>
       </div>
@@ -304,22 +251,22 @@ const meses = [
           maquinasEnActividad.length > 0 ? (
             maquinasEnActividad.map((t) => (
               <div
-                class="p-3 bg-gray-50 dark:bg-[#1E2228]/40 border border-gray-100 dark:border-[#232830] rounded-xl flex items-center justify-between gap-3 animate-fade-in"
+                class="p-3 bg-muted/50 border border-border rounded-xl flex items-center justify-between gap-3 animate-fade-in"
                 key={t.numParte}
               >
                 <div class="flex flex-col min-w-0">
-                  <span class="text-gray-700 dark:text-gray-300 truncate font-semibold">
+                  <span class="text-foreground truncate font-semibold">
                     Lote #{t.numParte} — Área {t.area}
                   </span>
-                  <span class="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-0.5 truncate uppercase">
+                  <span class="text-[10px] text-muted-foreground font-medium mt-0.5 truncate uppercase">
                     {t.cliente} // {t.descripcionGeneral || "Sin desglose"}
                   </span>
                 </div>
                 <span
                   class={`px-2 py-0.5 text-[9px] rounded font-semibold uppercase flex-shrink-0 tracking-wider border
-                ${t.estado === "Urgente" ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-100 dark:border-red-500/20 animate-pulse" : ""}
-                ${t.estado === "Imprimiendo" ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20" : ""}
-                ${t.estado === "Manipulado" ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20" : ""}
+                ${t.estado === "Urgente" ? "bg-destructive/10 text-destructive border-destructive/20 animate-pulse" : ""}
+                ${t.estado === "Imprimiendo" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" : ""}
+                ${t.estado === "Manipulado" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : ""}
               `}
                 >
                   {t.estado === "Imprimiendo" ? "En curso" : t.estado}
@@ -327,7 +274,7 @@ const meses = [
               </div>
             ))
           ) : (
-            <div class="h-full flex flex-col items-center justify-center text-center py-10 text-gray-400 dark:text-gray-500 space-y-2">
+            <div class="h-full flex flex-col items-center justify-center text-center py-10 text-muted-foreground space-y-2">
               <span class="material-symbols-rounded text-2xl opacity-40 animate-pulse">
                 precision_manufacturing
               </span>

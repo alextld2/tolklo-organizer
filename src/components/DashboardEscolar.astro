@@ -12,24 +12,24 @@ const enMaquetacion = trabajosProximos.filter(
 ).length;
 ---
 
-<div class="space-y-6 w-full animate-fade-in font-sans">
+<div class="space-y-6 w-full animate-fade-in font-sans text-foreground">
   <div class="mb-2">
     <h1
-      class="text-3xl font-semibold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]"
+      class="text-3xl font-semibold tracking-tight text-foreground"
     >
       Campañas de Agendas Escolares
     </h1>
-    <p class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1">
+    <p class="text-xs font-medium text-muted-foreground mt-1">
       Gestión de centros educativos, orlas y lotes de diseño editorial.
     </p>
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
     <div
-      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors"
     >
       <div
-        class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"
+        class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"
       >
         <span
           class="material-symbols-rounded text-2xl"
@@ -38,11 +38,11 @@ const enMaquetacion = trabajosProximos.filter(
       </div>
       <div>
         <span
-          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none"
+          class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest block leading-none"
           >Colegios Contratados</span
         >
         <h3
-          class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] mt-1.5"
+          class="text-2xl font-semibold text-foreground mt-1.5"
         >
           {trabajosProximos.length.toString().padStart(2, "0")}
         </h3>
@@ -50,10 +50,10 @@ const enMaquetacion = trabajosProximos.filter(
     </div>
 
     <div
-      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors"
     >
       <div
-        class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"
+        class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"
       >
         <span
           class="material-symbols-rounded text-2xl"
@@ -62,7 +62,7 @@ const enMaquetacion = trabajosProximos.filter(
       </div>
       <div>
         <span
-          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none"
+          class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest block leading-none"
           >Portadas en Revisión</span
         >
         <h3
@@ -74,10 +74,10 @@ const enMaquetacion = trabajosProximos.filter(
     </div>
 
     <div
-      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors sm:col-span-2 lg:col-span-1"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-5 flex items-center gap-4 shadow-xs transition-colors sm:col-span-2 lg:col-span-1"
     >
       <div
-        class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-[#5C42FF]/10 text-[#5C42FF] dark:text-[#9A85FF] flex items-center justify-center flex-shrink-0"
+        class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0"
       >
         <span
           class="material-symbols-rounded text-2xl"
@@ -86,11 +86,11 @@ const enMaquetacion = trabajosProximos.filter(
       </div>
       <div>
         <span
-          class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest block leading-none"
+          class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest block leading-none"
           >En Maquetación</span
         >
         <h3
-          class="text-2xl font-semibold text-[#5C42FF] dark:text-[#9A85FF] mt-1.5"
+          class="text-2xl font-semibold text-primary mt-1.5"
         >
           {enMaquetacion.toString().padStart(2, "0")}
         </h3>
@@ -108,51 +108,51 @@ const enMaquetacion = trabajosProximos.filter(
     </div>
 
     <div
-      class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-6 flex flex-col shadow-xs transition-colors"
+      class="bg-card text-card-foreground border border-border rounded-3xl p-6 flex flex-col shadow-xs transition-colors"
     >
       <div class="mb-4">
         <h3
-          class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight"
+          class="text-sm font-semibold text-foreground tracking-tight"
         >
           Hitos de Campaña
         </h3>
-        <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+        <p class="text-[11px] text-muted-foreground mt-0.5">
           Control de entregas críticas antes del inicio del curso.
         </p>
       </div>
 
       <div class="space-y-3 flex-1 overflow-y-auto text-xs font-semibold">
         <div
-          class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between"
+          class="p-3 bg-muted/50 border border-border rounded-xl flex items-center justify-between"
         >
-          <span class="text-gray-600 dark:text-gray-400"
+          <span class="text-foreground"
             >Fotografías de alumnos</span
           >
           <span
-            class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] rounded font-semibold uppercase"
+            class="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[9px] rounded font-semibold uppercase"
             >Listo</span
           >
         </div>
         <div
-          class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between"
+          class="p-3 bg-muted/50 border border-border rounded-xl flex items-center justify-between"
         >
-          <span class="text-gray-600 dark:text-gray-400"
+          <span class="text-foreground"
             >Pruebas de color retiradas</span
           >
           <span
-            class="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] rounded font-semibold uppercase"
+            class="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[9px] rounded font-semibold uppercase"
             >90%</span
           >
         </div>
         <div
-          class="p-3 bg-gray-50 dark:bg-[#1E2228]/50 border border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-between"
+          class="p-3 bg-muted/50 border border-border rounded-xl flex items-center justify-between"
         >
-          <span class="text-gray-600 dark:text-gray-400"
+          <span class="text-foreground"
             >Cierre de imprenta (Lote A)</span
           >
           <span
-            class="px-2 py-0.5 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] rounded font-semibold uppercase"
-            >12 Jul</span
+            class="px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[9px] rounded font-semibold uppercase"
+            >En curso</span
           >
         </div>
       </div>

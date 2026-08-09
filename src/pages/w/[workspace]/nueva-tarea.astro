@@ -11,9 +11,9 @@ export const prerender = false;
 // Al ser SSR, capturamos el parámetro del workspace directamente en tiempo real de la URL
 const { workspace } = Astro.params;
 
-// Solicitamos el histórico a Turso EN VIVO en cada carga de pantalla
-const todos = await db.select().from(Trabajo);
-const clientesExistentes = [...new Set(todos.map((t) => t.cliente))];
+// Solicitamos únicamente los campos requeridos a Turso EN VIVO
+const todos = await db.select({ numParte: Trabajo.numParte, cliente: Trabajo.cliente }).from(Trabajo);
+const clientesExistentes = [...new Set(todos.map((t) => t.cliente).filter(Boolean))];
 
 // LÓGICA AUTOINCREMENTAL DINÁMICA SIN CONGELAR
 const añoActual = new Date().getFullYear().toString().slice(-2);

@@ -3,7 +3,7 @@
 
 import MainLayout from "../../../layouts/MainLayout.astro";
 import DirectorioClientes from "../../../components/DirectorioClientes.svelte";
-import { db, Trabajo, eq } from "astro:db";
+import { getTrabajosWorkspace } from "../../../lib/db-utils";
 
 const { workspace } = Astro.params;
 
@@ -11,10 +11,7 @@ if (!workspace) {
   return Astro.redirect("/w/produccion");
 }
 
-const todosLosTrabajos = await db
-  .select()
-  .from(Trabajo)
-  .where(eq(Trabajo.workspaceId, workspace));
+const todosLosTrabajos = await getTrabajosWorkspace(workspace);
 
 const mapeoClientes = new Map<string, typeof todosLosTrabajos>();
 

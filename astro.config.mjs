@@ -3,6 +3,11 @@ import svelte from '@astrojs/svelte';
 import db from '@astrojs/db';
 import tailwindVite from '@tailwindcss/vite';
 import node from '@astrojs/node'; // 1. Importamos el adaptador de Node
+import path from 'node:path';
+
+if (!process.env.ASTRO_DATABASE_FILE && !process.env.ASTRO_DB_REMOTE_URL) {
+  process.env.ASTRO_DATABASE_FILE = 'file:./local.db';
+}
 
 // https://astro.build/config
 export default defineConfig({
@@ -17,5 +22,14 @@ export default defineConfig({
   integrations: [svelte(), db()],
   vite: {
     plugins: [tailwindVite()],
+    optimizeDeps: {
+      include: ['lucide-svelte', 'bits-ui', 'clsx', 'tailwind-merge']
+    },
+    resolve: {
+      alias: {
+        '$lib': path.resolve('./src/lib'),
+        '@': path.resolve('./src')
+      }
+    }
   },
 });

@@ -1,7 +1,7 @@
 <script lang="ts">
-  // 1. 🔥 IMPORTACIÓN DEL ALMACÉN: Necesario para escuchar lo que se escribe en el Header
   import { busquedaGlobal } from "../stores/busqueda";
   import { ESTADOS_ESTILOS } from "../utils/constants";
+  import { CalendarDays, SearchX } from "lucide-svelte";
 
   export let trabajosProximos: any[] = [];
   export let workspace: string = "produccion";
@@ -60,24 +60,19 @@
   }
 </script>
 
-<div class="space-y-4 w-full font-sans text-[#1A1D21] dark:text-[#EDF0F3]">
+<div class="space-y-4 w-full font-sans text-foreground">
   <div class="flex justify-between items-center">
     <h2
-      class="text-xl font-semibold tracking-tight text-[#1A1D21] dark:text-[#EDF0F3]"
+      class="text-xl font-semibold tracking-tight text-foreground"
     >
       Pedidos Activos
     </h2>
 
     <a
       href="/w/{workspace}/calendar"
-      class="text-xs font-medium text-gray-900 dark:text-gray-200 border border-dashed border-gray-900/40 dark:border-gray-200/30 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 cursor-pointer select-none"
+      class="text-xs font-medium text-foreground border border-dashed border-border px-3 py-1.5 rounded-xl hover:bg-accent transition-colors flex items-center gap-1 cursor-pointer select-none"
     >
-      <span
-        class="material-symbols-rounded text-sm"
-        style="font-variation-settings: 'wght' 300;"
-      >
-        calendar_today
-      </span>
+      <CalendarDays size={13} strokeWidth={2} />
       <span>Ver Agenda</span>
     </a>
   </div>
@@ -86,14 +81,14 @@
     <div class="space-y-3 flex-1">
       {#each trabajosVisibles as trabajo (trabajo.numParte)}
         <div
-          class="bg-white dark:bg-[#16191D] rounded-2xl p-4 dark:border-[#232830] flex items-center justify-between transition-all group"
+          class="bg-card text-card-foreground border border-border rounded-2xl p-4 flex items-center justify-between transition-all group shadow-xs"
         >
           <div class="flex items-center gap-4 min-w-0">
             <div
-              class="w-20 h-15 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 rounded-xl flex flex-col items-center justify-center font-semibold text-xs border border-gray-200 dark:border-gray-700 transition-colors group-hover:bg-gray-100 dark:group-hover:bg-gray-800 flex-shrink-0"
+              class="w-20 h-15 bg-muted text-foreground rounded-xl flex flex-col items-center justify-center font-semibold text-xs border border-border transition-colors group-hover:bg-accent flex-shrink-0"
             >
               <span
-                class="text-[10px] uppercase tracking-tighter opacity-50 font-medium"
+                class="text-[10px] uppercase tracking-tighter opacity-70 font-medium"
                 >PARTE</span
               >
               <span>{trabajo.numParte}</span>
@@ -101,12 +96,12 @@
 
             <div class="min-w-0">
               <p
-                class="text-sm font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase tracking-tight truncate"
+                class="text-sm font-semibold text-foreground uppercase tracking-tight truncate"
               >
                 {trabajo.cliente}
               </p>
               <p
-                class="text-xs text-gray-400 dark:text-gray-500 font-medium mt-0.5 truncate"
+                class="text-xs text-muted-foreground font-medium mt-0.5 truncate"
               >
                 {trabajo.descripcionGeneral || "Sin descripción"}
               </p>
@@ -117,13 +112,13 @@
             <span
               class="px-2.5 py-1 text-[9px] font-semibold rounded-lg uppercase tracking-wider border transition-colors
               {ESTADOS_ESTILOS[trabajo.estado] ||
-                'bg-gray-50 text-gray-600 border-gray-100 dark:bg-[#1E2228] dark:text-gray-400 dark:border-[#232830]'}"
+                'bg-muted text-muted-foreground border-border'}"
             >
               {trabajo.estado}
             </span>
 
             <span
-              class="px-2.5 py-1 bg-gray-50 dark:bg-[#1E2228] border border-gray-100 dark:border-gray-800 text-[9px] font-semibold text-gray-400 dark:text-gray-500 rounded-lg uppercase tracking-wider transition-colors"
+              class="px-2.5 py-1 bg-muted border border-border text-[9px] font-semibold text-muted-foreground rounded-lg uppercase tracking-wider transition-colors"
             >
               {trabajo.area}
             </span>
@@ -131,14 +126,9 @@
         </div>
       {:else}
         <div
-          class="bg-white dark:bg-[#16191D] border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-12 text-center text-gray-400 dark:text-gray-500 my-auto shadow-xs transition-colors"
+          class="bg-card border border-dashed border-border rounded-2xl p-12 text-center text-muted-foreground my-auto shadow-xs transition-colors"
         >
-          <span
-            class="material-symbols-rounded text-4xl block mb-2 text-gray-300 dark:text-gray-700"
-            style="font-variation-settings: 'wght' 100;"
-          >
-            search_off
-          </span>
+          <SearchX size={32} strokeWidth={1} class="mx-auto mb-2 opacity-30" />
           <p class="text-xs font-semibold">
             No se encontraron partes activos que coincidan con la búsqueda.
           </p>
@@ -152,10 +142,10 @@
           <button
             type="button"
             on:click={() => irAPagina(i)}
-            class="h-2 rounded-full transition-all duration-300 cursor-pointer outline-none
-              {paginaActual === i
-              ? 'w-5 bg-gray-900 dark:bg-gray-200'
-              : 'w-2 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700'}"
+            class={`h-2 rounded-full transition-all duration-300 cursor-pointer outline-none
+              ${paginaActual === i
+              ? 'w-5 bg-foreground'
+              : 'w-2 bg-border hover:bg-muted-foreground'}`}
             aria-label="Ir a página {i + 1}"
           ></button>
         {/each}

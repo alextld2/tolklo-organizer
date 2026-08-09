@@ -1,7 +1,28 @@
 <script lang="ts">
   // src/components/Calendario.svelte
   import { onMount } from "svelte";
-  import { fly } from "svelte/transition";
+  import { Toaster, toast } from "./ui/sonner";
+  import {
+    ContextMenu,
+    ContextMenuTrigger,
+    ContextMenuContent,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubTrigger,
+    ContextMenuSubContent,
+    ContextMenuLabel,
+    ContextMenuGroup,
+  } from "./ui/context-menu";
+  import {
+    Printer,
+    CheckCircle2,
+    Trash2,
+    RefreshCw,
+    FileText,
+    ChevronRight,
+    Check,
+  } from "lucide-svelte";
 
   export let trabajosIniciales: any[] = [];
   export let desglosesIniciales: any[] = [];
@@ -152,17 +173,58 @@
 
   // 🛡️ SOLUCIÓN AL RETARDO EN TIEMPO REAL (F5):
   // Creamos un diccionario reactivo de trabajos agrupados por fecha.
-  // Al actualizarse 'trabajos', Svelte recalculará instantáneamente este mapa,
-  // disparando la renderización de las celdas en el DOM sin necesidad de refrescar la página.
+  // Normalizamos las cadenas de fecha para asegurar compatibilidad total (YYYY-MM-DD).
   $: trabajosPorFecha = trabajos.reduce(
     (acc, t) => {
-      const fecha = t.fechaSalida;
-      if (!acc[fecha]) acc[fecha] = [];
-      acc[fecha].push(t);
+      if (!t || !t.fechaSalida) return acc;
+      let fechaStr = String(t.fechaSalida).trim().split("T")[0];
+      const parts = fechaStr.split("-");
+      if (parts.length === 3) {
+        const y = parts[0];
+        const m = parts[1].padStart(2, "0");
+        const d = parts[2].padStart(2, "0");
+        fechaStr = `${y}-${m}-${d}`;
+      }
+      if (!acc[fechaStr]) acc[fechaStr] = [];
+      acc[fechaStr].push(t);
       return acc;
     },
     {} as Record<string, any[]>,
   );
+
+  // 计算 meses con tareas registradas para acceso rápido y posicionamiento automático
+  $: mesesConTareas = (() => {
+    const mapa = new Map<
+      string,
+      { year: number; month: number; nombre: string; total: number }
+    >();
+    trabajos.forEach((t) => {
+      if (!t || !t.fechaSalida) return;
+      const fechaStr = String(t.fechaSalida).trim().split("T")[0];
+      const parts = fechaStr.split("-");
+      if (parts.length === 3) {
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        if (!isNaN(y) && !isNaN(m) && m >= 0 && m <= 11) {
+          const key = `${y}-${m}`;
+          if (!mapa.has(key)) {
+            mapa.set(key, {
+              year: y,
+              month: m,
+              nombre: `${nombresMeses[m]} ${y}`,
+              total: 0,
+            });
+          }
+          mapa.get(key)!.total += 1;
+        }
+      }
+    });
+    return Array.from(mapa.values()).sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return a.month - b.month;
+    });
+  })();
+
 
   function getDesgloses(numParte: string) {
     return desgloses.filter((d) => d.numParte === numParte);
@@ -206,19 +268,15 @@
   let draggedParte: string | null = null;
   let dragOverCellDate: string | null = null;
 
-  // Mensajes flotantes (Toasts integrados de control para no usar alert)
-  let toastMessage = "";
-  let toastType = "success"; // "success" | "error" | "info"
-  let toastTimeout: any = null;
-
+  // Notificaciones Toast con sonner de shadcn-svelte
   function showToast(msg: string, type = "success") {
-    toastMessage = msg;
-    toastType = type;
-    if (toastTimeout) clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => {
-      toastMessage = "";
-      toastTimeout = null;
-    }, 4500);
+    if (type === "success") {
+      toast.success(msg);
+    } else if (type === "error") {
+      toast.error(msg);
+    } else {
+      toast.info(msg);
+    }
   }
 
   function handleDragStart(event: DragEvent, numParte: string) {
@@ -348,16 +406,26 @@
   }
 
   // 🛡️ ACCIONES DEL CONJUNTO TÉCNICO DE TRABAJO (image_d47fd4.png)
-  async function cambiarEstado(nuevoEstado: string) {
-    if (!selectedTrabajo) return;
-    const originalEstado = selectedTrabajo.estado;
-    const numParteStr = selectedTrabajo.numParte;
+  async function cambiarEstado(target: any, estado?: string) {
+    let trabajoTarget = target;
+    let nuevoEstado = estado;
+
+    if (typeof target === "string") {
+      nuevoEstado = target;
+      trabajoTarget = selectedTrabajo;
+    }
+
+    if (!trabajoTarget || !nuevoEstado) return;
+    const originalEstado = trabajoTarget.estado;
+    const numParteStr = trabajoTarget.numParte;
 
     // Modificación Optimista de UI en Caliente (Instantáneo, sin F5)
     trabajos = trabajos.map((t) =>
       t.numParte === numParteStr ? { ...t, estado: nuevoEstado } : t,
     );
-    selectedTrabajo = { ...selectedTrabajo, estado: nuevoEstado };
+    if (selectedTrabajo && selectedTrabajo.numParte === numParteStr) {
+      selectedTrabajo = { ...selectedTrabajo, estado: nuevoEstado };
+    }
 
     showToast(`Cambiando estado del parte a "${nuevoEstado}"...`, "info");
 
@@ -368,7 +436,7 @@
         body: JSON.stringify({
           id: numParteStr,
           estado: nuevoEstado,
-          workspaceId: selectedTrabajo.workspaceId,
+          workspaceId: trabajoTarget.workspaceId,
         }),
       });
 
@@ -390,7 +458,9 @@
       trabajos = trabajos.map((t) =>
         t.numParte === numParteStr ? { ...t, estado: originalEstado } : t,
       );
-      selectedTrabajo = { ...selectedTrabajo, estado: originalEstado };
+      if (selectedTrabajo && selectedTrabajo.numParte === numParteStr) {
+        selectedTrabajo = { ...selectedTrabajo, estado: originalEstado };
+      }
       showToast(
         `Error: No se pudo actualizar el estado: ${error.message}`,
         "error",
@@ -401,14 +471,17 @@
   // Confirmación nativa integrada de Svelte para borrado de partes (Elimina alert/confirm intrusivos)
   let showDeleteConfirmation = false;
 
-  async function archivarEliminarTarea() {
-    if (!showDeleteConfirmation) {
+  async function archivarEliminarTarea(target?: any) {
+    const trabajoTarget =
+      target && typeof target === "object" ? target : selectedTrabajo;
+
+    if (!target && !showDeleteConfirmation) {
       showDeleteConfirmation = true;
       return;
     }
 
-    if (!selectedTrabajo) return;
-    const numParteStr = selectedTrabajo.numParte;
+    if (!trabajoTarget) return;
+    const numParteStr = trabajoTarget.numParte;
 
     showToast(`Eliminando parte de trabajo #${numParteStr}...`, "info");
 
@@ -418,7 +491,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: numParteStr,
-          workspaceId: selectedTrabajo.workspaceId,
+          workspaceId: trabajoTarget.workspaceId,
         }),
       });
 
@@ -432,7 +505,9 @@
 
       // Eliminación física en el estado reactivo en memoria
       trabajos = trabajos.filter((t) => t.numParte !== numParteStr);
-      closeDetails();
+      if (selectedTrabajo && selectedTrabajo.numParte === numParteStr) {
+        closeDetails();
+      }
       showToast(
         `Parte #${numParteStr} eliminado permanentemente del sistema.`,
         "success",
@@ -443,6 +518,41 @@
     } finally {
       showDeleteConfirmation = false;
     }
+  }
+
+  function imprimirFicha(target?: any) {
+    const trabajoTarget =
+      target && typeof target === "object" ? target : selectedTrabajo;
+    if (!trabajoTarget) return;
+    const url = `/w/${trabajoTarget.workspaceId}/parte/${trabajoTarget.numParte}/print`;
+    window.open(url, "_blank");
+  }
+
+  // Context Menu flotante robusto y de alto rendimiento
+  let contextMenuTrabajo: any = null;
+  let contextMenuPos = { x: 0, y: 0 };
+  let showStateSubmenu = false;
+
+  function openContextMenu(event: MouseEvent, trabajo: any) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const screenW = typeof window !== "undefined" ? window.innerWidth : 1200;
+    const screenH = typeof window !== "undefined" ? window.innerHeight : 800;
+    let x = event.clientX;
+    let y = event.clientY;
+
+    if (x + 220 > screenW) x = Math.max(10, screenW - 230);
+    if (y + 280 > screenH) y = Math.max(10, screenH - 290);
+
+    contextMenuPos = { x, y };
+    contextMenuTrabajo = trabajo;
+    showStateSubmenu = false;
+  }
+
+  function closeContextMenu() {
+    contextMenuTrabajo = null;
+    showStateSubmenu = false;
   }
 
   // Controladores de accesibilidad seguros para evitar errores sintácticos de Svelte en "keydown"
@@ -586,9 +696,9 @@
         Hoy
       </button>
 
-      <!-- Selector de Meses -->
+      <!-- Selector de Meses y Años Interactivo -->
       <div
-        class="flex items-center gap-3 bg-white dark:bg-[#16181c] border border-slate-200/60 dark:border-slate-800/80 p-1.5 rounded-2xl shadow-sm"
+        class="flex items-center gap-2 bg-white dark:bg-[#16181c] border border-slate-200/60 dark:border-slate-800/80 p-1.5 rounded-2xl shadow-sm"
       >
         <button
           on:click={prevMonth}
@@ -609,12 +719,35 @@
           >
         </button>
 
-        <span
-          class="text-sm font-semibold text-slate-800 dark:text-slate-100 min-w-[140px] text-center capitalize"
-        >
-          {nombresMeses[currentMonth]}
-          {currentYear}
-        </span>
+        <div class="flex items-center gap-1 font-semibold text-sm">
+          <select
+            bind:value={currentMonth}
+            class="bg-transparent text-slate-800 dark:text-slate-100 font-semibold text-sm border-none outline-none cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors capitalize"
+          >
+            {#each nombresMeses as nombre, idx}
+              <option
+                value={idx}
+                class="bg-white dark:bg-[#16181c] text-slate-800 dark:text-slate-200"
+              >
+                {nombre}
+              </option>
+            {/each}
+          </select>
+
+          <select
+            bind:value={currentYear}
+            class="bg-transparent text-slate-800 dark:text-slate-100 font-semibold text-sm border-none outline-none cursor-pointer py-1 px-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          >
+            {#each [2024, 2025, 2026, 2027] as y}
+              <option
+                value={y}
+                class="bg-white dark:bg-[#16181c] text-slate-800 dark:text-slate-200"
+              >
+                {y}
+              </option>
+            {/each}
+          </select>
+        </div>
 
         <button
           on:click={nextMonth}
@@ -638,47 +771,43 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION FLOTANTE -->
-  {#if toastMessage}
+  <!-- ACCESO RÁPIDO A MESES CON ENTREGAS PLANIFICADAS -->
+  {#if mesesConTareas.length > 0}
     <div
-      transition:fly={{ y: 16, duration: 250 }}
-      class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[999999] w-[calc(100%-2rem)] max-w-md p-4 rounded-2xl flex items-center justify-between text-sm font-semibold shadow-xl backdrop-blur-md transition-all duration-300
-      {toastType === 'success'
-        ? 'bg-white dark:bg-[#112419]/95 text-dark-800 dark:text-emerald-300 border-emerald-150'
-        : ''}
-      {toastType === 'error'
-        ? 'bg-rose-50/95 dark:bg-[#2e1517]/95 text-rose-800 dark:text-rose-300 border-rose-150 dark:border-rose-900/50'
-        : ''}
-      {toastType === 'info'
-        ? 'bg-gray-100/95 dark:bg-gray-900/95 text-gray-900 dark:text-[#a4f4cf] border-gray-200 dark:border-[#a4f4cf]/30'
-        : ''}"
+      class="flex items-center gap-2 overflow-x-auto pb-4 pt-1 border-b border-slate-100 dark:border-slate-800/80 mb-4"
     >
-      <div class="flex items-center gap-2.5">
-        <span
-          class="material-symbols-rounded text-lg flex-shrink-0 {toastType ===
-          'success'
-            ? 'text-emerald-500'
-            : ''} {toastType === 'error' ? 'text-rose-500' : ''} {toastType ===
-          'info'
-            ? 'text-gray-900 dark:text-[#a4f4cf]'
-            : ''}"
-        >
-          {toastType === "success" ? "check_circle" : ""}
-          {toastType === "error" ? "error" : ""}
-          {toastType === "info" ? "info" : ""}
-        </span>
-        <span class="leading-relaxed">{toastMessage}</span>
-      </div>
-      <button
-        on:click={() => {
-          toastMessage = "";
-          if (toastTimeout) clearTimeout(toastTimeout);
-        }}
-        class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 font-semibold ml-4 p-1 cursor-pointer select-none"
-        >✕</button
+      <span
+        class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0"
       >
+        Meses con Entregas:
+      </span>
+      {#each mesesConTareas as m}
+        <button
+          on:click={() => {
+            currentMonth = m.month;
+            currentYear = m.year;
+          }}
+          class="px-3 py-1.5 text-[11px] font-semibold rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 shrink-0
+            {currentMonth === m.month && currentYear === m.year
+            ? 'bg-slate-900 text-white dark:bg-[#a4f4cf] dark:text-black border-transparent shadow-sm'
+            : 'bg-white dark:bg-[#16181c] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'}"
+        >
+          <span>{m.nombre}</span>
+          <span
+            class="text-[9.5px] px-1.5 py-0.2 rounded-md font-mono
+            {currentMonth === m.month && currentYear === m.year
+              ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}"
+          >
+            {m.total}
+          </span>
+        </button>
+      {/each}
     </div>
   {/if}
+
+  <!-- TOAST NOTIFICATION SONNER (shadcn-svelte, inferior derecha) -->
+  <Toaster position="bottom-right" richColors />
 
   <!-- REJILLA SEMANAL -->
   <div class="grid grid-cols-7 gap-1.5 mb-2">
@@ -742,9 +871,10 @@
               tabindex="0"
               on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
               on:dragend={handleDragEnd}
-              on:click={() => openDetails(trabajo)}
+              on:click={(e) => openContextMenu(e, trabajo)}
+              on:contextmenu={(e) => openContextMenu(e, trabajo)}
               on:keydown={(e) => handleCardKeydown(e, trabajo)}
-              class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] {getEstadoClases(
+              class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01] w-full text-left outline-none block select-none {getEstadoClases(
                 trabajo.estado,
               )}"
             >
@@ -825,9 +955,10 @@
                   tabindex="0"
                   on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
                   on:dragend={handleDragEnd}
-                  on:click|stopPropagation={() => openDetails(trabajo)}
+                  on:click={(e) => openContextMenu(e, trabajo)}
+                  on:contextmenu={(e) => openContextMenu(e, trabajo)}
                   on:keydown={(e) => handleCardKeydown(e, trabajo)}
-                  class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] {getEstadoClases(
+                  class="border p-2 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02] w-full text-left outline-none block select-none {getEstadoClases(
                     trabajo.estado,
                   )}"
                 >
@@ -1119,7 +1250,7 @@
 
             <button
               on:click={() => cambiarEstado("Terminado")}
-              class="w-full py-3 bg-gray-900 dark:bg-[#a4f4cf] hover:bg-black dark:hover:bg-white text-white dark:text-gray-900 font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              class="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg
                 class="w-4 h-4"
@@ -1234,16 +1365,18 @@
               draggable="true"
               role="button"
               tabindex="0"
-              on:dragstart={(e) => {
-                handleDragStart(e, trabajo.numParte);
-              }}
+              on:dragstart={(e) => handleDragStart(e, trabajo.numParte)}
               on:dragend={handleDragEnd}
-              on:click={() => {
-                openDetails(trabajo);
+              on:click={(e) => {
+                openContextMenu(e, trabajo);
+                cerrarMasTareas();
+              }}
+              on:contextmenu={(e) => {
+                openContextMenu(e, trabajo);
                 cerrarMasTareas();
               }}
               on:keydown={(e) => handleMoreKeydown(e, trabajo)}
-              class="border p-3 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all flex flex-col gap-1.5 {getEstadoClases(
+              class="border p-3 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] cursor-grab active:cursor-grabbing transition-all flex flex-col gap-1.5 w-full text-left outline-none block select-none {getEstadoClases(
                 trabajo.estado,
               )}"
             >
@@ -1260,8 +1393,9 @@
                         : (trabajo.estado || 'por hacer').toLowerCase() ===
                             'terminado'
                           ? 'bg-teal-300 dark:bg-[#a4f4cf]/80'
-                          : (trabajo.estado || 'por hacer').toLowerCase() ===
-                              'urgente'
+                          : (
+                                trabajo.estado || 'por hacer'
+                              ).toLowerCase() === 'urgente'
                             ? 'bg-rose-300 dark:bg-rose-400/90 animate-pulse-slow'
                             : 'bg-gray-300 dark:bg-gray-500/80'}"
                   ></span>
@@ -1289,6 +1423,207 @@
           class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#202530] dark:hover:bg-[#2a313d] text-slate-600 dark:text-slate-300 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
         >
           Cerrar Vista
+        </button>
+      </div>
+    </div>
+  {/if}
+
+  <!-- 🛡️ MENÚ CONTEXTUAL FLOTANTE ROBUSTO DE SHADCN-SVELTE DE ALTO RENDIMIENTO -->
+  {#if contextMenuTrabajo}
+    <div
+      role="presentation"
+      class="fixed inset-0 z-[999999] bg-transparent"
+      on:click={closeContextMenu}
+      on:contextmenu|preventDefault={closeContextMenu}
+    >
+      <div
+        role="menu"
+        tabindex="-1"
+        on:click|stopPropagation
+        on:contextmenu|preventDefault
+        style="left: {contextMenuPos.x}px; top: {contextMenuPos.y}px;"
+        class="fixed z-[1000000] min-w-[13rem] overflow-visible rounded-2xl border border-gray-100 dark:border-[#232830] bg-white dark:bg-[#1E2228] p-1.5 text-slate-950 dark:text-slate-50 shadow-2xl animate-scale-up outline-none"
+      >
+        <!-- Encabezado de Tarea -->
+        <div
+          class="px-3 py-2 flex flex-col gap-0.5 border-b border-gray-100 dark:border-[#232830] mb-1"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span
+              class="font-mono text-[11px] font-bold text-gray-900 dark:text-gray-100"
+            >
+              #{contextMenuTrabajo.numParte}
+            </span>
+            <span
+              class="text-[9px] font-bold capitalize px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+            >
+              {contextMenuTrabajo.estado || "Por hacer"}
+            </span>
+          </div>
+          <p
+            class="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate mt-0.5"
+          >
+            {contextMenuTrabajo.cliente}
+          </p>
+        </div>
+
+        <!-- Submenú: Cambiar de estado -->
+        <div class="relative">
+          <button
+            type="button"
+            on:click={() => (showStateSubmenu = !showStateSubmenu)}
+            class="w-full flex cursor-pointer select-none items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] transition-colors hover:bg-gray-100/80 dark:hover:bg-gray-800/60"
+          >
+            <div class="flex items-center gap-2">
+              <RefreshCw
+                class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"
+              />
+              <span>Cambiar estado</span>
+            </div>
+            <ChevronRight class="w-3.5 h-3.5 text-slate-400" />
+          </button>
+
+          {#if showStateSubmenu}
+            <div
+              class="absolute left-full top-0 ml-1 min-w-[10rem] rounded-2xl border border-gray-100 dark:border-[#232830] bg-white dark:bg-[#1E2228] p-1.5 shadow-2xl z-[1000001] flex flex-col gap-0.5 animate-scale-up"
+            >
+              <button
+                type="button"
+                on:click={() => {
+                  cambiarEstado(contextMenuTrabajo, "Por hacer");
+                  closeContextMenu();
+                }}
+                class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-100/80 dark:hover:bg-gray-800/60"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-500"
+                  ></span>
+                  <span>Por hacer</span>
+                </div>
+                {#if (contextMenuTrabajo.estado || "por hacer").toLowerCase() === "por hacer"}
+                  <Check
+                    class="w-3.5 h-3.5 text-gray-600 dark:text-gray-300"
+                  />
+                {/if}
+              </button>
+
+              <button
+                type="button"
+                on:click={() => {
+                  cambiarEstado(contextMenuTrabajo, "Imprimiendo");
+                  closeContextMenu();
+                }}
+                class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-100/80 dark:hover:bg-gray-800/60"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="w-2 h-2 rounded-full bg-indigo-300 dark:bg-indigo-400"
+                  ></span>
+                  <span>Imprimiendo</span>
+                </div>
+                {#if (contextMenuTrabajo.estado || "").toLowerCase() === "imprimiendo"}
+                  <Check class="w-3.5 h-3.5 text-indigo-500" />
+                {/if}
+              </button>
+
+              <button
+                type="button"
+                on:click={() => {
+                  cambiarEstado(contextMenuTrabajo, "Manipulado");
+                  closeContextMenu();
+                }}
+                class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-100/80 dark:hover:bg-gray-800/60"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="w-2 h-2 rounded-full bg-amber-300 dark:bg-amber-400"
+                  ></span>
+                  <span>Manipulado</span>
+                </div>
+                {#if (contextMenuTrabajo.estado || "").toLowerCase() === "manipulado"}
+                  <Check class="w-3.5 h-3.5 text-amber-500" />
+                {/if}
+              </button>
+
+              <button
+                type="button"
+                on:click={() => {
+                  cambiarEstado(contextMenuTrabajo, "Terminado");
+                  closeContextMenu();
+                }}
+                class="w-full flex items-center justify-between rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-100/80 dark:hover:bg-gray-800/60"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="w-2 h-2 rounded-full bg-teal-300 dark:bg-[#a4f4cf]/80"
+                  ></span>
+                  <span>Terminado</span>
+                </div>
+                {#if (contextMenuTrabajo.estado || "").toLowerCase() === "terminado"}
+                  <Check class="w-3.5 h-3.5 text-teal-500" />
+                {/if}
+              </button>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Imprimir Ficha -->
+        <button
+          type="button"
+          on:click={() => {
+            imprimirFicha(contextMenuTrabajo);
+            closeContextMenu();
+          }}
+          class="w-full flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-100/80 dark:hover:bg-gray-800/60"
+        >
+          <Printer class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+          <span>Imprimir ficha técnica</span>
+        </button>
+
+        <!-- Finalizar -->
+        <button
+          type="button"
+          disabled={(contextMenuTrabajo.estado || "").toLowerCase() ===
+            "terminado"}
+          on:click={() => {
+            cambiarEstado(contextMenuTrabajo, "Terminado");
+            closeContextMenu();
+          }}
+          class="w-full flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-100/80 dark:hover:bg-gray-800/60 disabled:opacity-50 disabled:pointer-events-none"
+        >
+          <CheckCircle2 class="w-3.5 h-3.5 text-emerald-500" />
+          <span>Finalizar tarea</span>
+        </button>
+
+        <div class="-mx-1 my-1 h-px bg-gray-100 dark:bg-[#232830]"></div>
+
+        <!-- Ver detalles completos -->
+        <button
+          type="button"
+          on:click={() => {
+            openDetails(contextMenuTrabajo);
+            closeContextMenu();
+          }}
+          class="w-full flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-100/80 dark:hover:bg-gray-800/60"
+        >
+          <FileText class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+          <span>Ver detalles completos</span>
+        </button>
+
+        <div class="-mx-1 my-1 h-px bg-gray-100 dark:bg-[#232830]"></div>
+
+        <!-- Eliminar -->
+        <button
+          type="button"
+          on:click={() => {
+            archivarEliminarTarea(contextMenuTrabajo);
+            closeContextMenu();
+          }}
+          class="w-full flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+        >
+          <Trash2 class="w-3.5 h-3.5 text-rose-500" />
+          <span>Eliminar tarea</span>
         </button>
       </div>
     </div>

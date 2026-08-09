@@ -1,12 +1,44 @@
 <script lang="ts">
-  import { busquedaGlobal } from "../stores/busqueda"; // Escucha la barra superior
+  import { busquedaGlobal } from "../stores/busqueda";
+  import DataTableTareas from "./DataTableTareas.svelte";
   import {
     LISTA_COMERCIALES,
     LISTA_ESTADOS,
     LISTA_AREAS,
     ESTADOS_ESTILOS,
-    ICONOS_ESTADO,
   } from "../utils/constants";
+  import {
+    Monitor, Layers, PenTool, Zap, Shirt, Palette,
+    CheckCircle2, Printer, Package, Circle, Flame,
+    Pencil, Trash2, MoreHorizontal, SearchX, X, Plus,
+    AlertTriangle, FileText, Handshake,
+  } from "lucide-svelte";
+  import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell,
+  } from "./ui/table";
+  import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
+  } from "./ui/dropdown-menu";
+  import { Card, CardContent } from "./ui/card";
+
+  // Mapa de iconos Lucide por estado
+  const ICONOS_ESTADO_LUCIDE: Record<string, any> = {
+    "Terminado": CheckCircle2,
+    "Imprimiendo": Printer,
+    "Manipulado": Package,
+    "Urgente": Flame,
+    "Por hacer": Circle,
+  };
 
   // RECEPCIÓN DE DATOS RELACIONALES DESDE ASTRO DB
   export let tareas: Array<{
@@ -28,103 +60,27 @@
   const listaAreas = LISTA_AREAS;
 
   const configuracionAreas = [
-    {
-      id: "Digital",
-      nombre: "Digital",
-      icono: "computer",
-      colorBg: "bg-blue-50/60",
-      colorTexto: "text-blue-600",
-      colorBorde: "border-blue-100",
-    },
-    {
-      id: "Offset",
-      nombre: "Offset",
-      icono: "layers",
-      colorBg: "bg-emerald-50/60",
-      colorTexto: "text-emerald-600",
-      colorBorde: "border-emerald-100",
-    },
-    {
-      id: "Plotter",
-      nombre: "Plotter",
-      icono: "architecture",
-      colorBg: "bg-amber-50/60",
-      colorTexto: "text-amber-600",
-      colorBorde: "border-amber-100",
-    },
-    {
-      id: "OPX",
-      nombre: "OPX",
-      icono: "bolt",
-      colorBg: "bg-purple-50/60",
-      colorTexto: "text-purple-600",
-      colorBorde: "border-purple-100",
-    },
-    {
-      id: "DTF",
-      nombre: "DTF",
-      icono: "checkroom",
-      colorBg: "bg-rose-50/60",
-      colorTexto: "text-rose-600",
-      colorBorde: "border-rose-100",
-    },
-    {
-      id: "Mimaki",
-      nombre: "Mimaki",
-      icono: "palette",
-      colorBg: "bg-cyan-50/60",
-      colorTexto: "text-cyan-600",
-      colorBorde: "border-cyan-100",
-    },
+    { id: "Digital",  nombre: "Digital",               icon: Monitor,  colorBg: "bg-blue-50/60",    colorTexto: "text-blue-600",    colorBorde: "border-blue-100",    darkBg: "dark:bg-blue-500/10",    darkTexto: "dark:text-blue-400",    darkBorde: "dark:border-blue-500/20" },
+    { id: "Offset",   nombre: "Offset",                icon: Layers,   colorBg: "bg-emerald-50/60", colorTexto: "text-emerald-600", colorBorde: "border-emerald-100", darkBg: "dark:bg-emerald-500/10", darkTexto: "dark:text-emerald-400", darkBorde: "dark:border-emerald-500/20" },
+    { id: "Plotter",  nombre: "Plotter",               icon: PenTool, colorBg: "bg-amber-50/60",   colorTexto: "text-amber-600",   colorBorde: "border-amber-100",   darkBg: "dark:bg-amber-500/10",   darkTexto: "dark:text-amber-400",   darkBorde: "dark:border-amber-500/20" },
+    { id: "OPX",      nombre: "OPX",                   icon: Zap,      colorBg: "bg-purple-50/60",  colorTexto: "text-purple-600",  colorBorde: "border-purple-100",  darkBg: "dark:bg-purple-500/10",  darkTexto: "dark:text-purple-400",  darkBorde: "dark:border-purple-500/20" },
+    { id: "DTF",      nombre: "DTF",                   icon: Shirt,    colorBg: "bg-rose-50/60",    colorTexto: "text-rose-600",    colorBorde: "border-rose-100",    darkBg: "dark:bg-rose-500/10",    darkTexto: "dark:text-rose-400",    darkBorde: "dark:border-rose-500/20" },
+    { id: "Mimaki",   nombre: "Mimaki",                icon: Palette,  colorBg: "bg-cyan-50/60",    colorTexto: "text-cyan-600",    colorBorde: "border-cyan-100",    darkBg: "dark:bg-cyan-500/10",    darkTexto: "dark:text-cyan-400",    darkBorde: "dark:border-cyan-500/20" },
   ];
 
-  // CONFIGURACIÓN DE PAGINACIÓN
-  let paginaActual = 1;
-  const tareasPorPagina = 8;
-
-  let menuAbiertoNumParte: number | null = null;
   let modalEditarAbierto = false;
   let tareaEnEdicion: any = null;
   let modalEliminarAbierto = false;
   let numParteAEliminar: number | null = null;
 
-  // 2. 🎨 PALETA DE COLORES ESTILO NOTION
   const coloresTextoEstado = ESTADOS_ESTILOS;
-  const iconosEstado = ICONOS_ESTADO;
 
-  // 3. 🧠 LÓGICA DE CONTROL DE TRANSICIÓN UNIDIRECCIONAL
-  function esTransicionValida(
-    estadoActual: string,
-    estadoNuevo: string,
-  ): boolean {
-    if (estadoActual === estadoNuevo) return false;
-    if (estadoNuevo === "Urgente" || estadoActual === "Urgente") return true;
 
-    const flujoSecuencial = [
-      "Por hacer",
-      "Imprimiendo",
-      "Manipulado",
-      "Terminado",
-    ];
-    const idxActual = flujoSecuencial.indexOf(estadoActual);
-    const idxNuevo = flujoSecuencial.indexOf(estadoNuevo);
-
-    return idxNuevo > idxActual;
-  }
-
-  function ordenarMenuAcciones(numParte: number, event: Event) {
-    event.stopPropagation();
-    menuAbiertoNumParte = menuAbiertoNumParte === numParte ? null : numParte;
-  }
-
-  function cerrarMenus() {
-    menuAbiertoNumParte = null;
-  }
 
   // --- PERSISTENCIA: CAMBIO DE ESTADO RÁPIDO ---
   async function actualizarEstadoRapido(numParte: number, nuevoEstado: string) {
     const itemTarget = tareas.find((t) => t.numParte === numParte);
-    if (!itemTarget || !esTransicionValida(itemTarget.estado, nuevoEstado))
+    if (!itemTarget || itemTarget.estado === nuevoEstado)
       return;
 
     tareas = tareas.map((t) =>
@@ -136,7 +92,7 @@
       await fetch("/api/actualizar-tarea", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...itemTarget, estado: nuevoEstado }),
+        body: JSON.stringify({ id: itemTarget.numParte, numParte: itemTarget.numParte, estado: nuevoEstado }),
       });
     } catch (e) {
       console.error("Error guardando estado rápido en Astro DB", e);
@@ -310,32 +266,6 @@
     ventanaPDF.document.close();
   }
 
-  // --- TRATAMIENTO DEL BUSCADOR SUPERIOR ---
-  $: tareasFiltradas = (tareas || []).filter((t) => {
-    const query = ($busquedaGlobal || "").toLowerCase().trim();
-    if (!query) return true;
-    return (
-      t.numParte.toString().includes(query) ||
-      t.cliente.toLowerCase().includes(query) ||
-      (t.descripcionGeneral &&
-        t.descripcionGeneral.toLowerCase().includes(query))
-    );
-  });
-
-  let memorizarUltimaBusqueda = "";
-  $: if ($busquedaGlobal !== memorizarUltimaBusqueda) {
-    paginaActual = 1;
-    memorizarUltimaBusqueda = $busquedaGlobal;
-  }
-
-  // --- COMPUTOS DE PAGINACIÓN ---
-  $: totalTareasFiltradas = tareasFiltradas.length;
-  $: totalPaginas = Math.ceil(totalTareasFiltradas / tareasPorPagina) || 1;
-  $: tareasPaginadas = tareasFiltradas.slice(
-    (paginaActual - 1) * tareasPorPagina,
-    paginaActual * tareasPorPagina,
-  );
-
   // Analíticas globales
   $: totalTareasGlobal = tareas.length;
   $: completadas = tareas.filter((t) => t.estado === "Terminado").length;
@@ -357,12 +287,7 @@
     ).length;
 </script>
 
-<div
-  class="w-full font-sans flex flex-col h-full space-y-6"
-  role="presentation"
-  on:click={cerrarMenus}
-  on:keydown={(e) => e.key === "Escape" && cerrarMenus()}
->
+<div class="w-full font-sans flex flex-col h-full space-y-6">
   <div class="flex justify-between items-center flex-shrink-0">
     <div>
       <div class="flex items-center gap-3">
@@ -383,372 +308,97 @@
     </div>
   </div>
 
-  <div
-    class="bg-white dark:bg-[#16191D] rounded-3xl border border-[#E9EBF0] dark:border-[#232830] shadow-sm overflow-hidden flex flex-col"
-  >
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr
-            class="border-b border-gray-100 dark:border-[#232830] bg-gray-50/50 dark:bg-[#1E2228]/20"
-          >
-            <th
-              class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest w-44"
-              >Estado</th
-            >
-            <th
-              class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
-              >Descripcción</th
-            >
-            <th
-              class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
-              >Fecga de salida</th
-            >
-            <th
-              class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
-              >Área</th
-            >
-            <th
-              class="px-6 py-4 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-right pr-8 w-36"
-              >Acciones</th
-            >
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-50 dark:divide-[#232830]/40">
-          {#each tareasPaginadas as tarea, index (tarea.numParte)}
-            <tr
-              class="group hover:bg-gray-50/40 dark:hover:bg-[#1E2228]/30 transition-colors"
-            >
-              <td class="px-6 py-4.5">
-                <div class="flex items-center gap-2 text-xs font-semibold">
-                  <span
-                    class="material-symbols-rounded text-base
-                    {tarea.estado === 'Terminado' ? 'text-emerald-500' : ''}
-                    {tarea.estado === 'Imprimiendo'
-                      ? 'text-blue-500 animate-pulse'
-                      : ''}
-                    {tarea.estado === 'Manipulado' ? 'text-amber-500' : ''}
-                    {tarea.estado === 'Urgente'
-                      ? 'text-red-500 animate-bounce'
-                      : ''}
-                    {tarea.estado === 'Por hacer' ? 'text-gray-400' : ''}"
-                  >
-                    {iconosEstado[tarea.estado] || "circle"}
-                  </span>
-                  <span
-                    class="{coloresTextoEstado[tarea.estado] ||
-                      'text-gray-500 border border-transparent'} px-2.5 py-1 rounded-xl font-semibold"
-                  >
-                    {tarea.estado}
-                  </span>
-                </div>
-              </td>
+  <DataTableTareas
+    {tareas}
+    busquedaGlobal={$busquedaGlobal}
+    {listaEstados}
+    coloresTextoEstado={ESTADOS_ESTILOS}
+    onEditarTarea={abrirModalEditar}
+    onEliminarTarea={abrirModalEliminar}
+    onActualizarEstadoRapido={actualizarEstadoRapido}
+  />
 
-              <td class="px-6 py-4.5">
-                <div class="flex flex-col">
-                  <span
-                    class="text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] max-w-xl truncate {tarea.estado ===
-                    'Terminado'
-                      ? 'line-through text-gray-400 dark:text-gray-600 font-medium'
-                      : ''}"
-                  >
-                    #{tarea.numParte} - {tarea.cliente}
-                  </span>
-                  <span
-                    class="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5 uppercase tracking-wide"
-                  >
-                    {tarea.descripcionGeneral || "Sin especificar descripción"}
-                  </span>
-                </div>
-              </td>
-              <td
-                class="px-6 py-4.5 text-xs font-semibold text-gray-500 dark:text-gray-400"
-                >{tarea.fechaSalida}</td
-              >
-              <td class="px-6 py-4.5">
-                <span
-                  class="text-[9px] font-semibold px-2.5 py-1 rounded-lg uppercase tracking-wider bg-gray-50 dark:bg-[#1E2228] text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-[#232830]"
-                >
-                  {tarea.area}
-                </span>
-              </td>
-
-              <td
-                class="px-6 py-4.5 text-right pr-8 relative {menuAbiertoNumParte ===
-                tarea.numParte
-                  ? 'z-30'
-                  : ''}"
-              >
-                <div
-                  class="transition-opacity duration-150 flex items-center justify-end gap-3 {menuAbiertoNumParte ===
-                  tarea.numParte
-                    ? 'opacity-100'
-                    : 'opacity-0 group-hover:opacity-100'}"
-                >
-                  <button
-                    type="button"
-                    on:click={() => abrirModalEditar(tarea)}
-                    title="Editar Tarea"
-                    class="text-gray-400 hover:text-gray-900 dark:hover:text-[#a4f4cf] transition-all cursor-pointer flex items-center justify-center"
-                  >
-                    <span class="material-symbols-rounded text-lg">edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    on:click={() => abrirModalEliminar(tarea.numParte)}
-                    title="Eliminar Tarea"
-                    class="text-gray-400 hover:text-red-500 transition-all cursor-pointer flex items-center justify-center"
-                  >
-                    <span class="material-symbols-rounded text-lg">delete</span>
-                  </button>
-
-                  {#if tarea.estado !== "Terminado"}
-                    <div class="relative inline-block text-left">
-                      <button
-                        type="button"
-                        on:click|stopPropagation={(e) =>
-                          ordenarMenuAcciones(tarea.numParte, e)}
-                        class="text-gray-400 hover:text-black dark:hover:text-white font-semibold text-base px-1 cursor-pointer flex items-center justify-center"
-                      >
-                        <span class="material-symbols-rounded text-lg"
-                          >more_horiz</span
-                        >
-                      </button>
-                      {#if menuAbiertoNumParte === tarea.numParte}
-                        <div
-                          class="absolute right-0 z-30 w-44 bg-white dark:bg-[#1E2228] rounded-xl shadow-xl border border-gray-100 dark:border-[#232830] p-1.5 space-y-0.5 text-left animate-scale-up
-                          {index >= 4 ? 'bottom-full mb-2' : 'top-full mt-2'}"
-                        >
-                          {#each listaEstados as estadoOpcion}
-                            {#if esTransicionValida(tarea.estado, estadoOpcion)}
-                              <button
-                                type="button"
-                                on:click={() =>
-                                  actualizarEstadoRapido(
-                                    tarea.numParte,
-                                    estadoOpcion,
-                                  )}
-                                class="w-full text-left px-3 py-2 rounded-lg text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2"
-                              >
-                                <span
-                                  class="material-symbols-rounded text-base
-                                  {estadoOpcion === 'Terminado'
-                                    ? 'text-emerald-500'
-                                    : ''}
-                                  {estadoOpcion === 'Imprimiendo'
-                                    ? 'text-blue-500'
-                                    : ''}
-                                  {estadoOpcion === 'Manipulado'
-                                    ? 'text-amber-500'
-                                    : ''}
-                                  {estadoOpcion === 'Urgente'
-                                    ? 'text-red-500'
-                                    : ''}
-                                  {estadoOpcion === 'Por hacer'
-                                    ? 'text-gray-400'
-                                    : ''}"
-                                >
-                                  {iconosEstado[estadoOpcion]}
-                                </span>
-                                <span>{estadoOpcion}</span>
-                              </button>
-                            {/if}
-                          {/each}
-                        </div>
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
-              </td>
-            </tr>
-          {:else}
-            <tr>
-              <td
-                colspan="5"
-                class="px-6 py-12 text-center text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-50/20 dark:bg-[#1E2228]/10"
-              >
-                <span
-                  class="material-symbols-rounded text-2xl block mb-1 opacity-50"
-                  >search_off</span
-                >
-                <span
-                  >No se han encontrado órdenes de trabajo que coincidan con tu
-                  búsqueda.</span
-                >
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-
-    <div
-      class="border-t border-gray-100 dark:border-[#232830] px-6 py-4 flex justify-between items-center bg-white dark:bg-[#16191D] flex-shrink-0"
-    >
-      <span
-        class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
-      >
-        Showing {totalTareasFiltradas === 0
-          ? 0
-          : (paginaActual - 1) * tareasPorPagina + 1} to {Math.min(
-          paginaActual * tareasPorPagina,
-          totalTareasFiltradas,
-        )} of {totalTareasFiltradas} results
-      </span>
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          on:click={() => {
-            if (paginaActual > 1) paginaActual--;
-          }}
-          disabled={paginaActual === 1}
-          class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-gray-100 dark:border-[#232830] bg-white dark:bg-[#1E2228] hover:bg-gray-50 dark:hover:bg-gray-800 text-[#1A1D21] dark:text-[#EDF0F3] disabled:opacity-30 transition-colors cursor-pointer"
-          >‹ Ant</button
-        >
-        <span
-          class="text-xs font-semibold px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-[#a4f4cf] rounded-lg"
-          >{paginaActual} / {totalPaginas}</span
-        >
-        <button
-          type="button"
-          on:click={() => {
-            if (paginaActual < totalPaginas) paginaActual++;
-          }}
-          disabled={paginaActual === totalPaginas}
-          class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-gray-100 dark:border-[#232830] bg-white dark:bg-[#1E2228] hover:bg-gray-50 dark:hover:bg-gray-800 text-[#1A1D21] dark:text-[#EDF0F3] disabled:opacity-30 transition-colors cursor-pointer"
-          >Sig ›</button
-        >
-      </div>
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-shrink-0">
-    <div class="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-      {#each configuracionAreas as area}
-        <div
-          class="bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-5 flex flex-col justify-between shadow-xs transition-all hover:shadow-sm hover:border-gray-300 dark:hover:border-gray-700 group"
-        >
-          <div class="flex items-center justify-between">
-            <span
-              class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
-              >{area.nombre}</span
-            >
-            <span
-              class="material-symbols-rounded text-lg p-2 rounded-xl border {area.colorBg} {area.colorTexto} {area.colorBorde}
-              {area.id === 'Digital'
-                ? 'dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
-                : ''}
-              {area.id === 'Offset'
-                ? 'dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
-                : ''}
-              {area.id === 'Plotter'
-                ? 'dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20'
-                : ''}
-              {area.id === 'OPX'
-                ? 'dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20'
-                : ''}
-              {area.id === 'DTF'
-                ? 'dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
-                : ''}
-              {area.id === 'Mimaki'
-                ? 'dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20'
-                : ''}"
-            >
-              {area.icono}
+  <!-- ─── Fila de Tarjetas de Área y Resumen ────────────────────────────────── -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3 w-full flex-shrink-0">
+    {#each configuracionAreas as area}
+      {@const activas = contarIncompletasPorArea(area.id)}
+      {@const listas = contarCompletadasPorArea(area.id)}
+      <Card class="w-full border border-[#E9EBF0] dark:border-[#232830] bg-white dark:bg-[#16191D] rounded-2xl shadow-none transition-all hover:border-gray-300 dark:hover:border-gray-600">
+        <CardContent class="p-3.5 flex flex-col justify-between h-full gap-2">
+          <!-- Nombre del área + badge activas -->
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider truncate {area.colorTexto} {area.darkTexto}">
+              {area.nombre}
             </span>
-          </div>
-          <div class="mt-4 flex items-end justify-between">
-            <div class="space-y-0.5">
-              <div class="flex items-baseline gap-1.5">
-                <span
-                  class="text-3xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight"
-                  >{contarIncompletasPorArea(area.id)
-                    .toString()
-                    .padStart(2, "0")}</span
-                >
-                <span
-                  class="text-[9px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-md"
-                  >Activas</span
-                >
-              </div>
-              <div
-                class="text-[10px] font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1 pl-0.5"
-              >
-                <span
-                  >✓ {contarCompletadasPorArea(area.id)
-                    .toString()
-                    .padStart(2, "0")} listas</span
-                >
-              </div>
-            </div>
-            {#if contarIncompletasPorArea(area.id) > 0}
-              <button
-                type="button"
-                on:click|stopPropagation={() => exportarListadoAreaPDF(area.id)}
-                class="text-[10px] font-semibold tracking-wider px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 transition-all flex items-center gap-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-300 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer"
-              >
-                <span class="material-symbols-rounded text-sm"
-                  >apk_document</span
-                >
-                <span>PDF</span>
-              </button>
+            {#if activas > 0}
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {area.colorBg} {area.colorTexto} {area.colorBorde} {area.darkBg} {area.darkTexto} {area.darkBorde} border">
+                {activas}
+              </span>
             {:else}
-              <button
-                type="button"
-                disabled
-                class="text-[10px] font-semibold tracking-wider px-2.5 py-1.5 rounded-xl border border-transparent transition-all flex items-center gap-1 bg-gray-50 text-gray-400 opacity-50 cursor-not-allowed"
-              >
-                <span class="material-symbols-rounded text-sm"
-                  >apk_document</span
-                >
-                <span>PDF</span>
-              </button>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800/40 text-gray-400 border border-transparent">
+                0
+              </span>
             {/if}
           </div>
-        </div>
-      {/each}
-    </div>
 
-    <div
-      class="bg-gray-900 dark:bg-black rounded-3xl p-6 text-white shadow-xs flex flex-col justify-between border border-gray-800 dark:border-[#232830]"
-    >
-      <div>
-        <span
-          class="text-[9px] font-semibold text-gray-400 dark:text-[#a4f4cf]/70 uppercase tracking-widest block mb-1"
-          >Resumen rápido</span
-        >
-        <h3 class="text-lg font-semibold tracking-tight dark:text-[#a4f4cf]">
-          Finalizados completamente
-        </h3>
-        <div class="mt-4 space-y-2">
-          <div
-            class="flex justify-between items-center border-b border-white/10 pb-1.5"
-          >
-            <span class="text-xs font-semibold text-gray-400 dark:text-gray-300"
-              >Completados</span
-            >
-            <span class="text-base font-semibold"
-              >{completadas.toString().padStart(2, "0")}</span
-            >
+          <!-- Métricas -->
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span class="text-xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] leading-none">
+                {activas.toString().padStart(2, "0")}
+              </span>
+              <span class="text-[9px] font-medium text-gray-400 dark:text-gray-500">
+                activas
+              </span>
+            </div>
+            <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500 block mt-0.5">
+              ✓ {listas.toString().padStart(2, "0")} listas
+            </span>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-semibold text-gray-400 dark:text-gray-300"
-              >Pendientes</span
-            >
-            <span class="text-base font-semibold"
-              >{(totalTareasGlobal - completadas)
-                .toString()
-                .padStart(2, "0")}</span
-            >
+
+          <!-- Botón PDF -->
+          <button
+            type="button"
+            onclick={() => exportarListadoAreaPDF(area.id)}
+            disabled={activas === 0}
+            class="w-full inline-flex items-center justify-center gap-1 text-[10px] font-semibold py-1 rounded-lg border transition-all
+              {activas > 0
+                ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black cursor-pointer'
+                : 'border-transparent bg-gray-50/50 dark:bg-gray-800/20 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50'}"
+          >
+            <FileText size={11} strokeWidth={2} />
+            PDF
+          </button>
+        </CardContent>
+      </Card>
+    {/each}
+
+    <!-- Tarjeta resumen rápido -->
+    <Card class="w-full border border-[#E9EBF0] dark:border-[#232830] bg-gray-900 dark:bg-black rounded-2xl shadow-none">
+      <CardContent class="p-3.5 flex flex-col justify-between h-full gap-2">
+        <span class="text-[9px] font-semibold text-gray-400 dark:text-[#a4f4cf]/70 uppercase tracking-wider block">
+          Resumen
+        </span>
+        <div class="space-y-1.5 text-[10px]">
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-gray-400 dark:text-gray-400">Listas</span>
+            <span class="font-semibold text-white dark:text-[#a4f4cf]">
+              {completadas.toString().padStart(2, "0")}
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-gray-400 dark:text-gray-400">Pendientes</span>
+            <span class="font-semibold text-white">
+              {(totalTareasGlobal - completadas).toString().padStart(2, "0")}
+            </span>
+          </div>
+          <div class="flex items-center justify-between border-t border-white/10 pt-1">
+            <span class="font-medium text-gray-400 dark:text-gray-400">Eficiencia</span>
+            <span class="font-semibold text-white dark:text-[#a4f4cf]">{porcentajeEficiencia}%</span>
           </div>
         </div>
-      </div>
-      <button
-        type="button"
-        class="w-full bg-white dark:bg-[#a4f4cf] text-gray-900 dark:text-black font-semibold text-xs py-3 rounded-xl mt-5 hover:bg-gray-100 dark:hover:bg-[#8fdbb8] transition-colors shadow-xs"
-        >Revisión mensual</button
-      >
-    </div>
+      </CardContent>
+    </Card>
   </div>
 
   {#if modalEditarAbierto && tareaEnEdicion}
@@ -757,7 +407,7 @@
         type="button"
         aria-label="Cerrar modal de edición"
         class="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
-        on:click={() => (modalEditarAbierto = false)}
+        onclick={() => (modalEditarAbierto = false)}
       ></button>
       <div
         class="bg-white dark:bg-[#16191D] rounded-3xl border border-[#E9EBF0] dark:border-[#232830] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 p-8 space-y-6 relative text-[#1A1D21] dark:text-[#EDF0F3]"
@@ -780,10 +430,10 @@
           </div>
           <button
             type="button"
-            on:click={() => (modalEditarAbierto = false)}
+            onclick={() => (modalEditarAbierto = false)}
             class="text-gray-400 flex items-center justify-center p-1 hover:text-black dark:hover:text-white"
           >
-            <span class="material-symbols-rounded">close</span>
+            <X size={18} strokeWidth={2} />
           </button>
         </div>
 
@@ -839,11 +489,10 @@
             >
             <button
               type="button"
-              on:click={añadirFilaDesgloseEdicion}
+              onclick={añadirFilaDesgloseEdicion}
               class="text-xs font-semibold text-gray-900 dark:text-[#a4f4cf] bg-gray-100 dark:bg-[#a4f4cf]/10 hover:bg-gray-200 dark:hover:bg-[#a4f4cf]/20 px-4 py-2 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <span class="material-symbols-rounded text-base">add</span> Añadir
-              Producto
+              <Plus size={14} strokeWidth={2.5} /> Añadir Producto
             </button>
           </div>
           <div class="space-y-3 max-h-48 overflow-y-auto pr-1">
@@ -866,10 +515,10 @@
                 {#if tareaEnEdicion.desgloses.length > 1}
                   <button
                     type="button"
-                    on:click={() => eliminarFilaDesgloseEdicion(index)}
+                    onclick={() => eliminarFilaDesgloseEdicion(index)}
                     class="text-gray-400 hover:text-red-500 transition-colors p-2 flex items-center justify-center cursor-pointer"
                   >
-                    <span class="material-symbols-rounded text-lg">delete</span>
+                    <Trash2 size={16} strokeWidth={2} />
                   </button>
                 {/if}
               </div>
@@ -936,11 +585,9 @@
         <div>
           <label
             for="edit-subcontrata"
-            class="text-[10px] font-semibold text-orange-500 uppercase tracking-widest mb-1.5 block flex items-center gap-1"
+            class="text-[10px] font-semibold text-orange-500 uppercase tracking-widest mb-1.5 flex items-center gap-1"
           >
-            <span class="material-symbols-rounded text-sm text-orange-500"
-              >handshake</span
-            >
+            <Handshake size={13} strokeWidth={2} class="text-orange-500" />
             Taller Externo (Subcontrata)
           </label>
           <input
@@ -957,13 +604,13 @@
         >
           <button
             type="button"
-            on:click={() => (modalEditarAbierto = false)}
+            onclick={() => (modalEditarAbierto = false)}
             class="px-6 py-3 border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 font-semibold text-xs rounded-full cursor-pointer"
             >Cancelar</button
           >
           <button
             type="button"
-            on:click={guardarEdicion}
+            onclick={guardarEdicion}
             class="px-6 py-3 bg-gray-900 dark:bg-[#a4f4cf] text-white dark:text-gray-900 font-semibold text-xs rounded-full shadow-md cursor-pointer hover:bg-black dark:hover:bg-white"
             >Guardar Cambios ➔</button
           >
@@ -978,7 +625,7 @@
         type="button"
         aria-label="Cerrar modal de confirmación"
         class="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
-        on:click={() => (modalEliminarAbierto = false)}
+        onclick={() => (modalEliminarAbierto = false)}
       ></button>
       <div
         class="bg-white dark:bg-[#16191D] rounded-3xl border border-[#E9EBF0] dark:border-[#232830] shadow-2xl w-full max-w-md z-10 p-6 space-y-4 text-center text-[#1A1D21] dark:text-[#EDF0F3]"
@@ -986,7 +633,7 @@
         <div
           class="w-11 h-11 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-500 dark:text-red-400 flex items-center justify-center mx-auto mb-1 border border-red-100/50 dark:border-red-500/20"
         >
-          <span class="material-symbols-rounded text-xl">warning</span>
+          <AlertTriangle size={20} strokeWidth={2} />
         </div>
         <div>
           <h3
@@ -1005,13 +652,13 @@
         <div class="grid grid-cols-2 gap-3 pt-1">
           <button
             type="button"
-            on:click={() => (modalEliminarAbierto = false)}
+            onclick={() => (modalEliminarAbierto = false)}
             class="w-full py-2.5 border border-gray-100 dark:border-[#232830] text-gray-400 dark:text-gray-500 font-semibold text-xs rounded-xl cursor-pointer"
             >Cancelar</button
           >
           <button
             type="button"
-            on:click={confirmarEliminar}
+            onclick={confirmarEliminar}
             class="w-full py-2.5 bg-red-500 text-white font-semibold text-xs rounded-xl shadow-sm cursor-pointer"
             >Sí, Eliminar</button
           >

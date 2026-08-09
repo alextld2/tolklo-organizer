@@ -12,36 +12,20 @@ const isPathActive = (targetPath: string, strict = false) => {
     : pathname === targetPath || pathname.startsWith(targetPath + "/");
 };
 
-// SISTEMA DE LUCES EN ENLACES: Ahora muta de color perfectamente de noche
 const getLinkClass = (targetPath: string, strict = false) => {
-  const baseClass =
-    "flex items-center gap-3 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all group outline-none select-none";
-  const isActive = isPathActive(targetPath, strict);
-
-  return isActive
-    ? `${baseClass} text-black dark:text-[#a4f4cf] bg-gray-100 dark:bg-[#a4f4cf]/10 font-semibold`
-    : `${baseClass} text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-[#a4f4cf] hover:bg-gray-50 dark:hover:bg-[#1E2228]`;
+  const base = "flex items-center gap-3 px-3 py-2.5 text-xs font-medium rounded-xl transition-all group outline-none select-none";
+  return isPathActive(targetPath, strict)
+    ? `${base} text-primary-foreground bg-primary font-semibold shadow-xs`
+    : `${base} text-muted-foreground hover:text-foreground hover:bg-accent`;
 };
 
-const getIconStyle = (targetPath: string, strict = false) => {
-  const isActive = isPathActive(targetPath, strict);
-  return isActive
-    ? "font-variation-settings: 'FILL' 1, 'wght' 300;"
-    : "font-variation-settings: 'wght' 300;";
-};
+const isActive = (p: string, strict = false) => isPathActive(p, strict);
 ---
 
-<aside
-  class="w-64 bg-white dark:bg-[#16191D] border-r border-[#E9EBF0] dark:border-[#232830] h-screen flex flex-col justify-between flex-shrink-0 z-30 font-sans transition-colors duration-200"
->
+<aside class="w-64 h-full flex flex-col justify-between flex-shrink-0 font-sans py-2 pr-2">
   <div class="flex flex-col space-y-4">
-    <div
-      class="h-20 flex items-center px-6 border-b border-gray-100/50 dark:border-[#232830] flex-shrink-0"
-    >
-      <a
-        href={`/w/${workspace}`}
-        class="flex items-center gap-2 group outline-none"
-      >
+    <div class="h-20 flex items-center px-6 border-b border-border flex-shrink-0">
+      <a href={`/w/${workspace}`} class="flex items-center gap-2 group outline-none">
         <img
           src="/logotipo-app.svg"
           alt="Tolkie Organizer"
@@ -53,44 +37,54 @@ const getIconStyle = (targetPath: string, strict = false) => {
     <WorkspaceSwitcher workspaceActivo={workspace} client:load />
 
     <nav class="flex flex-col px-4 pt-2 space-y-1">
+      <!-- Inicio -->
       <a href={`/w/${workspace}`} class={getLinkClass(`/w/${workspace}`, true)}>
-        <span
-          class="material-symbols-rounded text-lg transition-all"
-          style={getIconStyle(`/w/${workspace}`, true)}>home</span
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class={isActive(`/w/${workspace}`, true) ? "opacity-100" : "opacity-70"}>
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
         <span>Inicio</span>
       </a>
 
-      <a
-        href={`/w/${workspace}/tasks`}
-        class={getLinkClass(`/w/${workspace}/tasks`)}
-      >
-        <span
-          class="material-symbols-rounded text-lg transition-all"
-          style={getIconStyle(`/w/${workspace}/tasks`)}>assignment</span
-        >
+      <!-- Tareas -->
+      <a href={`/w/${workspace}/tasks`} class={getLinkClass(`/w/${workspace}/tasks`)}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class={isActive(`/w/${workspace}/tasks`) ? "opacity-100" : "opacity-70"}>
+          <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <path d="m9 14 2 2 4-4"/>
+        </svg>
         <span>Tareas</span>
       </a>
 
-      <a
-        href={`/w/${workspace}/calendar`}
-        class={getLinkClass(`/w/${workspace}/calendar`)}
-      >
-        <span
-          class="material-symbols-rounded text-lg transition-all"
-          style={getIconStyle(`/w/${workspace}/calendar`)}>calendar_today</span
-        >
+      <!-- Calendario -->
+      <a href={`/w/${workspace}/calendar`} class={getLinkClass(`/w/${workspace}/calendar`)}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class={isActive(`/w/${workspace}/calendar`) ? "opacity-100" : "opacity-70"}>
+          <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+          <line x1="16" x2="16" y1="2" y2="6"/>
+          <line x1="8" x2="8" y1="2" y2="6"/>
+          <line x1="3" x2="21" y1="10" y2="10"/>
+          <path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>
+          <path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>
+        </svg>
         <span>Calendario</span>
       </a>
 
-      <a
-        href={`/w/${workspace}/clients`}
-        class={getLinkClass(`/w/${workspace}/clients`)}
-      >
-        <span
-          class="material-symbols-rounded text-lg transition-all"
-          style={getIconStyle(`/w/${workspace}/clients`)}>group</span
-        >
+      <!-- Clientes -->
+      <a href={`/w/${workspace}/clients`} class={getLinkClass(`/w/${workspace}/clients`)}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class={isActive(`/w/${workspace}/clients`) ? "opacity-100" : "opacity-70"}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
         <span>Clientes</span>
       </a>
     </nav>
@@ -99,48 +93,40 @@ const getIconStyle = (targetPath: string, strict = false) => {
   <div class="p-4 space-y-4 flex flex-col">
     <a
       href={`/w/${workspace}/nueva-tarea`}
-      class="w-full bg-gray-900 dark:bg-black text-[#a4f4cf] font-semibold text-xs py-3 rounded-xl hover:bg-black dark:hover:bg-gray-900 border border-transparent dark:border-[#232830] transition-all shadow-sm flex items-center justify-center gap-2 outline-none text-center select-none"
+      class="w-full bg-primary text-primary-foreground font-semibold text-xs py-3 rounded-xl hover:bg-primary/90 transition-all shadow-xs flex items-center justify-center gap-2 outline-none text-center select-none"
     >
-      <span
-        class="material-symbols-rounded text-base"
-        style="font-variation-settings: 'wght' 400;">add</span
-      >
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+      </svg>
       <span>Registrar nuevo parte</span>
     </a>
 
-    <div
-      class="border-t border-gray-100 dark:border-[#232830] pt-3 space-y-0.5"
-    >
+    <div class="border-t border-border pt-3 space-y-0.5">
       <ThemeSelector client:load />
 
       <a
         href={`/w/${workspace}/logs`}
-        class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-gray-400 dark:text-gray-500 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] hover:bg-gray-50 dark:hover:bg-[#1E2228] transition-all outline-none"
+        class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all outline-none"
       >
-        <span
-          class="material-symbols-rounded text-lg"
-          style="font-variation-settings: 'wght' 300;">bug_report</span
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+          <path d="M12 8v4"/><path d="M12 16h.01"/>
+        </svg>
         <span>Registro/Logs</span>
       </a>
 
       <a
         href="/api/auth/logout"
         data-astro-reload
-        class="flex items-center gap-2 px-4 py-3 text-xs font-semibold text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
+        class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-destructive transition-colors cursor-pointer rounded-xl hover:bg-destructive/10"
       >
-        <svg
-          class="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-          ></path>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" x2="9" y1="12" y2="12"/>
         </svg>
         <span>Cerrar sesión</span>
       </a>

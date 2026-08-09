@@ -1,39 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* 🛡️ SAFELIST TAILWIND v4: Fuerza la generación de clases de color dinámicas usadas en ESTADOS_ESTILOS (constants.ts) y dots del Calendario.
-   Sin esto, el scanner de Vite+Svelte ignora las clases dentro de ternarios JS en tiempo de HMR. */
-/* Clases de fondo / border de ESTADOS_ESTILOS (paleta desaturada monocromática) */
+/* =============================================
+   🎨 SHADCN-SVELTE – ZINC BASE + SKY CHART
+   ============================================= */
+:root {
+  /* Zinc light theme con fondo #f7f7f5 */
+  --background: 60 4.8% 96.5%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.85rem;
+  /* Sky chart color */
+  --chart: 199 89% 48%;
+}
+
+.dark {
+  /* Zinc dark theme */
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 6%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 6%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 240 5.9% 10%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 240 4.9% 83.9%;
+  /* Sky chart color dark */
+  --chart: 199 89% 60%;
+}
+
+/* =============================================
+   🛡️ SAFELIST: dynamic classes used in constants.ts and Calendario dots
+   ============================================= */
 @source inline("{bg-gray-100,bg-gray-900,bg-white,border-gray-200,border-gray-900,border-white}");
 @source inline("{dark:bg-white,dark:bg-transparent,text-gray-500,text-gray-700,text-white,text-gray-900}");
 @source inline("{dark:text-gray-300,dark:text-gray-400,dark:text-gray-900,dark:border-white}");
 @source inline("{dark:bg-white/5,dark:bg-white/8,dark:border-white/10,dark:border-white/15}");
-/* Dots del Calendario (clases dinámicas de color de estado) */
 @source inline("{bg-indigo-300,bg-indigo-400,bg-amber-300,bg-amber-400,bg-teal-300,bg-rose-300,bg-rose-400,bg-gray-300,bg-gray-500}");
 @source inline("{dark:bg-indigo-400/90,dark:bg-amber-400/90,dark:bg-rose-400/90,dark:bg-gray-500/80,dark:bg-[#a4f4cf]/80}");
 
-/* 1. Importamos Google Sans Flex original directamente desde los servidores de Google */
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@8..144,100..900&display=swap');
-
+/* =============================================
+   🎨 TAILWIND v4 THEME TOKENS
+   ============================================= */
 @theme {
-  /* 2. Le indicamos a Tailwind v4 que aplique la tipografía oficial */
-  --font-sans: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --color-brand-purple: #7B61FF;
-  --color-bg-main: #F6F6F6;
-  --color-sidebar-text: #8A8D91;
-  --color-border-light: #E9EBF0;
-  --color-text-dark: #1A1D21;
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-chart: hsl(var(--chart));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
-/* Scroll estilizado */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
+/* =============================================
+   📜 SCROLLBAR
+   ============================================= */
+::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb {
-  background: #E2E8F0;
+  background: hsl(var(--border));
   border-radius: 10px;
 }
 
-/* 🌙 CONFIGURACIÓN DE MODO OSCURO POR CLASE EN TAILWIND v4 */
+/* =============================================
+   🌙 DARK MODE CONFIG (Tailwind v4 class strategy)
+   ============================================= */
 @custom-variant dark (&:where(.dark, .dark *));

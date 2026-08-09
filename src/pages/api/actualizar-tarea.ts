@@ -6,9 +6,11 @@ export const prerender = false; // Forzamos carga en vivo SSR
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const { id, estado, area, workspaceId } = await request.json();
+    const body = await request.json();
+    const targetId = body.id || body.numParte;
+    const { estado, area, workspaceId } = body;
 
-    if (!id) {
+    if (!targetId) {
       return new Response(JSON.stringify({ error: 'Falta el ID del parte de trabajo' }), { status: 400 });
     }
 
@@ -20,7 +22,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // 2. Actualizamos el trabajo en Turso
     await db.update(Trabajo)
       .set(camposActualizar)
-      .where(eq(Trabajo.numParte, id));
+      .where(eq(Trabajo.numParte, String(targetId)));
 
     // 3. 🛡️ EXTRACCIÓN SEGURA DE AUTORÍA (Evita conflictos con el nuevo objeto de Google)
     const usuarioLogueado = locals.user?.name || locals.user?.email || 'Sistema';

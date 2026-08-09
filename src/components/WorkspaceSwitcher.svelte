@@ -1,97 +1,148 @@
 <script lang="ts">
-  // Recibimos el espacio actual desde Astro para saber cuál iluminar por defecto
-  export let workspaceActivo: string = "produccion";
+  import {
+    Factory,
+    GraduationCap,
+    Briefcase,
+    ChevronsUpDown,
+    Plus,
+  } from "lucide-svelte";
+  import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuGroup,
+  } from "./ui/dropdown-menu";
 
-  let desplegado = false;
+  let {
+    workspaceActivo = "produccion",
+  }: {
+    workspaceActivo?: string;
+  } = $props();
 
-  // Catálogo estático de espacios (Coincide con los IDs exactos de tu DB)
-  const espacios = [
-    { id: "produccion", nombre: "Imprenta", icono: "factory", color: "text-[#5C42FF]", bg: "bg-purple-50/70" },
-    { id: "escolar", nombre: "Agendas Escolares", icono: "school", color: "text-sky-500", bg: "bg-sky-50/70" },
-    { id: "profesional", nombre: "Agendas Profesionales", icono: "business_center", color: "text-emerald-500", bg: "bg-emerald-50/70" }
+  const equipos = [
+    {
+      id: "produccion",
+      nombre: "Imprenta",
+      plan: "Producción",
+      icon: Factory,
+      shortcut: "⌘1",
+    },
+    {
+      id: "escolar",
+      nombre: "Agendas Escolares",
+      plan: "Educativo",
+      icon: GraduationCap,
+      shortcut: "⌘2",
+    },
+    {
+      id: "profesional",
+      nombre: "Agendas Profesionales",
+      plan: "Empresarial",
+      icon: Briefcase,
+      shortcut: "⌘3",
+    },
   ];
 
-  // Encontramos los datos del espacio que está abierto actualmente
-  $: espacioSeleccionado = espacios.find(e => e.id === workspaceActivo) || espacios[0];
+  const equipoActivo = $derived(
+    equipos.find((e) => e.id === workspaceActivo) || equipos[0]
+  );
 
-  // Cerramos el panel de forma limpia si hacen clic fuera
-  function conmutarMenu(event: MouseEvent) {
-    event.stopPropagation();
-    desplegado = !desplegado;
+  function seleccionarWorkspace(id: string) {
+    if (id !== workspaceActivo) {
+      window.location.href = `/w/${id}`;
+    }
   }
 
-  function cerrarMenu() {
-    desplegado = false;
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.metaKey || e.ctrlKey) {
+      if (e.key === "1") {
+        e.preventDefault();
+        seleccionarWorkspace("produccion");
+      } else if (e.key === "2") {
+        e.preventDefault();
+        seleccionarWorkspace("escolar");
+      } else if (e.key === "3") {
+        e.preventDefault();
+        seleccionarWorkspace("profesional");
+      }
+    }
   }
 </script>
 
-<svelte:window on:click={cerrarMenu} />
+<svelte:window onkeydown={handleKeydown} />
 
-<div class="relative w-full px-4 font-sans text-[#1A1D21]">
-  
-  <button
-    type="button"
-    on:click={conmutarMenu}
-    class="w-full flex items-center justify-between p-2.5 bg-[#F1F3F6]/80 hover:bg-[#EAECEF] border border-[#E9EBF0] rounded-2xl transition-all cursor-pointer shadow-xs group select-none outline-none"
-  >
-    <div class="flex items-center gap-2.5 min-w-0">
-      <div class="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200/40 bg-white shadow-xs">
-        <span class="material-symbols-rounded text-base {espacioSeleccionado.color}" style="font-variation-settings: 'wght' 400;">
-          {espacioSeleccionado.icono}
+<div class="w-full px-3">
+  <DropdownMenu>
+    <DropdownMenuTrigger
+      class="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-100 dark:hover:bg-[#1E2228] transition-colors cursor-pointer outline-none select-none group data-[state=open]:bg-gray-100 dark:data-[state=open]:bg-[#1E2228]"
+    >
+      <div
+        class="flex size-9 items-center justify-center rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xs flex-shrink-0"
+      >
+        <svelte:component this={equipoActivo.icon} class="size-4" strokeWidth={2.2} />
+      </div>
+
+      <div class="grid flex-1 text-left leading-tight min-w-0">
+        <span class="truncate font-semibold text-xs text-[#1A1D21] dark:text-[#EDF0F3]">
+          {equipoActivo.nombre}
+        </span>
+        <span class="truncate text-[11px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">
+          {equipoActivo.plan}
         </span>
       </div>
-      
-      <div class="flex flex-col text-left min-w-0">
-        <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest leading-none">Workspace</span>
-        <span class="text-xs font-semibold text-[#1A1D21] mt-1 truncate">{espacioSeleccionado.nombre}</span>
-      </div>
-    </div>
 
-    <span 
-      class="material-symbols-rounded text-gray-400 text-lg transition-transform duration-200 pr-0.5
-             {desplegado ? 'rotate-180 text-[#1A1D21]' : ''}"
-      style="font-variation-settings: 'wght' 300;"
+      <ChevronsUpDown class="size-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+    </DropdownMenuTrigger>
+
+    <DropdownMenuContent
+      side="right"
+      align="start"
+      sideOffset={8}
+      class="w-64 p-1.5 rounded-2xl border border-gray-100 dark:border-[#232830] bg-white dark:bg-[#1E2228] shadow-xl"
     >
-      keyboard_arrow_down
-    </span>
-  </button>
+      <DropdownMenuGroup>
+        <DropdownMenuLabel class="text-xs text-gray-400 dark:text-gray-500 px-2 py-1.5 font-semibold">
+          Equipos
+        </DropdownMenuLabel>
 
-  {#if desplegado}
-    <div class="absolute top-[calc(100%+6px)] left-4 right-4 bg-white border border-[#E9EBF0] rounded-2xl shadow-xl p-1.5 space-y-0.5 z-50 animate-scale-up">
-      <p class="text-[9px] font-semibold text-gray-400 uppercase tracking-widest px-2.5 py-1.5">Cambiar de espacio</p>
-      
-      {#each espacios as espacio}
-        <a
-          href="/w/{espacio.id}"
-          class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all group
-                 {workspaceActivo === espacio.id 
-                   ? 'bg-[#5C42FF]/5 text-[#5C42FF]' 
-                   : 'text-[#1A1D21] hover:bg-gray-50'}"
+        {#each equipos as equipo}
+          <DropdownMenuItem
+            onSelect={() => seleccionarWorkspace(equipo.id)}
+            class="gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 {workspaceActivo === equipo.id ? 'bg-gray-50 dark:bg-gray-800/60' : ''}"
+          >
+            <div
+              class="flex size-6 items-center justify-center rounded-lg border border-gray-200 dark:border-[#232830] bg-gray-50 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300 flex-shrink-0"
+            >
+              <svelte:component this={equipo.icon} class="size-3.5" strokeWidth={2} />
+            </div>
+
+            <span class="font-semibold text-xs text-[#1A1D21] dark:text-[#EDF0F3] flex-1 truncate">
+              {equipo.nombre}
+            </span>
+
+            <DropdownMenuShortcut>{equipo.shortcut}</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        {/each}
+      </DropdownMenuGroup>
+
+      <DropdownMenuSeparator class="my-1 border-t border-gray-100 dark:border-[#232830]" />
+
+      <DropdownMenuItem
+        class="gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60"
+      >
+        <div
+          class="flex size-6 items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 bg-transparent text-gray-400 flex-shrink-0"
         >
-          <div class="w-7 h-7 rounded-lg flex items-center justify-center transition-colors
-                      {workspaceActivo === espacio.id ? 'bg-white shadow-xs' : 'bg-gray-50 group-hover:bg-white'}">
-            <span class="material-symbols-rounded text-sm {espacio.color}" style="font-variation-settings: 'wght' 400;">
-              {espacio.icono}
-            </span>
-          </div>
-
-          <span class="flex-1 truncate">{espacio.nombre}</span>
-
-          {#if workspaceActivo === espacio.id}
-            <span class="material-symbols-rounded text-base text-[#5C42FF]" style="font-variation-settings: 'wght' 500;">
-              check
-            </span>
-          {/if}
-        </a>
-      {/each}
-    </div>
-  {/if}
+          <Plus class="size-3.5" strokeWidth={2.2} />
+        </div>
+        <span class="font-medium text-xs text-gray-500 dark:text-gray-400">
+          Añadir equipo
+        </span>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
 </div>
-
-<style>
-  @keyframes scale-up { 
-    from { opacity: 0; transform: scale(0.97) translateY(-4px); } 
-    to { opacity: 1; transform: scale(1) translateY(0); } 
-  }
-  .animate-scale-up { animation: scale-up 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-</style>
