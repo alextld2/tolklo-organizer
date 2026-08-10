@@ -23,7 +23,10 @@ export default defineConfig({
   vite: {
     plugins: [tailwindVite()],
     optimizeDeps: {
-      include: ['lucide-svelte', 'bits-ui', 'clsx', 'tailwind-merge']
+      include: ['lucide-svelte', 'bits-ui', 'clsx', 'tailwind-merge', '@internationalized/date']
+    },
+    ssr: {
+      noExternal: ['bits-ui', '@internationalized/date']
     },
     resolve: {
       alias: {
