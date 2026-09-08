@@ -7,17 +7,19 @@ export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const { id, workspaceId } = await request.json();
+    const body = await request.json();
+    const targetId = body.id || body.numParte;
+    const workspaceId = body.workspaceId;
 
-    if (!id) {
+    if (!targetId) {
       return new Response(JSON.stringify({ error: 'Falta el ID del parte' }), { status: 400 });
     }
 
     // 2. Cambia Desglose por Desgloses aquí también
-    await db.delete(DesgloseTrabajo).where(eq(DesgloseTrabajo.numParte, id));
+    await db.delete(DesgloseTrabajo).where(eq(DesgloseTrabajo.numParte, String(targetId)));
 
     // El resto de tu código de eliminación del Trabajo se queda exactamente igual...
-    await db.delete(Trabajo).where(eq(Trabajo.numParte, id));
+    await db.delete(Trabajo).where(eq(Trabajo.numParte, String(targetId)));
 
     const usuarioLogueado = locals.user?.name || locals.user?.email || 'Sistema';
 
@@ -26,7 +28,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       workspaceId: workspaceId || 'general',
       tipo: 'DELETE',
       accion: 'Eliminar Parte',
-      detalles: `Se eliminó el parte de trabajo #${id} y sus líneas de desglose asociadas de la base de datos.`
+      detalles: `Se eliminó el parte de trabajo #${targetId} y sus líneas de desglose asociadas de la base de datos.`
     });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });

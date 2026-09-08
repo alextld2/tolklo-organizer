@@ -1,6 +1,8 @@
 <script lang="ts">
   import { busquedaGlobal } from "../stores/busqueda";
   import DataTableTareas from "./DataTableTareas.svelte";
+  import ModalEditarTarea from "./ModalEditarTarea.svelte";
+  import { Toaster, toast } from "./ui/sonner";
   import {
     LISTA_COMERCIALES,
     LISTA_ESTADOS,
@@ -78,79 +80,45 @@
 
 
   // --- PERSISTENCIA: CAMBIO DE ESTADO RÁPIDO ---
-  async function actualizarEstadoRapido(numParte: number, nuevoEstado: string) {
-    const itemTarget = tareas.find((t) => t.numParte === numParte);
+  async function actualizarEstadoRapido(numParte: number | string, nuevoEstado: string) {
+    const itemTarget = tareas.find((t) => String(t.numParte) === String(numParte));
     if (!itemTarget || itemTarget.estado === nuevoEstado)
       return;
 
     tareas = tareas.map((t) =>
-      t.numParte === numParte ? { ...t, estado: nuevoEstado } : t,
+      String(t.numParte) === String(numParte) ? { ...t, estado: nuevoEstado } : t,
     );
-    menuAbiertoNumParte = null;
 
     try {
-      await fetch("/api/actualizar-tarea", {
+      const res = await fetch("/api/actualizar-tarea", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: itemTarget.numParte, numParte: itemTarget.numParte, estado: nuevoEstado }),
       });
+      if (res.ok) {
+        toast.success(`Estado de #${numParte} cambiado a ${nuevoEstado}`);
+      } else {
+        toast.error("Error al actualizar el estado");
+      }
     } catch (e) {
       console.error("Error guardando estado rápido en Astro DB", e);
+      toast.error("Error de conexión al actualizar el estado");
     }
   }
 
   // --- MODAL DE EDICIÓN ---
   function abrirModalEditar(tarea: any) {
-    tareaEnEdicion = {
-      ...tarea,
-      desgloses: tarea.desgloses
-        ? tarea.desgloses.map((d: any) => ({ ...d }))
-        : [{ descripcionProducto: "", cantidad: null }],
-    };
+    tareaEnEdicion = { ...tarea };
     modalEditarAbierto = true;
   }
 
-  function añadirFilaDesgloseEdicion() {
-    tareaEnEdicion.desgloses = [
-      ...tareaEnEdicion.desgloses,
-      { descripcionProducto: "", cantidad: null },
-    ];
-  }
-  function eliminarFilaDesgloseEdicion(index: number) {
-    if (tareaEnEdicion.desgloses.length > 1) {
-      tareaEnEdicion.desgloses = tareaEnEdicion.desgloses.filter(
-        (
-          _: { descripcionProducto: string; cantidad: number | null },
-          i: number,
-        ) => i !== index,
-      );
-    }
-  }
-
-  // --- PERSISTENCIA: GUARDAR EDICIÓN ---
-  async function guardarEdicion() {
-    tareaEnEdicion.desgloses = tareaEnEdicion.desgloses.filter(
-      (d: any) => d.descripcionProducto !== "" && d.cantidad !== null,
-    );
-    if (tareaEnEdicion.desgloses.length === 0) {
-      tareaEnEdicion.desgloses = [{ descripcionProducto: "", cantidad: null }];
-    }
-
+  function onTareaGuardada(tareaActualizada: any) {
     tareas = tareas.map((t) =>
-      t.numParte === tareaEnEdicion.numParte ? { ...tareaEnEdicion } : t,
+      String(t.numParte) === String(tareaActualizada.numParte)
+        ? { ...t, ...tareaActualizada }
+        : t,
     );
-    modalEditarAbierto = false;
-
-    try {
-      await fetch("/api/actualizar-tarea", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tareaEnEdicion),
-      });
-      tareaEnEdicion = null;
-    } catch (e) {
-      console.error("Error guardando maxi-modal en Astro DB", e);
-    }
+    tareaEnEdicion = null;
   }
 
   // --- PERSISTENCIA: CONFIRMAR ELIMINACIÓN ---
@@ -401,223 +369,14 @@
     </Card>
   </div>
 
-  {#if modalEditarAbierto && tareaEnEdicion}
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button
-        type="button"
-        aria-label="Cerrar modal de edición"
-        class="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
-        onclick={() => (modalEditarAbierto = false)}
-      ></button>
-      <div
-        class="bg-white dark:bg-[#16191D] rounded-3xl border border-[#E9EBF0] dark:border-[#232830] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto z-10 p-8 space-y-6 relative text-[#1A1D21] dark:text-[#EDF0F3]"
-      >
-        <div
-          class="flex justify-between items-start border-b border-gray-100 dark:border-[#232830] pb-4"
-        >
-          <div>
-            <h2
-              class="text-2xl font-semibold text-[#1A1D21] dark:text-[#EDF0F3] tracking-tight"
-            >
-              Editar Orden de Trabajo
-            </h2>
-            <p
-              class="text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5"
-            >
-              Modifica las especificaciones y el desglose de productos del parte
-              #{tareaEnEdicion.numParte}.
-            </p>
-          </div>
-          <button
-            type="button"
-            onclick={() => (modalEditarAbierto = false)}
-            class="text-gray-400 flex items-center justify-center p-1 hover:text-black dark:hover:text-white"
-          >
-            <X size={18} strokeWidth={2} />
-          </button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label
-              for="edit-cliente"
-              class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
-              >Cliente</label
-            >
-            <input
-              id="edit-cliente"
-              type="text"
-              bind:value={tareaEnEdicion.cliente}
-              class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none"
-            />
-          </div>
-          <div>
-            <label
-              for="edit-fecha-salida"
-              class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
-              >Fecha de Salida</label
-            >
-            <input
-              id="edit-fecha-salida"
-              type="date"
-              bind:value={tareaEnEdicion.fechaSalida}
-              class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label
-            for="edit-descripcion"
-            class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
-            >Descripción General del Trabajo</label
-          >
-          <input
-            id="edit-descripcion"
-            type="text"
-            bind:value={tareaEnEdicion.descripcionGeneral}
-            class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none"
-          />
-        </div>
-
-        <div class="border-t border-gray-100 dark:border-[#232830] pt-5">
-          <div class="flex justify-between items-center mb-3">
-            <label
-              for="edit-desglose-placeholder"
-              class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest"
-              >Líneas de Production / Cantidades</label
-            >
-            <button
-              type="button"
-              onclick={añadirFilaDesgloseEdicion}
-              class="text-xs font-semibold text-gray-900 dark:text-[#a4f4cf] bg-gray-100 dark:bg-[#a4f4cf]/10 hover:bg-gray-200 dark:hover:bg-[#a4f4cf]/20 px-4 py-2 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
-            >
-              <Plus size={14} strokeWidth={2.5} /> Añadir Producto
-            </button>
-          </div>
-          <div class="space-y-3 max-h-48 overflow-y-auto pr-1">
-            {#each tareaEnEdicion.desgloses as fila, index}
-              <div
-                class="flex items-center gap-4 bg-gray-50/40 dark:bg-[#1E2228]/40 p-3 rounded-2xl border border-gray-100/80 dark:border-[#232830]"
-              >
-                <input
-                  type="text"
-                  placeholder="Ej: Revistas 16pp..."
-                  bind:value={fila.descripcionProducto}
-                  class="flex-1 bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none"
-                />
-                <input
-                  type="number"
-                  placeholder="Cant."
-                  bind:value={fila.cantidad}
-                  class="w-32 bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] text-right outline-none"
-                />
-                {#if tareaEnEdicion.desgloses.length > 1}
-                  <button
-                    type="button"
-                    onclick={() => eliminarFilaDesgloseEdicion(index)}
-                    class="text-gray-400 hover:text-red-500 transition-colors p-2 flex items-center justify-center cursor-pointer"
-                  >
-                    <Trash2 size={16} strokeWidth={2} />
-                  </button>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-5 border-t border-gray-100 dark:border-[#232830] pt-5"
-        >
-          <div>
-            <label
-              for="edit-comercial"
-              class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
-              >Comercial</label
-            >
-            <select
-              id="edit-comercial"
-              bind:value={tareaEnEdicion.comercial}
-              class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
-            >
-              <option value="">Ninguno</option>
-              {#each listaComerciales as c}<option value={c}>{c}</option>{/each}
-            </select>
-          </div>
-          <div>
-            <label
-              for="edit-area"
-              class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
-              >Área de Production</label
-            >
-            <select
-              id="edit-area"
-              bind:value={tareaEnEdicion.area}
-              class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
-            >
-              {#each listaAreas as a}<option value={a}>{a}</option>{/each}
-            </select>
-          </div>
-          <div>
-            <label
-              for="edit-estado"
-              class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 block"
-              >Estado del Parte</label
-            >
-            <select
-              id="edit-estado"
-              bind:value={tareaEnEdicion.estado}
-              class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none cursor-pointer"
-            >
-              {#each listaEstados as est}
-                <option
-                  value={est}
-                  disabled={tareaEnEdicion.estado !== est &&
-                    !esTransicionValida(tareaEnEdicion.estado, est)}
-                >
-                  {est}
-                </option>
-              {/each}
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label
-            for="edit-subcontrata"
-            class="text-[10px] font-semibold text-orange-500 uppercase tracking-widest mb-1.5 flex items-center gap-1"
-          >
-            <Handshake size={13} strokeWidth={2} class="text-orange-500" />
-            Taller Externo (Subcontrata)
-          </label>
-          <input
-            id="edit-subcontrata"
-            type="text"
-            bind:value={tareaEnEdicion.subcontrata}
-            placeholder="Fabricación interna de Aeroprint"
-            class="w-full bg-[#F1F3F6] dark:bg-[#1E2228] px-4 py-3 rounded-xl text-xs font-semibold text-[#1A1D21] dark:text-[#EDF0F3] outline-none"
-          />
-        </div>
-
-        <div
-          class="border-t border-gray-100 dark:border-[#232830] pt-5 flex justify-end gap-3"
-        >
-          <button
-            type="button"
-            onclick={() => (modalEditarAbierto = false)}
-            class="px-6 py-3 border border-dashed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 font-semibold text-xs rounded-full cursor-pointer"
-            >Cancelar</button
-          >
-          <button
-            type="button"
-            onclick={guardarEdicion}
-            class="px-6 py-3 bg-gray-900 dark:bg-[#a4f4cf] text-white dark:text-gray-900 font-semibold text-xs rounded-full shadow-md cursor-pointer hover:bg-black dark:hover:bg-white"
-            >Guardar Cambios ➔</button
-          >
-        </div>
-      </div>
-    </div>
-  {/if}
+  <ModalEditarTarea
+    bind:open={modalEditarAbierto}
+    tarea={tareaEnEdicion}
+    {listaComerciales}
+    {listaAreas}
+    {listaEstados}
+    onGuardado={onTareaGuardada}
+  />
 
   {#if modalEliminarAbierto}
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -666,6 +425,8 @@
       </div>
     </div>
   {/if}
+
+  <Toaster position="bottom-right" richColors />
 </div>
 
 <style>

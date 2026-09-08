@@ -12,11 +12,11 @@
   },
   "dependencies": {
     "@astrojs/db": "latest",
-    "@astrojs/node": "^11.1.0",
+    "@astrojs/node": "^11.1.4",
     "@astrojs/svelte": "^9.0.1",
     "@internationalized/date": "3.12.3",
     "@tailwindcss/vite": "^4.0.0",
-    "astro": "^7.2.0",
+    "astro": "^7.2.6",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
     "lucide-svelte": "^1.0.1",

@@ -1,6 +1,49 @@
 <script lang="ts">
   import { slide, fade } from "svelte/transition";
   import { LISTA_COMERCIALES } from "../utils/constants";
+  import {
+    CheckCircle2,
+    AlertCircle,
+    Check,
+    Calendar,
+    User,
+    Hash,
+    FileText,
+    Warehouse,
+    Store,
+    Truck,
+    MapPin,
+    Layers,
+    Printer,
+    Settings2,
+    Scissors,
+    Package,
+    Plus,
+    Trash2,
+    X,
+    ArrowLeft,
+    ArrowRight,
+    Loader2,
+    BookOpen,
+    Sparkles,
+    SlidersHorizontal,
+    Palette,
+    Info,
+    Building2,
+    Tag,
+    Handshake,
+  } from "lucide-svelte";
+  import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
+  import { Button } from "./ui/button";
+  import { Input } from "./ui/input";
+  import { Badge } from "./ui/badge";
+  import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+  } from "./ui/select";
 
   export let workspace: string = "";
   export let clientesExistentes: string[] = [];
@@ -9,7 +52,7 @@
   // --- ESTADO INTERNO DEL WIZARD Y NOTIFICACIONES ---
   let pasoActual = 1;
   let mensajeNotificacion = "";
-  let tipoNotificacion = ""; // 'success' o 'error'
+  let tipoNotificacion: "success" | "error" = "success";
   let guardandoDato = false;
 
   // --- PASO 1: ADM & LOGÍSTICA ---
@@ -83,15 +126,39 @@
   const comerciales = LISTA_COMERCIALES;
 
   // --- PASO 2: PRODUCCIÓN & DESGLOSE ---
-  let area = "DIGITAL";
+  let areasSeleccionadas: string[] = ["DIGITAL"];
+  $: area = areasSeleccionadas.length > 0 ? areasSeleccionadas.join(" / ") : "DIGITAL";
+  $: tieneSubcontrata = areasSeleccionadas.includes("SUBCONTRATA");
+
+  const listaEmpresasSubcontrata = [
+    "Subcontrata 1",
+    "Subcontrata 2",
+    "Subcontrata 3",
+    "Subcontrata 4",
+    "Taller Gráfico Externo",
+    "Acabados Especiales SL",
+  ];
+  let empresaSubcontrata = "Subcontrata 1";
+
+  function toggleArea(item: string) {
+    if (areasSeleccionadas.includes(item)) {
+      if (areasSeleccionadas.length > 1) {
+        areasSeleccionadas = areasSeleccionadas.filter((a) => a !== item);
+      }
+    } else {
+      areasSeleccionadas = [...areasSeleccionadas, item];
+    }
+  }
+
   let descripcionGeneral = "";
   let desgloses: Array<{
     descripcionProducto: string;
     cantidad: number | null;
-  }> = [{ descripcionProducto: "", cantidad: null }];
+    subcontratado?: boolean;
+  }> = [{ descripcionProducto: "", cantidad: null, subcontratado: false }];
 
   function agregarFilaDesglose() {
-    desgloses = [...desgloses, { descripcionProducto: "", cantidad: null }];
+    desgloses = [...desgloses, { descripcionProducto: "", cantidad: null, subcontratado: false }];
   }
   function eliminarFilaDesglose(index: number) {
     if (desgloses.length > 1)
@@ -165,25 +232,60 @@
     enumerado: false,
   };
 
-  let grapadoTipo = "Normal";
-  let barnizUVTipo = "No requiere";
+  let grapadoTipo = "Seleccionar opción";
+  let barnizUVTipo = "No";
   let estampingTipo = "No requiere";
 
   let laminadoTipo = "1 cara";
-  let tipoLaminadoCara1 = {
+  let tipoLaminadoCara1: Record<string, boolean> = {
     brillo: false,
     sandy: false,
     softTouch: false,
     antiAranazos: false,
     mate: false,
   };
-  let tipoLaminadoCara2 = {
+  let tipoLaminadoCara2: Record<string, boolean> = {
     brillo: false,
     sandy: false,
     softTouch: false,
     antiAranazos: false,
     mate: false,
   };
+
+  // Selección única y mutuamente excluyente de acabado de laminado
+  function seleccionarLaminadoCara1(key: string) {
+    const yaSeleccionado = tipoLaminadoCara1[key];
+    const nuevoEstado: Record<string, boolean> = {
+      brillo: false,
+      sandy: false,
+      softTouch: false,
+      antiAranazos: false,
+      mate: false,
+    };
+    nuevoEstado[key] = !yaSeleccionado;
+    tipoLaminadoCara1 = nuevoEstado;
+    if (laminadoTipo === "2 caras") {
+      tipoLaminadoCara2 = { ...nuevoEstado };
+    }
+  }
+
+  function seleccionarLaminadoCara2(key: string) {
+    const yaSeleccionado = tipoLaminadoCara2[key];
+    const nuevoEstado: Record<string, boolean> = {
+      brillo: false,
+      sandy: false,
+      softTouch: false,
+      antiAranazos: false,
+      mate: false,
+    };
+    nuevoEstado[key] = !yaSeleccionado;
+    tipoLaminadoCara2 = nuevoEstado;
+  }
+
+  // Sincronización automática si se selecciona "2 caras"
+  $: if (laminadoTipo === "2 caras") {
+    tipoLaminadoCara2 = { ...tipoLaminadoCara1 };
+  }
 
   const areasImpresion = [
     "DIGITAL",
@@ -208,15 +310,29 @@
   ];
 
   function irAlSiguiente() {
-    if (pasoActual < 3) pasoActual += 1;
+    if (pasoActual === 1) {
+      if (!cliente.trim() || !fechaSalida) {
+        mensajeNotificacion = "Por favor, completa el Cliente y la Fecha de Salida antes de continuar.";
+        tipoNotificacion = "error";
+        return;
+      }
+    }
+    if (pasoActual < 3) {
+      mensajeNotificacion = "";
+      pasoActual += 1;
+    }
   }
+
   function irAlAnterior() {
-    if (pasoActual > 1) pasoActual -= 1;
+    if (pasoActual > 1) {
+      mensajeNotificacion = "";
+      pasoActual -= 1;
+    }
   }
 
   // PROCESAR ENVÍO CON INCREMENTO REACTIVO AUTOMÁTICO (RUTA EXACTA /api/tarea/create)
   async function procesarEnvio() {
-    if (!cliente || !fechaSalida) {
+    if (!cliente.trim() || !fechaSalida) {
       mensajeNotificacion =
         "Faltan campos obligatorios por rellenar (Cliente o Fecha Salida).";
       tipoNotificacion = "error";
@@ -240,6 +356,7 @@
           comercial,
           fechaSalida,
           area,
+          subcontrata: tieneSubcontrata ? empresaSubcontrata : null,
           desgloses,
           papelPortada,
           colorPortada,
@@ -287,7 +404,9 @@
       albaranAnonimo = false;
       tipoEntrega = "taller";
       area = "DIGITAL";
-      desgloses = [{ descripcionProducto: "", cantidad: null }];
+      areasSeleccionadas = ["DIGITAL"];
+      empresaSubcontrata = "Subcontrata 1";
+      desgloses = [{ descripcionProducto: "", cantidad: null, subcontratado: false }];
       papelPortada = "";
       colorPortada = "";
       papelInterior = "";
@@ -314,8 +433,8 @@
       };
       espiralColor = "";
       wireOColor = "";
-      grapadoTipo = "Normal";
-      barnizUVTipo = "No requiere";
+      grapadoTipo = "Seleccionar opción";
+      barnizUVTipo = "No";
       estampingTipo = "No requiere";
       laminadoTipo = "1 cara";
 
@@ -330,470 +449,334 @@
       }, 5000);
     }
   }
-
-  function lanzarVentanaImpresionA3() {
-    const ventanaImpresion = window.open("", "_blank");
-    if (!ventanaImpresion) return;
-
-    const colorBoli = "#0038a8";
-    const txtColorPortadaPrint =
-      tipoTintaPortada === "pantone" && listaPantonesPortada.length > 0
-        ? `PANTONE (${listaPantonesPortada.join(" / ")})`
-        : colorPortada || "_________________";
-
-    const txtColorInteriorPrint =
-      tipoTintaInterior === "pantone" && listaPantonesInterior.length > 0
-        ? `PANTONE (${listaPantonesInterior.join(" / ")})`
-        : colorInterior || "_________________";
-
-    const filasDesgloseHTML = desgloses
-      .map((d) =>
-        d.descripcionProducto
-          ? `
-        <div style="display: grid; grid-template-columns: 1fr 140px; border-bottom: 1px solid #000; padding: 5px 8px; font-weight: bold; text-transform: uppercase; color: ${colorBoli};">
-          <div>${d.descripcionProducto}</div>
-          <div style="text-align: right; font-family: monospace; font-size:13px;">${d.cantidad ? d.cantidad.toLocaleString() : "0"}</div>
-        </div>
-      `
-          : "",
-      )
-      .join("");
-
-    ventanaImpresion.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Parte Aeroprint #${numParte}</title>
-        <style>
-          @page { size: A3 landscape; margin: 0; }
-          body { font-family: Arial, sans-serif; margin: 0; padding: 8mm; color: black; background: white; font-size: 11px; box-sizing: border-box; }
-          .documento-a3 { display: grid; grid-template-columns: 1fr 1fr; gap: 14mm; width: 100%; height: 100%; }
-          .hoja-taller { display: flex; flex-direction: column; justify-content: flex-start; gap: 9px; height: 280mm; box-sizing: border-box; }
-          .box-borde { border: 1.5px solid black; padding: 7px; box-sizing: border-box; }
-          .label-mini { font-size: 8.5px; font-weight: bold; text-transform: uppercase; color: #444; display: block; margin-bottom: 2px; }
-          .box-pliegos-lineal { border: 1.5px solid black; padding: 6px 10px; background: white; }
-          .grid-pliegos { display: grid; grid-template-columns: 1fr 1fr; gap-x: 25px; gap-y: 2px; }
-          .fila-pliego-linea { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5e5e5; padding: 2px 0; font-size: 9px; font-weight: bold; }
-          .chk-item { display: flex; align-items: center; gap: 5px; font-weight: bold; font-size: 9.5px; text-transform: uppercase; }
-          .chk-box { width: 13px; height: 13px; border: 1.5px solid black; display: inline-block; text-align: center; line-height: 11px; font-weight: 900; font-size: 10px; background: white; flex-shrink: 0; }
-          .flex-row-box { display: flex; gap: 8px; width: 100%; }
-          .flex-1 { flex: 1; }
-          .tabla-prod { border: 1.5px solid black; flex: 1; min-height: 140px; display: flex; flex-direction: column; }
-          .tab-header { display: grid; grid-template-columns: 1fr 140px; background: #f2f2f2; font-weight: bold; font-size: 9.5px; padding: 5px 8px; border-bottom: 1.5px solid black; text-transform: uppercase; }
-          .tab-operarios { width: 100%; border-collapse: collapse; border: 1.5px solid black; }
-          .tab-operarios th { background: #f2f2f2; font-size: 8.5px; font-weight: bold; border: 1px solid black; padding: 4.5px; text-transform: uppercase; }
-          .tab-operarios td { border: 1px solid black; padding: 4.5px; text-align: center; font-weight: bold; font-size: 9.5px; }
-          .box-cajas-matriz-taller { border: 1.5px solid black; padding: 8px 12px; background: white; }
-          .caja-vacia-escribir { border: 1px solid black; width: 35px; height: 16px; display: inline-block; background: white; }
-          .caja-vacia-unids { border: 1px solid black; width: 75px; height: 16px; display: inline-block; background: white; }
-          .fila-matriz-cajas { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: bold; color: #333; }
-          .box-observaciones-gigante { border: 1.5px solid black; padding: 10px; flex: 1; background: white; }
-        </style>
-      </head>
-      <body>
-        <div class="documento-a3">
-          <div class="hoja-taller">
-            <div style="border-bottom: 2px solid black; padding-bottom: 3px; display: flex; justify-content: space-between; align-items: end;">
-              <div>
-                <h2 style="font-size: 11.5px; font-weight: 900; text-transform: uppercase; margin: 0;">HOJA DE MANIPULADO Y CONTROL</h2>
-                <p style="font-size: 7.5px; font-weight: bold; text-transform: uppercase; color: #555; margin: 1px 0 0 0;">Uso exclusivo para operarios de planta de producción</p>
-              </div>
-              <span style="font-size: 8px; font-weight: bold; border: 1px dashed black; padding: 1px 5px;">Mesa Técnica</span>
-            </div>
-            <div class="box-pliegos-lineal">
-              <span class="label-mini" style="font-weight: 900; border-bottom: 1.5px solid black; padding-bottom: 2px; margin-bottom: 4px;">Control de Pliegos de Folletos / Portadas</span>
-              <div class="grid-pliegos">
-                ${Array.from({ length: 16 })
-                  .map(
-                    (_, i) =>
-                      `<div class="fila-pliego-linea"><span style="color: #000; width: 55px; font-size:8.5px;">PLIEGO ${i + 1}</span><span style="color: #666; font-size: 8.5px; flex-grow: 1; text-align: right; padding-right: 5px;">Tamaño: _______________________ mm</span><span style="color: #666; font-size: 8.5px; width: 65px; text-align: right;">Págs: ________</span></div>`,
-                  )
-                  .join("")}
-              </div>
-            </div>
-            <table class="tab-operarios">
-              <thead><tr><th style="width: 35%; text-align: left; padding-left: 8px;">Fase de Acabado</th><th style="width: 30%;">Cantidad Confección</th><th style="width: 35%;">Operario / Firma</th></tr></thead>
-              <tbody>
-                <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">PLASTIFICADORA</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
-                <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">TROQUELADORA</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
-                <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">GUILLOTINA</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
-                <tr><td style="text-align: left; padding-left: 8px; font-weight: bold; color: #333; font-size:8.5px;">TREN DE ALZADO</td><td style="color: #ddd;">___________________________</td><td style="color: #ddd;">___________________________</td></tr>
-              </tbody>
-            </table>
-            <div class="box-borde" style="padding: 5px 8px;"><span class="label-mini" style="font-weight: 700;">Tren y Encolado Manual</span><div style="display: flex; gap: 30px; font-size: 8.5px; color: #444; font-weight: bold; margin-top: 1px;"><div>Operario Ajuste: ____________________________________</div><div>Velocidad Tren: ___________________________________</div></div></div>
-            <div class="box-cajas-matriz-taller">
-              <span class="label-mini" style="font-weight: 900; border-bottom: 1px solid black; padding-bottom: 2px; margin-bottom: 6px;">Logística de Desglose de Cajas</span>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap-x: 25px; gap-y: 6px; align-items: center;">
-                ${Array(6)
-                  .fill(0)
-                  .map(
-                    () =>
-                      `<div class="fila-matriz-cajas"><span>Nº CAJAS</span> <span class="caja-vacia-escribir"></span><span style="margin-left: 4px;">UNIDS.</span> <span class="caja-vacia-unids"></span></div>`,
-                  )
-                  .join("")}
-              </div>
-            </div>
-            <div class="box-observaciones-gigante"><span class="label-mini" style="font-weight: 900; border-bottom: 1.5px solid #000; padding-bottom: 2px;">Observaciones e Incidencias Técnicas de Planta</span></div>
-          </div>
-          <div class="hoja-taller" style="gap: 7.5px;">
-            <div style="display: flex; flex-direction: column; gap: 7.5px; height: 100%; width: 100%;">
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid black; padding-bottom: 4px;">
-                <div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 26px; font-weight: 900; text-transform: lowercase; letter-spacing: -1px;">aeroprint</span><span style="font-size: 18px; font-weight: bold; color: ${colorBoli}; text-transform: uppercase; margin-left: 5px;">${cliente || "NOMBRE DEL CLIENTE"}</span></div>
-                <div style="border: 1.5px solid black; padding: 4px 10px; font-weight: bold; font-size: 11px; text-align: center; background: white;">Nº PARTE: <span style="color: ${colorBoli}; font-family: monospace; font-size: 12px; font-weight: 900;">${numParte || "26-0000"}</span></div>
-              </div>
-              <div class="box-borde"><span class="label-mini">Descripción General del Trabajo</span><div style="font-size: 12px; font-weight: bold; color: ${colorBoli}; text-transform: uppercase;">${descripcionGeneral || "Nombre del trabajo"}</div></div>
-              <div class="tabla-prod">
-                <div class="tab-header"><div>Concepto del producto</div><div style="text-align: right;">Cantidad</div></div>
-                <div style="padding: 0 8px; flex: 1; background: white;">${filasDesgloseHTML || '<div style="color:#ccc; padding: 10px 0;">No se añadieron desgloses dinámicos.</div>'}</div>
-              </div>
-              <div class="flex-row-box">
-                <div class="box-borde" style="width: 150px; background: white;"><span class="label-mini">Comercial</span><div style="font-size: 13px; font-weight: bold; color: ${colorBoli}; text-transform: uppercase; margin-top: 2px;">${comercial || "Marcos"}</div></div>
-                <div class="box-borde flex-1" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; align-items: center; padding-left: 10px; background: white;">
-                  ${areasImpresion.map((item) => `<div class="chk-item"><span class="chk-box">${area === item ? "X" : ""}</span><span>${item}</span></div>`).join("")}
-                </div>
-              </div>
-              <div class="flex-row-box">
-                <div class="box-borde flex-1" style="display: flex; align-items: center; gap: 35px; padding-left: 10px; background: white;">
-                  <div class="chk-item" style="font-size: 10px; font-weight: normal;"><span class="chk-box" style="width:13px; height:13px; line-height:11px; font-weight: bold;">${tipoEntrega === "almacen" ? "X" : ""}</span><span>Recogida en almacén</span></div>
-                  <div class="chk-item" style="font-size: 10px; font-weight: normal;"><span class="chk-box" style="width:13px; height:13px; line-height:11px; font-weight: bold;">${albaranAnonimo ? "X" : ""}</span><span>Albarán Anónimo</span></div>
-                </div>
-                <div class="box-borde text-center font-semibold" style="width: 130px; background: white;"><span class="label-mini">Entrada</span><span style="color: ${colorBoli}; font-size: 10px;">${new Date().toLocaleDateString("es-ES")}</span></div>
-                <div class="box-borde text-center font-semibold" style="width: 130px; background: white;"><span class="label-mini">Salida</span><span style="color: ${colorBoli}; font-size: 10px;">${fechaSalida ? new Date(fechaSalida).toLocaleDateString("es-ES") : "___/___/___"}</span></div>
-              </div>
-              <div class="box-borde" style="min-height: 35px;"><span class="label-mini">Dirección de entrega</span><div style="font-size: 10px; font-weight: bold; color: ${colorBoli}; text-transform: uppercase; margin-top: 1px;">${tipoEntrega === "envio" ? direccionEntrega || "Dirección de envío" : "RECOGIDA EN TALLER / ALMACÉN"}</div></div>
-              <div class="flex-row-box">
-                <div class="box-borde flex-1"><span class="label-mini">Color de portada</span><div style="font-weight: bold; color: ${colorBoli}; font-size: 11px;">${papelPortada ? txtColorPortadaPrint : "_________________"}</div></div>
-                <div class="box-borde flex-1"><span class="label-mini">Color del interior</span><div style="font-weight: bold; color: ${colorBoli}; font-size: 11px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${papelInterior ? txtColorInteriorPrint : "_________________"}</div></div>
-              </div>
-              <div class="flex-row-box">
-                <div class="box-borde flex-1"><span class="label-mini">Papel portada</span><div style="font-weight: bold; color: ${colorBoli}; font-size: 11px;">${papelPortada || "_________________"}</div></div>
-                <div class="box-borde flex-1"><span class="label-mini">Papel interior</span><div style="font-weight: bold; color: ${colorBoli}; font-size: 11px;">${papelInterior || "_________________"}</div></div>
-              </div>
-              <div class="flex-row-box">
-                <div class="box-borde flex-1" style="display: grid; grid-template-columns: repeat(3, 1fr); gap-y: 3px; padding-left: 8px; background: white;">
-                  ${Object.keys(encuadernacion)
-                    .map(
-                      (k) =>
-                        `<div class="chk-item"><span class="chk-box">${encuadernacion[k] ? "X" : ""}</span><span>${k}</span></div>`,
-                    )
-                    .join("")}
-                </div>
-                <div class="box-borde" style="width: 200px; display: flex; flex-direction: column; gap: 3px; justify-content: center; padding-left: 10px; background: white;">
-                  <div style="font-weight: bold; font-size: 9px;">Espiral: <span style="color:${colorBoli}; font-weight:bold; margin-left:4px;">${espiralColor || "___________"}</span></div>
-                  <div style="font-weight: bold; font-size: 9px;">Wire-o: <span style="color:${colorBoli}; font-weight:bold; margin-left:8px;">${wireOColor || "___________"}</span></div>
-                </div>
-              </div>
-              <div class="box-borde" style="display: grid; grid-template-columns: repeat(4, 1fr); gap-y: 4px; padding-left: 8px; background: white;">
-                ${Object.keys(acabados)
-                  .map(
-                    (k) =>
-                      `<div class="chk-item"><span class="chk-box">${acabados[k] ? "X" : ""}</span><span>${k}</span></div>`,
-                  )
-                  .join("")}
-              </div>
-              <div class="flex-row-box">
-                <div class="box-borde flex-1"><span class="label-mini">Grapado</span><div style="color: ${colorBoli}; font-weight: bold; margin-top: 1px;">${grapadoTipo}</div></div>
-                <div class="box-borde flex-1"><span class="label-mini">Barniz UV</span><div style="color: ${colorBoli}; font-weight: bold; margin-top: 1px;">${barnizUVTipo}</div></div>
-                <div class="box-borde flex-1"><span class="label-mini">Estamping</span><div style="color: ${colorBoli}; font-weight: bold; margin-top: 1px;">${estampingTipo}</div></div>
-              </div>
-              <div class="box-borde" style="display: flex; flex-direction: column; gap: 5px; background: white;">
-                <div class="flex-row-box" style="justify-content: space-between; align-items: center; padding-right: 20px;">
-                  <span class="label-mini" style="display:inline; margin: 0;">Laminado:</span>
-                  <div class="chk-item"><span class="chk-box">${laminadoTipo === "1 cara" ? "X" : ""}</span><span>1 cara</span></div>
-                  <div class="chk-item"><span class="chk-box">${laminadoTipo === "2 caras" ? "X" : ""}</span><span>2 caras</span></div>
-                  <div class="chk-item"><span class="chk-box">${laminadoTipo === "2 caras diferentes" ? "X" : ""}</span><span>2 caras diferentes</span></div>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-weight: bold; border-top: 1px solid #000; padding-top: 5px; width: 100%;">
-                  <span style="color:#666; font-size: 8.5px; width: 95px; flex-shrink: 0;">TIPO LAMINADO 1:</span>
-                  ${Object.keys(tipoLaminadoCara1)
-                    .map(
-                      (k) =>
-                        `<div class="chk-item"><span class="chk-box">${tipoLaminadoCara1[k] ? "X" : ""}</span><span>${k.replace("S", " S").replace("A", " A")}</span></div>`,
-                    )
-                    .join("")}
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-weight: bold; padding-top: 2px; width: 100%;">
-                  <span style="color:#666; font-size: 8.5px; width: 95px; flex-shrink: 0;">TIPO LAMINADO 2:</span>
-                  ${Object.keys(tipoLaminadoCara2)
-                    .map(
-                      (k) =>
-                        `<div class="chk-item"><span class="chk-box">${tipoLaminadoCara2[k] ? "X" : ""}</span><span>${k.replace("S", " S").replace("A", " A")}</span></div>`,
-                    )
-                    .join("")}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </body>
-      </html>
-    `);
-    ventanaImpresion.document.close();
-    ventanaImpresion.focus();
-    setTimeout(() => {
-      ventanaImpresion.print();
-    }, 350);
-  }
 </script>
 
-{#if mensajeNotificacion}
-  <div
-    transition:slide
-    class="w-full p-4 rounded-2xl text-xs font-semibold tracking-wide shadow-md flex items-center gap-2 mb-4 animate-pulse
-    {tipoNotificacion === 'success'
-      ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-      : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'}"
-  >
-    <span class="material-symbols-rounded text-base"
-      >{tipoNotificacion === "success" ? "check_circle" : "error"}</span
-    >
-    <span>{mensajeNotificacion}</span>
-  </div>
-{/if}
+<!-- CONTENEDOR PRINCIPAL DEL WIZARD -->
+<div class="w-full max-w-5xl mx-auto flex flex-col space-y-6 text-foreground font-sans pb-10">
 
-<div
-  class="w-full font-sans flex flex-col h-full space-y-6 text-[#1A1D21] dark:text-[#EDF0F3] px-1"
->
-  <div class="flex items-center justify-between select-none py-1">
-    <div class="flex items-center gap-6 md:gap-14 mx-auto">
-      <div class="flex items-center gap-2">
+  <!-- 🧭 STEPPER INDICATOR (ESTILO SHADCN / ZINC) -->
+  <div class="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+    <div class="flex items-center justify-between max-w-3xl mx-auto relative">
+      
+      <!-- Paso 1 -->
+      <button
+        type="button"
+        onclick={() => (pasoActual = 1)}
+        class="flex items-center gap-3 group text-left cursor-pointer transition-all bg-transparent border-none p-0"
+      >
         <div
-          class="w-7 h-7 rounded-xl font-semibold text-xs flex items-center justify-center transition-all {pasoActual >=
-          1
-            ? 'bg-[#5C42FF] text-white shadow-md'
-            : 'bg-gray-200 text-gray-400'}"
+          class="w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-xs transition-all duration-200 shadow-2xs {pasoActual === 1
+            ? 'bg-primary text-primary-foreground ring-4 ring-primary/10'
+            : pasoActual > 1
+              ? 'bg-primary/15 text-primary border border-primary/30'
+              : 'bg-muted text-muted-foreground border border-border'}"
         >
-          1
+          {#if pasoActual > 1}
+            <Check class="w-4 h-4" />
+          {:else}
+            <FileText class="w-4 h-4" />
+          {/if}
         </div>
-        <span
-          class="text-xs font-semibold {pasoActual === 1
-            ? 'text-[#1A1D21] dark:text-[#EDF0F3]'
-            : 'text-gray-400'}">Administrativo</span
-        >
-      </div>
-      <div class="h-px w-10 bg-gray-300 dark:bg-gray-700"></div>
-      <div class="flex items-center gap-2">
+        <div class="hidden sm:flex flex-col">
+          <span class="text-[10px] uppercase font-semibold tracking-wider {pasoActual === 1 ? 'text-primary font-bold' : 'text-muted-foreground'}">Paso 1</span>
+          <span class="text-xs font-semibold {pasoActual === 1 ? 'text-foreground' : 'text-muted-foreground'}">Administrativo</span>
+        </div>
+      </button>
+
+      <!-- Línea conectora 1 -> 2 -->
+      <div class="flex-1 h-0.5 mx-3 sm:mx-6 rounded-full transition-all duration-300 {pasoActual > 1 ? 'bg-primary/40' : 'bg-border'}"></div>
+
+      <!-- Paso 2 -->
+      <button
+        type="button"
+        onclick={() => { if (cliente.trim() && fechaSalida) pasoActual = 2; }}
+        class="flex items-center gap-3 group text-left cursor-pointer transition-all bg-transparent border-none p-0"
+      >
         <div
-          class="w-7 h-7 rounded-xl font-semibold text-xs flex items-center justify-center transition-all {pasoActual >=
-          2
-            ? 'bg-[#5C42FF] text-white shadow-md'
-            : 'bg-gray-200 text-gray-400'}"
+          class="w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-xs transition-all duration-200 shadow-2xs {pasoActual === 2
+            ? 'bg-primary text-primary-foreground ring-4 ring-primary/10'
+            : pasoActual > 2
+              ? 'bg-primary/15 text-primary border border-primary/30'
+              : 'bg-muted text-muted-foreground border border-border'}"
         >
-          2
+          {#if pasoActual > 2}
+            <Check class="w-4 h-4" />
+          {:else}
+            <Layers class="w-4 h-4" />
+          {/if}
         </div>
-        <span
-          class="text-xs font-semibold {pasoActual === 2
-            ? 'text-[#1A1D21] dark:text-[#EDF0F3]'
-            : 'text-gray-400'}">Producción</span
-        >
-      </div>
-      <div class="h-px w-10 bg-gray-300 dark:bg-gray-700"></div>
-      <div class="flex items-center gap-2">
+        <div class="hidden sm:flex flex-col">
+          <span class="text-[10px] uppercase font-semibold tracking-wider {pasoActual === 2 ? 'text-primary font-bold' : 'text-muted-foreground'}">Paso 2</span>
+          <span class="text-xs font-semibold {pasoActual === 2 ? 'text-foreground' : 'text-muted-foreground'}">Producción</span>
+        </div>
+      </button>
+
+      <!-- Línea conectora 2 -> 3 -->
+      <div class="flex-1 h-0.5 mx-3 sm:mx-6 rounded-full transition-all duration-300 {pasoActual > 2 ? 'bg-primary/40' : 'bg-border'}"></div>
+
+      <!-- Paso 3 -->
+      <button
+        type="button"
+        onclick={() => { if (cliente.trim() && fechaSalida) pasoActual = 3; }}
+        class="flex items-center gap-3 group text-left cursor-pointer transition-all bg-transparent border-none p-0"
+      >
         <div
-          class="w-7 h-7 rounded-xl font-semibold text-xs flex items-center justify-center transition-all {pasoActual >=
-          3
-            ? 'bg-[#5C42FF] text-white shadow-md'
-            : 'bg-gray-200 text-gray-400'}"
+          class="w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-xs transition-all duration-200 shadow-2xs {pasoActual === 3
+            ? 'bg-primary text-primary-foreground ring-4 ring-primary/10'
+            : 'bg-muted text-muted-foreground border border-border'}"
         >
-          3
+          <Settings2 class="w-4 h-4" />
         </div>
-        <span
-          class="text-xs font-semibold {pasoActual === 3
-            ? 'text-[#1A1D21] dark:text-[#EDF0F3]'
-            : 'text-gray-400'}">Ficha Técnica</span
-        >
-      </div>
+        <div class="hidden sm:flex flex-col">
+          <span class="text-[10px] uppercase font-semibold tracking-wider {pasoActual === 3 ? 'text-primary font-bold' : 'text-muted-foreground'}">Paso 3</span>
+          <span class="text-xs font-semibold {pasoActual === 3 ? 'text-foreground' : 'text-muted-foreground'}">Ficha Técnica</span>
+        </div>
+      </button>
+
     </div>
   </div>
 
-  <div
-    class="flex-1 bg-white dark:bg-[#16191D] border border-[#E9EBF0] dark:border-[#232830] rounded-3xl p-8 shadow-xs overflow-y-auto min-h-0"
-  >
-    {#if pasoActual === 1}
-      <div class="space-y-6" in:fade={{ duration: 150 }}>
-        <div>
-          <h2 class="text-xl font-semibold tracking-tight">
-            Paso 1: Identificación y Plazos
-          </h2>
-          <p class="text-xs text-gray-400 mt-0.5">
-            Apertura técnica comercial y logística de la orden.
-          </p>
-        </div>
-        <div
-          class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-semibold"
-        >
-          <div class="flex flex-col space-y-2">
-            <label
-              for="numParte"
-              class="text-gray-400 uppercase tracking-wider text-[10px]"
-              >Número de Parte (Automático)</label
-            >
-            <input
-              id="numParte"
-              type="text"
-              bind:value={numParte}
-              readonly
-              class="p-3 bg-gray-100 dark:bg-gray-800 border border-transparent rounded-xl font-mono text-xs font-semibold text-gray-500 cursor-not-allowed select-none"
-            />
-          </div>
-          <div class="flex flex-col space-y-2">
-            <label
-              for="comercial"
-              class="text-gray-400 uppercase tracking-wider text-[10px]"
-              >Comercial Asignado</label
-            >
-            <select
-              id="comercial"
-              bind:value={comercial}
-              class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-100 rounded-xl outline-none text-xs font-semibold text-black dark:text-white"
-            >
-              {#each comerciales as c}<option value={c}>{c}</option>{/each}
-            </select>
-          </div>
-          <div class="flex flex-col space-y-2 relative">
-            <label
-              for="cliente"
-              class="text-gray-400 uppercase tracking-wider text-[10px]"
-              >Cliente Corporativo *</label
-            >
-            <input
-              id="cliente"
-              type="text"
-              bind:value={cliente}
-              on:focus={() => (mostrarSugerencias = true)}
-              on:blur={() =>
-                setTimeout(() => (mostrarSugerencias = false), 200)}
-              placeholder="Escribe el nombre del cliente..."
-              class="p-3 bg-gray-50 dark:bg-[#1E2228] border rounded-xl outline-none text-xs font-semibold"
-            />
-            {#if mostrarSugerencias && sugerenciasFiltradas.length > 0}
-              <div
-                class="absolute top-[68px] left-0 w-full bg-white dark:bg-[#1E2228] border rounded-xl max-h-40 overflow-y-auto shadow-lg z-50 divide-y"
-              >
-                {#each sugerenciasFiltradas as sug}
-                  <button
-                    type="button"
-                    on:click={() => seleccionarCliente(sug)}
-                    class="w-full text-left p-2.5 text-xs font-semibold hover:bg-gray-50 transition-colors block border-none"
-                    >{sug}</button
-                  >
-                {/each}
-              </div>
-            {/if}
-          </div>
-          <div class="flex flex-col space-y-2">
-            <label
-              for="fechaSalida"
-              class="text-gray-400 uppercase tracking-wider text-[10px]"
-              >Fecha Límite de Salida *</label
-            >
-            <input
-              id="fechaSalida"
-              type="date"
-              bind:value={fechaSalida}
-              class="p-3 bg-gray-50 dark:bg-[#1E2228] border rounded-xl outline-none text-xs font-semibold"
-            />
-          </div>
-        </div>
-        <div
-          class="border-t border-gray-100 dark:border-[#232830] pt-5 space-y-4 text-xs font-semibold"
-        >
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col space-y-2">
-              <span class="text-gray-400 uppercase tracking-wider text-[10px]"
-                >Modalidad de Distribución</span
-              >
-              <div
-                class="flex gap-1 bg-gray-50 dark:bg-[#1E2228] p-1.5 rounded-xl border"
-              >
-                <button
-                  type="button"
-                  on:click={() => (tipoEntrega = "taller")}
-                  class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all {tipoEntrega ===
-                  'taller'
-                    ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs'
-                    : 'text-gray-400'}">Entrega en Taller</button
-                >
-                <button
-                  type="button"
-                  on:click={() => (tipoEntrega = "almacen")}
-                  class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all {tipoEntrega ===
-                  'almacen'
-                    ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs'
-                    : 'text-gray-400'}">Recogida Almacén</button
-                >
-                <button
-                  type="button"
-                  on:click={() => (tipoEntrega = "envio")}
-                  class="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all {tipoEntrega ===
-                  'envio'
-                    ? 'bg-white dark:bg-[#16191D] text-[#5C42FF] shadow-xs'
-                    : 'text-gray-400'}">Se Envía Fuera</button
-                >
-              </div>
+  <!-- 🔔 NOTIFICACIÓN FLOTANTE / INLINE -->
+  {#if mensajeNotificacion}
+    <div
+      transition:slide={{ duration: 200 }}
+      class="w-full p-3.5 rounded-xl text-xs font-medium tracking-tight shadow-2xs flex items-center gap-2.5 {tipoNotificacion === 'success'
+        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+        : 'bg-destructive/10 text-destructive border border-destructive/20'}"
+    >
+      {#if tipoNotificacion === "success"}
+        <CheckCircle2 class="w-4 h-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+      {:else}
+        <AlertCircle class="w-4 h-4 flex-shrink-0 text-destructive" />
+      {/if}
+      <span class="flex-1">{mensajeNotificacion}</span>
+      <button
+        type="button"
+        onclick={() => (mensajeNotificacion = "")}
+        class="text-muted-foreground hover:text-foreground p-1 transition-colors rounded-md"
+      >
+        <X class="w-3.5 h-3.5" />
+      </button>
+    </div>
+  {/if}
+
+  <!-- ========================================================================= -->
+  <!-- PASO 1: ADM & LOGÍSTICA -->
+  <!-- ========================================================================= -->
+  {#if pasoActual === 1}
+    <div class="space-y-6" in:fade={{ duration: 150 }}>
+      
+      <!-- Datos Principales -->
+      <Card class="border-border/80 shadow-2xs">
+        <CardHeader class="pb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <FileText class="w-4 h-4" />
             </div>
-            <div class="flex items-center pt-6">
-              <label
-                class="flex items-center gap-3 cursor-pointer text-gray-400 select-none font-semibold text-xs"
-              >
-                <input
-                  type="checkbox"
-                  bind:checked={albaranAnonimo}
-                  class="w-4 h-4 rounded accent-[#5C42FF]"
-                />
-                <span>Albarán Anónimo</span>
+            <div>
+              <CardTitle class="text-base font-semibold">Identificación y Plazos</CardTitle>
+              <CardDescription class="text-xs text-muted-foreground">
+                Apertura técnica, asignación de comercial y fecha comprometida de entrega.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+            
+            <!-- Número de Parte -->
+            <div class="flex flex-col space-y-1.5">
+              <label for="numParte" class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <Hash class="w-3.5 h-3.5" /> Número de Parte (Automático)
               </label>
+              <div class="relative">
+                <input
+                  id="numParte"
+                  type="text"
+                  bind:value={numParte}
+                  readonly
+                  class="flex h-9 w-full rounded-xl border border-input bg-muted/60 px-3 py-1 font-mono text-xs font-semibold text-muted-foreground cursor-not-allowed select-none shadow-2xs"
+                />
+                <Badge variant="secondary" class="absolute right-2 top-1.5 text-[9px] font-mono pointer-events-none">
+                  AUTO
+                </Badge>
+              </div>
             </div>
-          </div>
-          {#if tipoEntrega === "envio"}
-            <div class="flex flex-col space-y-2" transition:slide>
-              {#if cargandoDirecciones}
+
+            <!-- Comercial Asignado con Shadcn Select -->
+            <div class="flex flex-col space-y-1.5">
+              <label class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <User class="w-3.5 h-3.5" /> Comercial Asignado
+              </label>
+              <Select bind:value={comercial}>
+                <SelectTrigger class="h-9 rounded-xl">
+                  <SelectValue placeholder="Seleccionar comercial..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {#each comerciales as c}
+                    <SelectItem value={c} label={c}>
+                      <div class="flex items-center gap-2">
+                        <User class="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>{c}</span>
+                      </div>
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <!-- Cliente Corporativo (Con predictivo) -->
+            <div class="flex flex-col space-y-1.5 relative">
+              <label for="cliente" class="text-xs font-semibold text-muted-foreground flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <Building2 class="w-3.5 h-3.5" /> Cliente Corporativo <span class="text-destructive">*</span>
+                </span>
+                {#if cliente.trim()}
+                  <span class="text-[10px] text-muted-foreground font-normal">Escribe para autocompletar</span>
+                {/if}
+              </label>
+              <div class="relative">
+                <input
+                  id="cliente"
+                  type="text"
+                  bind:value={cliente}
+                  onfocus={() => (mostrarSugerencias = true)}
+                  onblur={() => setTimeout(() => (mostrarSugerencias = false), 200)}
+                  placeholder="Escribe el nombre del cliente..."
+                  class="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+
+              {#if mostrarSugerencias && sugerenciasFiltradas.length > 0}
                 <div
-                  class="flex items-center gap-1.5 text-xs text-gray-400 py-1"
+                  class="absolute top-[62px] left-0 w-full bg-popover text-popover-foreground border border-border rounded-xl max-h-48 overflow-y-auto shadow-lg z-50 divide-y divide-border/60"
+                  transition:slide={{ duration: 150 }}
                 >
-                  <span class="material-symbols-rounded animate-spin text-sm"
-                    >progress_activity</span
-                  >
-                  <span>Buscando direcciones del cliente...</span>
+                  {#each sugerenciasFiltradas as sug}
+                    <button
+                      type="button"
+                      onclick={() => seleccionarCliente(sug)}
+                      class="w-full text-left px-3.5 py-2.5 text-xs font-medium hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between group cursor-pointer border-none bg-transparent"
+                    >
+                      <span class="flex items-center gap-2">
+                        <Building2 class="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
+                        {sug}
+                      </span>
+                      <span class="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Seleccionar</span>
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+
+            <!-- Fecha Límite de Salida -->
+            <div class="flex flex-col space-y-1.5">
+              <label for="fechaSalida" class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <Calendar class="w-3.5 h-3.5" /> Fecha Límite de Salida <span class="text-destructive">*</span>
+              </label>
+              <input
+                id="fechaSalida"
+                type="date"
+                bind:value={fechaSalida}
+                class="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Modalidad de Distribución -->
+      <Card class="border-border/80 shadow-2xs">
+        <CardHeader class="pb-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <Truck class="w-4 h-4" />
+              </div>
+              <div>
+                <CardTitle class="text-base font-semibold">Logística y Entrega</CardTitle>
+                <CardDescription class="text-xs text-muted-foreground">
+                  Define cómo se entregará el pedido terminado.
+                </CardDescription>
+              </div>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer text-xs font-medium text-muted-foreground select-none hover:text-foreground transition-colors">
+              <input
+                type="checkbox"
+                bind:checked={albaranAnonimo}
+                class="h-4 w-4 rounded border-input text-primary focus:ring-ring accent-primary cursor-pointer"
+              />
+              <span>Albarán Anónimo</span>
+            </label>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          
+          <!-- Segmented Control de Entrega (Unificado Taller y Almacén) -->
+          <div class="grid grid-cols-2 gap-2 bg-muted/60 p-1 rounded-xl border border-border/60">
+            <button
+              type="button"
+              onclick={() => (tipoEntrega = "taller")}
+              class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer border-none {tipoEntrega === 'taller' || tipoEntrega === 'almacen'
+                ? 'bg-background text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+            >
+              <Store class="w-3.5 h-3.5" />
+              <span>Recogida Taller / Almacén</span>
+            </button>
+            <button
+              type="button"
+              onclick={() => (tipoEntrega = "envio")}
+              class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer border-none {tipoEntrega === 'envio'
+                ? 'bg-background text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground bg-transparent'}"
+            >
+              <Truck class="w-3.5 h-3.5" />
+              <span>Se Envía Fuera</span>
+            </button>
+          </div>
+
+          <!-- Si es Envío Fuera -->
+          {#if tipoEntrega === "envio"}
+            <div class="space-y-3 pt-2" transition:slide={{ duration: 150 }}>
+              
+              {#if cargandoDirecciones}
+                <div class="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                  <Loader2 class="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span>Buscando direcciones registradas para este cliente...</span>
                 </div>
               {:else if direccionesCliente.length > 0}
-                <div
-                  class="flex flex-col space-y-1 bg-gray-50/50 dark:bg-[#1E2228]/30 border border-dashed border-gray-200 dark:border-gray-800 p-3 rounded-2xl mb-1"
-                >
-                  <span
-                    class="text-gray-400 uppercase tracking-wider text-[9px] flex items-center gap-1"
-                  >
-                    <span class="material-symbols-rounded text-xs"
-                      >room_service</span
-                    >
-                    Direcciones registradas para {cliente}
-                  </span>
+                <div class="space-y-2 bg-muted/40 border border-border/80 p-3.5 rounded-xl">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin class="w-3.5 h-3.5 text-primary" /> Direcciones registradas ({cliente})
+                    </span>
+                    <span class="text-[10px] text-muted-foreground">Haz clic para asignar</span>
+                  </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                     {#each direccionesCliente as dir}
                       <button
                         type="button"
-                        on:click={() => {
+                        onclick={() => {
                           const formateada = `${dir.calle}, ${dir.codigoPostal} ${dir.ciudad}${dir.provincia ? ` (${dir.provincia})` : ""}, ${dir.pais}`;
                           direccionEntrega = formateada;
                         }}
-                        class="p-2.5 rounded-xl border text-left flex flex-col justify-start transition-all cursor-pointer bg-white dark:bg-[#16191D] hover:border-[#5C42FF] hover:ring-1 hover:ring-[#5C42FF]/30 select-none
-                          {direccionEntrega.startsWith(dir.calle)
-                          ? 'border-[#5C42FF] ring-2 ring-[#5C42FF]/20 bg-[#5C42FF]/5 text-[#5C42FF]'
-                          : 'border-[#E9EBF0] dark:border-[#232830] text-gray-500'}"
+                        class="p-2.5 rounded-xl border text-left flex flex-col justify-start transition-all cursor-pointer select-none {direccionEntrega.startsWith(dir.calle)
+                          ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/20'
+                          : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:bg-accent/50'}"
                       >
-                        <span
-                          class="font-bold text-[11px] text-[#1A1D21] dark:text-[#EDF0F3] truncate w-full"
-                          >{dir.calle}</span
-                        >
-                        <span
-                          class="text-[10px] text-gray-500 dark:text-gray-400 truncate w-full"
-                          >{dir.codigoPostal} {dir.ciudad}</span
-                        >
+                        <span class="font-semibold text-xs text-foreground truncate w-full flex items-center gap-1">
+                          <MapPin class="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                          {dir.calle}
+                        </span>
+                        <span class="text-[11px] text-muted-foreground truncate w-full pl-4">
+                          {dir.codigoPostal} {dir.ciudad}
+                        </span>
                         {#if dir.notas}
-                          <span
-                            class="text-[9px] text-orange-500 mt-1 truncate w-full italic"
-                            >*{dir.notas}</span
-                          >
+                          <span class="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 truncate w-full italic pl-4">
+                            *{dir.notas}
+                          </span>
                         {/if}
                       </button>
                     {/each}
@@ -801,505 +784,708 @@
                 </div>
               {/if}
 
-              <label
-                for="direccion"
-                class="text-gray-400 uppercase tracking-wider text-[10px] mt-2"
-                >Dirección de Entrega Completa</label
-              >
-              <input
-                id="direccion"
-                type="text"
-                bind:value={direccionEntrega}
-                placeholder="Calle, Número, Localidad..."
-                class="p-3 bg-gray-50 dark:bg-[#1E2228] border border-gray-200 dark:border-[#232830] rounded-xl outline-none text-xs font-semibold focus:border-[#5C42FF] transition-colors"
-              />
+              <div class="flex flex-col space-y-1.5">
+                <label for="direccion" class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <MapPin class="w-3.5 h-3.5" /> Dirección de Entrega Completa
+                </label>
+                <input
+                  id="direccion"
+                  type="text"
+                  bind:value={direccionEntrega}
+                  placeholder="Calle, Número, Código Postal, Localidad..."
+                  class="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
             </div>
           {/if}
-        </div>
-      </div>
-    {/if}
 
-    {#if pasoActual === 2}
-      <div class="space-y-6" in:fade={{ duration: 150 }}>
-        <div>
-          <h2 class="text-xl font-semibold tracking-tight">
-            Paso 2: Maquinaria y Líneas de Producto
-          </h2>
-          <p class="text-xs text-gray-400 mt-0.5">
-            Asignación de maquinaria y desglose de volúmenes.
-          </p>
-        </div>
-        <div class="flex flex-col space-y-2 text-xs font-semibold w-full">
-          <span class="text-gray-400 uppercase tracking-wider text-[10px]"
-            >Área / Maquinaria Principal</span
-          >
-          <div
-            class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2 bg-gray-50 dark:bg-[#1E2228] p-2 rounded-2xl border w-full"
-          >
-            {#each areasImpresion as item}
-              <button
-                type="button"
-                on:click={() => (area = item)}
-                class="py-3 rounded-xl text-xs font-semibold transition-all text-center {area ===
-                item
-                  ? 'bg-[#5C42FF] text-white shadow-md scale-102'
-                  : 'text-gray-400 hover:bg-white dark:hover:bg-gray-800'}"
-                >{item}</button
-              >
-            {/each}
+        </CardContent>
+      </Card>
+
+    </div>
+  {/if}
+
+  <!-- ========================================================================= -->
+  <!-- PASO 2: PRODUCCIÓN & DESGLOSE -->
+  <!-- ========================================================================= -->
+  {#if pasoActual === 2}
+    <div class="space-y-6" in:fade={{ duration: 150 }}>
+      
+      <!-- Maquinaria / Área Principal -->
+      <Card class="border-border/80 shadow-2xs">
+        <CardHeader class="pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <Layers class="w-4 h-4" />
+            </div>
+            <div>
+              <CardTitle class="text-base font-semibold">Área y Maquinaria Principal</CardTitle>
+              <CardDescription class="text-xs text-muted-foreground">
+                Selecciona el centro de trabajo o técnica asignada a la orden.
+              </CardDescription>
+            </div>
           </div>
-        </div>
-        <div class="flex flex-col space-y-2 text-xs font-semibold">
-          <label
-            for="descripcionGeneral"
-            class="text-gray-400 uppercase tracking-wider text-[10px]"
-            >Descripción General del Trabajo</label
-          >
-          <input
-            id="descripcionGeneral"
-            type="text"
-            bind:value={descripcionGeneral}
-            placeholder="Ej: BOLSA DELUXE"
-            class="p-3 bg-gray-50 dark:bg-[#1E2228] border rounded-xl outline-none"
-          />
-        </div>
-
-        <div class="space-y-4 w-full">
-          <div
-            class="flex justify-between items-center border-b pb-2 border-gray-100 dark:border-gray-800"
-          >
-            <span class="text-[10px] font-semibold uppercase text-gray-400"
-              >Unidades y Conceptos del Parte</span
-            >
-            <button
-              type="button"
-              on:click={agregarFilaDesglose}
-              class="text-xs font-semibold text-[#5C42FF] flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-none p-0"
-            >
-              <span class="material-symbols-rounded text-sm">add_circle</span> Añadir
-              Línea
-            </button>
-          </div>
-
-          <div class="space-y-2.5 w-full">
-            {#each desgloses as item, idx}
-              <div
-                class="flex items-center gap-3 bg-gray-50 dark:bg-[#1E2228] p-3 rounded-xl border border-gray-100 dark:border-transparent"
-                transition:slide={{ duration: 150 }}
-              >
-                <input
-                  type="text"
-                  bind:value={item.descripcionProducto}
-                  placeholder="Concepto del producto"
-                  class="flex-1 bg-white dark:bg-[#16191D] p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 outline-none text-xs font-semibold focus:border-[#5C42FF]"
-                />
-                <input
-                  type="number"
-                  bind:value={item.cantidad}
-                  placeholder="Cantidad"
-                  class="w-32 bg-white dark:bg-[#16191D] p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-center font-semibold text-xs focus:border-[#5C42FF]"
-                />
+        </CardHeader>
+        <CardContent>
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2 bg-muted/40 p-2 rounded-2xl border border-border/60">
+              {#each areasImpresion as item}
                 <button
                   type="button"
-                  on:click={() => eliminarFilaDesglose(idx)}
-                  disabled={desgloses.length === 1}
-                  class="text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:pointer-events-none bg-transparent border-none"
+                  onclick={() => toggleArea(item)}
+                  class="py-2.5 px-2 rounded-xl text-xs font-semibold transition-all text-center cursor-pointer border-none {areasSeleccionadas.includes(item)
+                    ? 'bg-primary text-primary-foreground shadow-sm scale-102 ring-2 ring-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/80 bg-transparent'}"
                 >
-                  <span class="material-symbols-rounded text-base">delete</span>
+                  <span class="flex items-center justify-center gap-1">
+                    {#if areasSeleccionadas.includes(item)}
+                      <Check class="w-3 h-3" strokeWidth={3} />
+                    {/if}
+                    {item}
+                  </span>
                 </button>
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
-    {/if}
-
-    {#if pasoActual === 3}
-      <div class="space-y-8 text-sm" in:fade={{ duration: 150 }}>
-        <div>
-          <h2 class="text-xl font-semibold tracking-tight">
-            Paso 3: Parámetros del Soporte Técnico y Tintas
-          </h2>
-          <p class="text-xs text-gray-400 mt-0.5">
-            Especificaciones industriales de soportes, acabados y laminación de
-            planta.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 border-b pb-6">
-          <div
-            class="space-y-4 bg-gray-50/50 dark:bg-[#1E2228]/40 p-6 rounded-2xl border text-xs font-semibold"
-          >
-            <span
-              class="text-[11px] font-semibold uppercase text-[#5C42FF] tracking-wider block border-b pb-1"
-              >Configuración Portada</span
-            >
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col space-y-2">
-                <span class="text-gray-400 uppercase text-[9px]"
-                  >Papel Portada</span
-                >
-                <select
-                  bind:value={papelPortada}
-                  class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white"
-                >
-                  <option value="">-- Seleccionar gramaje --</option>
-                  {#each opcionesGramaje as g}<option value={g}>{g}</option
-                    >{/each}
-                </select>
-              </div>
-              <div class="flex flex-col space-y-2">
-                <span class="text-gray-400 uppercase text-[9px]"
-                  >Color Portada</span
-                >
-                <select
-                  bind:value={colorPortada}
-                  class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white"
-                >
-                  <option value="">-- Seleccionar tintas --</option>
-                  {#each opcionesColor as c}<option value={c}>{c}</option
-                    >{/each}
-                </select>
-              </div>
-            </div>
-
-            {#if requiereConfigurarTintasPortada}
-              <div class="flex flex-col space-y-2 mt-3" transition:slide>
-                <span class="text-gray-400 uppercase text-[9px]"
-                  >Tipo Tinta Portada</span
-                >
-                <select
-                  bind:value={tipoTintaPortada}
-                  class="p-3 bg-white dark:bg-[#16191D] border rounded-xl outline-none font-semibold"
-                >
-                  <option value="estandar">Tinta Estándar</option>
-                  <option value="pantone">Color Pantone Especial</option>
-                </select>
-                {#if tipoTintaPortada === "pantone"}
-                  <div class="space-y-2 mt-2">
-                    <div class="flex gap-2">
-                      <input
-                        type="text"
-                        bind:value={inputPantonePortada}
-                        placeholder="Código (Ej: 485)"
-                        class="flex-1 p-2.5 bg-white dark:bg-[#16191D] border rounded-xl font-mono"
-                      />
-                      <button
-                        type="button"
-                        on:click={añadirPantonePortada}
-                        class="px-4 bg-[#5C42FF] text-white font-semibold rounded-xl"
-                        >Añadir</button
-                      >
-                    </div>
-                    <div class="flex flex-wrap gap-1">
-                      {#each listaPantonesPortada as p, idx}
-                        <span
-                          class="bg-blue-500/10 text-blue-500 border font-mono text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1"
-                          >P. {p}
-                          <button
-                            type="button"
-                            on:click={() => eliminarPantonePortada(idx)}
-                            class="font-semibold">×</button
-                          ></span
-                        >
-                      {/each}
-                    </div>
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </div>
-
-          <div
-            class="space-y-4 bg-gray-50/50 dark:bg-[#1E2228]/40 p-6 rounded-2xl border text-xs font-semibold"
-          >
-            <span
-              class="text-[11px] font-semibold uppercase text-[#5C42FF] tracking-wider block border-b pb-1"
-              >Configuración Interior</span
-            >
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex flex-col space-y-2">
-                <span class="text-gray-400 uppercase text-[9px]"
-                  >Papel Interior</span
-                >
-                <select
-                  bind:value={papelInterior}
-                  class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white"
-                >
-                  <option value="">-- Seleccionar gramaje --</option>
-                  {#each opcionesGramaje as g}<option value={g}>{g}</option
-                    >{/each}
-                </select>
-              </div>
-              <div class="flex flex-col space-y-2">
-                <span class="text-gray-400 uppercase text-[9px]"
-                  >Color Interior</span
-                >
-                <select
-                  bind:value={colorInterior}
-                  class="p-3 bg-white dark:bg-[#16191D] border border-gray-100 rounded-xl outline-none font-semibold text-black dark:text-white"
-                >
-                  <option value="">-- Seleccionar tintas --</option>
-                  {#each opcionesColor as c}<option value={c}>{c}</option
-                    >{/each}
-                  <option value="Pantone">Pantone Especial</option>
-                </select>
-              </div>
-            </div>
-
-            {#if requiereConfigurarTintasInterior}
-              <div class="flex flex-col space-y-2 mt-3" transition:slide>
-                <span class="text-gray-400 uppercase text-[9px]"
-                  >Tipo Tinta Interior</span
-                >
-                <select
-                  bind:value={tipoTintaInterior}
-                  class="p-3 bg-white dark:bg-[#16191D] border rounded-xl outline-none font-semibold"
-                >
-                  <option value="estandar">Tinta Estándar</option>
-                  <option value="pantone">Color Pantone Especial</option>
-                </select>
-                {#if tipoTintaInterior === "pantone"}
-                  <div class="space-y-2 mt-2">
-                    <div class="flex gap-2">
-                      <input
-                        type="text"
-                        bind:value={inputPantoneInterior}
-                        placeholder="Código (Ej: 7241)"
-                        class="flex-1 p-2.5 bg-white dark:bg-[#16191D] border rounded-xl font-mono"
-                      />
-                      <button
-                        type="button"
-                        on:click={añadirPantoneInterior}
-                        class="px-4 bg-[#5C42FF] text-white font-semibold rounded-xl"
-                        >Añadir</button
-                      >
-                    </div>
-                    <div class="flex flex-wrap gap-1">
-                      {#each listaPantonesInterior as p, idx}
-                        <span
-                          class="bg-blue-500/10 text-blue-500 border font-mono text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1"
-                          >P. {p}
-                          <button
-                            type="button"
-                            on:click={() => eliminarPantoneInterior(idx)}
-                            class="font-semibold">×</button
-                          ></span
-                        >
-                      {/each}
-                    </div>
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        <div
-          class="grid grid-cols-1 md:grid-cols-3 gap-8 text-xs font-semibold text-gray-500"
-        >
-          <div
-            class="space-y-3 bg-gray-50/30 dark:bg-[#1E2228]/20 p-5 rounded-2xl border"
-          >
-            <span
-              class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2"
-              >1. Encuadernación</span
-            >
-            <div class="grid grid-cols-2 gap-3">
-              {#each Object.keys(encuadernacion) as k}
-                <label class="flex items-center gap-2 capitalize cursor-pointer"
-                  ><input
-                    type="checkbox"
-                    bind:checked={encuadernacion[k]}
-                    class="w-4 h-4 rounded accent-[#5C42FF]"
-                  />
-                  {k}</label
-                >
               {/each}
             </div>
-            <div class="pt-3 space-y-2 mt-3 border-t">
-              <input
-                type="text"
-                bind:value={espiralColor}
-                placeholder="Color de espiral"
-                class="w-full p-3 bg-white dark:bg-[#16191D] border rounded-xl text-xs"
-              />
-              <input
-                type="text"
-                bind:value={wireOColor}
-                placeholder="Color de wire-o"
-                class="w-full p-3 bg-white dark:bg-[#16191D] border rounded-xl text-xs"
-              />
-            </div>
-          </div>
 
-          <div
-            class="space-y-3 bg-gray-50/30 dark:bg-[#1E2228]/20 p-5 rounded-2xl border"
-          >
-            <span
-              class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2"
-              >2. Mecanizado</span
-            >
-            <div class="grid grid-cols-2 gap-3">
-              {#each Object.keys(acabados) as k}
-                <label class="flex items-center gap-2 capitalize cursor-pointer"
-                  ><input
-                    type="checkbox"
-                    bind:checked={acabados[k]}
-                    class="w-4 h-4 rounded accent-[#5C42FF]"
-                  />
-                  {k}</label
-                >
-              {/each}
-            </div>
-          </div>
-
-          <div
-            class="space-y-3 bg-gray-50/30 dark:bg-[#1E2228]/20 p-5 rounded-2xl border"
-          >
-            <span
-              class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-2"
-              >3. Triplete Industrial</span
-            >
-            <div class="space-y-3">
-              <div class="flex flex-col space-y-1">
-                <span
-                  class="text-[9px] uppercase tracking-wider text-gray-400 font-semibold"
-                  >Grapado</span
-                ><input
-                  type="text"
-                  bind:value={grapadoTipo}
-                  class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-semibold text-black"
-                />
-              </div>
-              <div class="flex flex-col space-y-1">
-                <span
-                  class="text-[9px] uppercase tracking-wider text-gray-400 font-semibold"
-                  >Barniz UV</span
-                ><input
-                  type="text"
-                  bind:value={barnizUVTipo}
-                  class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-semibold text-black"
-                />
-              </div>
-              <div class="flex flex-col space-y-1">
-                <span
-                  class="text-[9px] uppercase tracking-wider text-gray-400 font-semibold"
-                  >Estamping</span
-                ><input
-                  type="text"
-                  bind:value={estampingTipo}
-                  class="p-3 bg-white dark:bg-[#16191D] border rounded-xl font-semibold text-black"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="p-5 bg-gray-50/30 dark:bg-[#1E2228]/20 rounded-2xl border text-xs font-semibold text-gray-500"
-        >
-          <span
-            class="text-[11px] font-semibold text-[#1A1D21] dark:text-[#EDF0F3] uppercase block border-b pb-1 mb-3"
-            >4. Laminadora de Planta</span
-          >
-          <div class="flex gap-6 mb-4 font-semibold">
-            <label class="cursor-pointer flex items-center gap-1.5"
-              ><input
-                type="radio"
-                bind:group={laminadoTipo}
-                value="1 cara"
-                class="accent-[#5C42FF]"
-              /> 1 cara</label
-            >
-            <label class="cursor-pointer flex items-center gap-1.5"
-              ><input
-                type="radio"
-                bind:group={laminadoTipo}
-                value="2 caras"
-                class="accent-[#5C42FF]"
-              /> 2 caras</label
-            >
-            <label class="cursor-pointer flex items-center gap-1.5"
-              ><input
-                type="radio"
-                bind:group={laminadoTipo}
-                value="2 caras diferentes"
-                class="accent-[#5C42FF]"
-              /> 2 caras diferentes</label
-            >
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t">
-            <div class="space-y-2">
-              <span
-                class="text-[10px] text-gray-400 font-semibold block uppercase"
-                >Cara 1</span
+            <!-- Recuadro dinámico para Empresa Subcontratada -->
+            {#if tieneSubcontrata}
+              <div
+                class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2.5"
+                transition:slide={{ duration: 150 }}
               >
-              <div class="flex flex-wrap gap-3">
-                {#each Object.keys(tipoLaminadoCara1) as k}
-                  <label
-                    class="flex items-center gap-1.5 cursor-pointer capitalize"
-                    ><input
-                      type="checkbox"
-                      bind:checked={tipoLaminadoCara1[k]}
-                      class="accent-[#5C42FF]"
-                    />
-                    {k}</label
-                  >
-                {/each}
-              </div>
-            </div>
-            {#if laminadoTipo !== "1 cara"}
-              <div class="space-y-2" transition:slide>
-                <span
-                  class="text-[10px] text-gray-400 font-semibold block uppercase"
-                  >Cara 2</span
-                >
-                <div class="flex flex-wrap gap-3">
-                  {#each Object.keys(tipoLaminadoCara2) as k}
-                    <label
-                      class="flex items-center gap-1.5 cursor-pointer capitalize"
-                      ><input
-                        type="checkbox"
-                        bind:checked={tipoLaminadoCara2[k]}
-                        class="accent-[#5C42FF]"
-                      />
-                      {k}</label
-                    >
-                  {/each}
+                <div class="flex items-center justify-between">
+                  <label class="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                    <Handshake class="w-4 h-4 text-amber-600 dark:text-amber-400" /> Empresa / Taller de Subcontrata
+                  </label>
+                  <Badge variant="outline" class="text-[10px] bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 font-semibold">
+                    Taller Externo Activo
+                  </Badge>
+                </div>
+                <p class="text-[11px] text-muted-foreground">
+                  Selecciona la empresa con la que se trabaja y marca más abajo las líneas de producto que se derivan a subcontratar.
+                </p>
+                <div class="w-full sm:w-80">
+                  <Select bind:value={empresaSubcontrata}>
+                    <SelectTrigger class="h-9 rounded-xl bg-background border-amber-500/30">
+                      <SelectValue placeholder="Seleccionar subcontrata..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {#each listaEmpresasSubcontrata as sub}
+                        <SelectItem value={sub} label={sub}>
+                          <div class="flex items-center gap-2">
+                            <Building2 class="w-3.5 h-3.5 text-amber-500" />
+                            <span>{sub}</span>
+                          </div>
+                        </SelectItem>
+                      {/each}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             {/if}
           </div>
-        </div>
+        </CardContent>
+      </Card>
+
+      <!-- Descripción General y Desgloses -->
+      <Card class="border-border/80 shadow-2xs">
+        <CardHeader class="pb-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <FileText class="w-4 h-4" />
+              </div>
+              <div>
+                <CardTitle class="text-base font-semibold">Conceptos y Desglose de Producción</CardTitle>
+                <CardDescription class="text-xs text-muted-foreground">
+                  Título general del trabajo y desglose por líneas de producto.
+                </CardDescription>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onclick={agregarFilaDesglose}
+              class="gap-1.5 text-xs h-8 rounded-lg"
+            >
+              <Plus class="w-3.5 h-3.5" /> Añadir Línea
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-5">
+          
+          <!-- Descripción General -->
+          <div class="flex flex-col space-y-1.5">
+            <label for="descripcionGeneral" class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+              <Tag class="w-3.5 h-3.5" /> Descripción General del Trabajo
+            </label>
+            <input
+              id="descripcionGeneral"
+              type="text"
+              bind:value={descripcionGeneral}
+              placeholder="Ej: FOLLETOS A4 CORPORATIVOS, CARPETAS CON SOLAPA, BOLSA DELUXE..."
+              class="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+
+          <!-- Tabla de Desglose de Líneas -->
+          <div class="space-y-2.5">
+            <!-- Encabezados de la Tabla centrados y alineados -->
+            <div class="flex items-center gap-2.5 px-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <span class="w-6 flex-shrink-0 text-center">#</span>
+              <span class="flex-1">Líneas de Producto</span>
+              <span class="w-28 sm:w-32 text-center flex-shrink-0">Cantidad (Unids)</span>
+              {#if tieneSubcontrata}
+                <span class="w-24 sm:w-28 text-center text-amber-600 dark:text-amber-400 font-bold flex-shrink-0">
+                  Subcontratar
+                </span>
+              {/if}
+              <span class="w-9 flex-shrink-0"></span>
+            </div>
+
+            <div class="space-y-2">
+              {#each desgloses as item, idx}
+                <div
+                  class="flex items-center gap-2.5 bg-muted/40 p-2.5 rounded-xl border border-border/80 transition-all hover:border-border {item.subcontratado ? 'border-amber-500/40 bg-amber-500/5' : ''}"
+                  transition:slide={{ duration: 150 }}
+                >
+                  <div class="flex items-center justify-center w-6 h-6 rounded-lg bg-background text-[11px] font-semibold text-muted-foreground shadow-2xs flex-shrink-0">
+                    {idx + 1}
+                  </div>
+                  <input
+                    type="text"
+                    bind:value={item.descripcionProducto}
+                    placeholder="Concepto o variante del producto..."
+                    class="flex-1 h-9 rounded-lg border border-input bg-background px-3 text-xs font-medium text-foreground shadow-2xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+
+                  <!-- Cantidad -->
+                  <input
+                    type="number"
+                    bind:value={item.cantidad}
+                    placeholder="Cant."
+                    class="w-28 sm:w-32 h-9 rounded-lg border border-input bg-background px-3 text-xs font-mono font-semibold text-center text-foreground shadow-2xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring flex-shrink-0"
+                  />
+
+                  <!-- Subcontratar (después de la Cantidad, limpio y centrado) -->
+                  {#if tieneSubcontrata}
+                    <div class="w-24 sm:w-28 flex items-center justify-center flex-shrink-0">
+                      <label
+                        class="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer transition-all hover:bg-amber-500/15 {item.subcontratado ? 'bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30' : 'text-muted-foreground/60 hover:text-foreground'}"
+                        title="Marcar si esta línea se deriva a taller externo"
+                      >
+                        <input
+                          type="checkbox"
+                          bind:checked={item.subcontratado}
+                          class="h-4 w-4 rounded border-border accent-amber-600 cursor-pointer transition-transform active:scale-90"
+                        />
+                      </label>
+                    </div>
+                  {/if}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onclick={() => eliminarFilaDesglose(idx)}
+                    disabled={desgloses.length === 1}
+                    class="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg flex-shrink-0"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </Button>
+                </div>
+              {/each}
+            </div>
+          </div>
+
+        </CardContent>
+      </Card>
+
+    </div>
+  {/if}
+
+  <!-- ========================================================================= -->
+  <!-- PASO 3: FICHA TÉCNICA -->
+  <!-- ========================================================================= -->
+  {#if pasoActual === 3}
+    <div class="space-y-6" in:fade={{ duration: 150 }}>
+      
+      <!-- Papeles, Tintas y Pantones -->
+      <Card class="border-border/80 shadow-2xs">
+        <CardHeader class="pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <Palette class="w-4 h-4" />
+            </div>
+            <div>
+              <CardTitle class="text-base font-semibold">Soportes y Tintas (Portada / Interior)</CardTitle>
+              <CardDescription class="text-xs text-muted-foreground">
+                Gramajes, esquemas de color y tintas especiales de planta.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Portada -->
+            <div class="bg-muted/40 p-4 rounded-xl border border-border/80 space-y-3.5">
+              <div class="flex items-center justify-between border-b border-border/60 pb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <FileText class="w-3.5 h-3.5" /> Configuración Portada
+                </span>
+                {#if colorPortada}
+                  <Badge variant="secondary" class="font-mono text-[10px]">{colorPortada}</Badge>
+                {/if}
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col space-y-1.5">
+                  <label for="papelPortada" class="text-[11px] font-semibold text-muted-foreground">Papel Portada</label>
+                  <select
+                    id="papelPortada"
+                    bind:value={papelPortada}
+                    class="flex h-9 w-full rounded-xl border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">-- Gramaje --</option>
+                    {#each opcionesGramaje as g}<option value={g}>{g}</option>{/each}
+                  </select>
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                  <label for="colorPortada" class="text-[11px] font-semibold text-muted-foreground">Color Portada</label>
+                  <select
+                    id="colorPortada"
+                    bind:value={colorPortada}
+                    class="flex h-9 w-full rounded-xl border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">-- Tintas --</option>
+                    {#each opcionesColor as c}<option value={c}>{c}</option>{/each}
+                  </select>
+                </div>
+              </div>
+
+              {#if requiereConfigurarTintasPortada}
+                <div class="space-y-2 pt-2 border-t border-border/50" transition:slide={{ duration: 150 }}>
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-[11px] font-semibold text-muted-foreground">Tipo de Tinta Portada</span>
+                    <select
+                      bind:value={tipoTintaPortada}
+                      class="flex h-8 w-full rounded-lg border border-input bg-background px-2.5 text-xs font-medium text-foreground shadow-2xs"
+                    >
+                      <option value="estandar">Tinta Estándar</option>
+                      <option value="pantone">Color Pantone Especial</option>
+                    </select>
+                  </div>
+
+                  {#if tipoTintaPortada === "pantone"}
+                    <div class="space-y-2 pt-1" transition:slide={{ duration: 150 }}>
+                      <div class="flex gap-2">
+                        <input
+                          type="text"
+                          bind:value={inputPantonePortada}
+                          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); añadirPantonePortada(); } }}
+                          placeholder="Código Pantone (Ej: 485C)"
+                          class="flex-1 h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-mono text-foreground shadow-2xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onclick={añadirPantonePortada}
+                          class="h-8 text-xs font-semibold px-3"
+                        >
+                          Añadir
+                        </Button>
+                      </div>
+
+                      <div class="flex flex-wrap gap-1.5 min-h-6">
+                        {#each listaPantonesPortada as p, idx}
+                          <Badge variant="outline" class="font-mono text-[10px] pl-2 pr-1 py-0.5 gap-1 bg-background border-primary/30 text-primary">
+                            <span>P. {p}</span>
+                            <button
+                              type="button"
+                              onclick={() => eliminarPantonePortada(idx)}
+                              class="text-muted-foreground hover:text-destructive rounded-full p-0.5"
+                            >
+                              <X class="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+
+            <!-- Interior -->
+            <div class="bg-muted/40 p-4 rounded-xl border border-border/80 space-y-3.5">
+              <div class="flex items-center justify-between border-b border-border/60 pb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <FileText class="w-3.5 h-3.5" /> Configuración Interior
+                </span>
+                {#if colorInterior}
+                  <Badge variant="secondary" class="font-mono text-[10px]">{colorInterior}</Badge>
+                {/if}
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col space-y-1.5">
+                  <label for="papelInterior" class="text-[11px] font-semibold text-muted-foreground">Papel Interior</label>
+                  <select
+                    id="papelInterior"
+                    bind:value={papelInterior}
+                    class="flex h-9 w-full rounded-xl border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">-- Gramaje --</option>
+                    {#each opcionesGramaje as g}<option value={g}>{g}</option>{/each}
+                  </select>
+                </div>
+                <div class="flex flex-col space-y-1.5">
+                  <label for="colorInterior" class="text-[11px] font-semibold text-muted-foreground">Color Interior</label>
+                  <select
+                    id="colorInterior"
+                    bind:value={colorInterior}
+                    class="flex h-9 w-full rounded-xl border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">-- Tintas --</option>
+                    {#each opcionesColor as c}<option value={c}>{c}</option>{/each}
+                    <option value="Pantone">Pantone Especial</option>
+                  </select>
+                </div>
+              </div>
+
+              {#if requiereConfigurarTintasInterior}
+                <div class="space-y-2 pt-2 border-t border-border/50" transition:slide={{ duration: 150 }}>
+                  <div class="flex flex-col space-y-1">
+                    <span class="text-[11px] font-semibold text-muted-foreground">Tipo de Tinta Interior</span>
+                    <select
+                      bind:value={tipoTintaInterior}
+                      class="flex h-8 w-full rounded-lg border border-input bg-background px-2.5 text-xs font-medium text-foreground shadow-2xs"
+                    >
+                      <option value="estandar">Tinta Estándar</option>
+                      <option value="pantone">Color Pantone Especial</option>
+                    </select>
+                  </div>
+
+                  {#if tipoTintaInterior === "pantone"}
+                    <div class="space-y-2 pt-1" transition:slide={{ duration: 150 }}>
+                      <div class="flex gap-2">
+                        <input
+                          type="text"
+                          bind:value={inputPantoneInterior}
+                          onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); añadirPantoneInterior(); } }}
+                          placeholder="Código Pantone (Ej: 7241C)"
+                          class="flex-1 h-8 rounded-lg border border-input bg-background px-2.5 text-xs font-mono text-foreground shadow-2xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onclick={añadirPantoneInterior}
+                          class="h-8 text-xs font-semibold px-3"
+                        >
+                          Añadir
+                        </Button>
+                      </div>
+
+                      <div class="flex flex-wrap gap-1.5 min-h-6">
+                        {#each listaPantonesInterior as p, idx}
+                          <Badge variant="outline" class="font-mono text-[10px] pl-2 pr-1 py-0.5 gap-1 bg-background border-primary/30 text-primary">
+                            <span>P. {p}</span>
+                            <button
+                              type="button"
+                              onclick={() => eliminarPantoneInterior(idx)}
+                              class="text-muted-foreground hover:text-destructive rounded-full p-0.5"
+                            >
+                              <X class="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Encuadernación, Mecanizado y Procesos Industriales -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- 1. Encuadernación -->
+        <Card class="border-border/80 shadow-2xs">
+          <CardHeader class="pb-3">
+            <div class="flex items-center gap-2">
+              <BookOpen class="w-4 h-4 text-primary" />
+              <CardTitle class="text-sm font-semibold">1. Encuadernación</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              {#each Object.keys(encuadernacion) as k}
+                <label class="flex items-center gap-2 p-2 rounded-lg border border-border/60 bg-muted/30 hover:bg-muted/60 cursor-pointer select-none capitalize transition-colors {encuadernacion[k] ? 'border-primary/50 bg-primary/5 text-foreground font-semibold' : 'text-muted-foreground'}">
+                  <input
+                    type="checkbox"
+                    bind:checked={encuadernacion[k]}
+                    class="h-3.5 w-3.5 rounded border-input accent-primary"
+                  />
+                  <span>{k}</span>
+                </label>
+              {/each}
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-border/60">
+              <input
+                type="text"
+                bind:value={espiralColor}
+                placeholder="Color de espiral..."
+                class="flex h-8 w-full rounded-lg border border-input bg-background px-2.5 text-xs text-foreground shadow-2xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+              <input
+                type="text"
+                bind:value={wireOColor}
+                placeholder="Color de wire-o..."
+                class="flex h-8 w-full rounded-lg border border-input bg-background px-2.5 text-xs text-foreground shadow-2xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- 2. Mecanizado -->
+        <Card class="border-border/80 shadow-2xs">
+          <CardHeader class="pb-3">
+            <div class="flex items-center gap-2">
+              <Scissors class="w-4 h-4 text-primary" />
+              <CardTitle class="text-sm font-semibold">2. Mecanizado</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              {#each Object.keys(acabados) as k}
+                <label class="flex items-center gap-2 p-2 rounded-lg border border-border/60 bg-muted/30 hover:bg-muted/60 cursor-pointer select-none capitalize transition-colors {acabados[k] ? 'border-primary/50 bg-primary/5 text-foreground font-semibold' : 'text-muted-foreground'}">
+                  <input
+                    type="checkbox"
+                    bind:checked={acabados[k]}
+                    class="h-3.5 w-3.5 rounded border-input accent-primary"
+                  />
+                  <span>{k}</span>
+                </label>
+              {/each}
+            </div>
+          </CardContent>
+        </Card>
+
+        <!-- 3. Acabados (antes Triplete Industrial) -->
+        <Card class="border-border/80 shadow-2xs">
+          <CardHeader class="pb-3">
+            <div class="flex items-center gap-2">
+              <Sparkles class="w-4 h-4 text-primary" />
+              <CardTitle class="text-sm font-semibold">3. Acabados</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <!-- Grapado -->
+            <div class="flex flex-col space-y-1">
+              <label class="text-[11px] font-semibold text-muted-foreground">Grapado</label>
+              <Select bind:value={grapadoTipo}>
+                <SelectTrigger class="h-8 rounded-lg text-xs">
+                  <SelectValue placeholder="Seleccionar opción..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Seleccionar opción" label="Seleccionar opción" />
+                  <SelectItem value="Normal" label="Normal" />
+                  <SelectItem value="Omega" label="Omega" />
+                </SelectContent>
+              </Select>
+            </div>
+
+            <!-- Barniz UV -->
+            <div class="flex flex-col space-y-1">
+              <label class="text-[11px] font-semibold text-muted-foreground">Barniz UV</label>
+              <Select bind:value={barnizUVTipo}>
+                <SelectTrigger class="h-8 rounded-lg text-xs">
+                  <SelectValue placeholder="Seleccionar..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="No" label="No" />
+                  <SelectItem value="Sí" label="Sí" />
+                </SelectContent>
+              </Select>
+            </div>
+
+            <!-- Estamping -->
+            <div class="flex flex-col space-y-1">
+              <label class="text-[11px] font-semibold text-muted-foreground">Estamping</label>
+              <Select bind:value={estampingTipo}>
+                <SelectTrigger class="h-8 rounded-lg text-xs">
+                  <SelectValue placeholder="Seleccionar..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="No requiere" label="No requiere" />
+                  <SelectItem value="Requiere" label="Requiere" />
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
       </div>
+
+      <!-- 4. Laminadora de Planta -->
+      <Card class="border-border/80 shadow-2xs">
+        <CardHeader class="pb-3">
+          <div class="flex items-center gap-2">
+            <SlidersHorizontal class="w-4 h-4 text-primary" />
+            <CardTitle class="text-base font-semibold">4. Laminadora de Planta</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          
+          <!-- Tipo de Laminado (Radio selector) -->
+          <div class="flex flex-wrap gap-4 text-xs font-semibold text-muted-foreground">
+            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 transition-colors {laminadoTipo === '1 cara' ? 'border-primary/50 bg-primary/5 text-foreground' : ''}">
+              <input
+                type="radio"
+                bind:group={laminadoTipo}
+                value="1 cara"
+                class="accent-primary"
+              />
+              <span>1 cara</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 transition-colors {laminadoTipo === '2 caras' ? 'border-primary/50 bg-primary/5 text-foreground' : ''}">
+              <input
+                type="radio"
+                bind:group={laminadoTipo}
+                value="2 caras"
+                class="accent-primary"
+              />
+              <span>2 caras</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted/60 transition-colors {laminadoTipo === '2 caras diferentes' ? 'border-primary/50 bg-primary/5 text-foreground' : ''}">
+              <input
+                type="radio"
+                bind:group={laminadoTipo}
+                value="2 caras diferentes"
+                class="accent-primary"
+              />
+              <span>2 caras diferentes</span>
+            </label>
+          </div>
+
+          <!-- Selección de Acabados de Laminado -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-border/60">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                  {laminadoTipo === "2 caras" ? "Acabado Ambas Caras (1 y 2)" : "Acabado Cara 1"}
+                </span>
+                {#if laminadoTipo === "2 caras"}
+                  <Badge variant="secondary" class="text-[10px] font-normal text-primary bg-primary/10">
+                    Sincronizado 2 Caras
+                  </Badge>
+                {/if}
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                {#each Object.keys(tipoLaminadoCara1) as k}
+                  <button
+                    type="button"
+                    onclick={() => seleccionarLaminadoCara1(k)}
+                    class="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/60 bg-background hover:bg-muted/40 cursor-pointer select-none capitalize transition-all {tipoLaminadoCara1[k] ? 'border-primary bg-primary/10 text-foreground font-semibold shadow-2xs ring-1 ring-primary/25' : 'text-muted-foreground'}"
+                  >
+                    <span class="w-4 h-4 rounded-full border flex items-center justify-center {tipoLaminadoCara1[k] ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 bg-background'}">
+                      {#if tipoLaminadoCara1[k]}
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary-foreground"></span>
+                      {/if}
+                    </span>
+                    <span>{k.replace("S", " S").replace("A", " A")}</span>
+                  </button>
+                {/each}
+              </div>
+            </div>
+
+            {#if laminadoTipo === "2 caras diferentes"}
+              <div class="space-y-2" transition:slide={{ duration: 150 }}>
+                <span class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                  Acabado Cara 2 (Diferente)
+                </span>
+                <div class="flex flex-wrap gap-2 text-xs">
+                  {#each Object.keys(tipoLaminadoCara2) as k}
+                    <button
+                      type="button"
+                      onclick={() => seleccionarLaminadoCara2(k)}
+                      class="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/60 bg-background hover:bg-muted/40 cursor-pointer select-none capitalize transition-all {tipoLaminadoCara2[k] ? 'border-primary bg-primary/10 text-foreground font-semibold shadow-2xs ring-1 ring-primary/25' : 'text-muted-foreground'}"
+                    >
+                      <span class="w-4 h-4 rounded-full border flex items-center justify-center {tipoLaminadoCara2[k] ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40 bg-background'}">
+                        {#if tipoLaminadoCara2[k]}
+                          <span class="w-1.5 h-1.5 rounded-full bg-primary-foreground"></span>
+                        {/if}
+                      </span>
+                      <span>{k.replace("S", " S").replace("A", " A")}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {:else if laminadoTipo === "2 caras"}
+              <div class="space-y-2 p-3 rounded-xl bg-muted/30 border border-border/60 flex flex-col justify-center" transition:slide={{ duration: 150 }}>
+                <span class="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                  <Check class="w-3.5 h-3.5 text-primary" /> Cara 2 idéntica a Cara 1
+                </span>
+                <p class="text-[11px] text-muted-foreground leading-relaxed">
+                  Al haber elegido <strong>2 caras</strong>, el acabado seleccionado en Cara 1 se replica automáticamente en ambas caras del material.
+                </p>
+              </div>
+            {/if}
+          </div>
+
+        </CardContent>
+      </Card>
+
+    </div>
+  {/if}
+
+  <!-- ========================================================================= -->
+  <!-- BARRA INFERIOR DE NAVEGACIÓN Y ACCIONES -->
+  <!-- ========================================================================= -->
+  <div class="flex items-center justify-between pt-2 border-t border-border/60">
+    <Button
+      type="button"
+      variant="outline"
+      onclick={irAlAnterior}
+      disabled={pasoActual === 1 || guardandoDato}
+      class="gap-2 text-xs h-10 px-4 rounded-xl"
+    >
+      <ArrowLeft class="w-4 h-4" /> Atrás
+    </Button>
+
+    {#if pasoActual < 3}
+      <Button
+        type="button"
+        variant="default"
+        onclick={irAlSiguiente}
+        class="gap-2 text-xs h-10 px-5 rounded-xl shadow-xs"
+      >
+        Continuar <ArrowRight class="w-4 h-4" />
+      </Button>
+    {:else}
+      <Button
+        type="button"
+        variant="default"
+        onclick={procesarEnvio}
+        disabled={guardandoDato}
+        class="gap-2 text-xs h-10 px-6 rounded-xl shadow-md"
+      >
+        {#if guardandoDato}
+          <Loader2 class="w-4 h-4 animate-spin" /> Guardando en Turso...
+        {:else}
+          <Printer class="w-4 h-4" /> Guardar y Generar A3
+        {/if}
+      </Button>
     {/if}
   </div>
 
-  <div class="flex items-center justify-between flex-shrink-0 px-2 py-1">
-    <button
-      type="button"
-      on:click={irAlAnterior}
-      disabled={pasoActual === 1 || guardandoDato}
-      class="px-5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-[#1A1D21] dark:hover:text-[#EDF0F3] bg-transparent hover:bg-gray-200 transition-all cursor-pointer"
-      >Atrás</button
-    >
-    {#if pasoActual < 3}
-      <button
-        type="button"
-        on:click={irAlSiguiente}
-        class="px-6 py-2.5 rounded-xl text-xs font-semibold bg-[#5C42FF] text-white hover:bg-[#4730D9] shadow-xs cursor-pointer"
-        >Continuar</button
-      >
-    {:else}
-      <button
-        type="button"
-        on:click={procesarEnvio}
-        disabled={guardandoDato}
-        class="px-6 py-2.5 rounded-xl text-xs font-semibold bg-[#5C42FF] text-white hover:bg-[#4730D9] shadow-md cursor-pointer"
-      >
-        {guardandoDato ? "Guardando en Turso..." : "Guardar y Generar A3"}
-      </button>
-    {/if}
-  </div>
 </div>
