@@ -16,6 +16,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       area, 
       comercial, 
       subcontrata, 
+      prioridad,
+      ordenCola,
       desgloses, 
       workspaceId 
     } = body;
@@ -33,6 +35,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (area !== undefined) camposActualizar.area = area;
     if (comercial !== undefined) camposActualizar.comercial = comercial;
     if (subcontrata !== undefined) camposActualizar.subcontrata = subcontrata;
+    if (prioridad !== undefined) camposActualizar.prioridad = prioridad;
+    if (ordenCola !== undefined) camposActualizar.ordenCola = Number(ordenCola);
 
     if (Object.keys(camposActualizar).length > 0) {
       await db.update(Trabajo)

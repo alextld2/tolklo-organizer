@@ -1,0 +1,36 @@
+---
+// src/pages/w/[workspace]/tv.astro
+import PantallaTallerTV from "../../../components/PantallaTallerTV.svelte";
+import "../../../styles/global.css";
+
+const { workspace = "produccion" } = Astro.params;
+
+const nombresEspacios: Record<string, string> = {
+  produccion: "Imprenta",
+  escolar: "Agendas Escolares",
+  profesional: "Agendas Profesionales",
+};
+const nombreTaller = nombresEspacios[workspace] || workspace.toUpperCase();
+---
+
+<!DOCTYPE html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📺 Pantalla Taller en Vivo - {nombreTaller}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      /* Evitar barras de scroll innecesarias en pantallas de televisión */
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background-color: #0a0a0a;
+      }
+    </style>
+  </head>
+  <body>
+    <PantallaTallerTV workspace={workspace} client:load />
+  </body>
+</html>

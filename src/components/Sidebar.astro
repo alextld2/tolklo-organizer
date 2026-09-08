@@ -60,6 +60,24 @@ const isActive = (p: string, strict = false) => isPathActive(p, strict);
         <span>Tareas</span>
       </a>
 
+      <!-- Cola Taller / Prioridades -->
+      <a href={`/w/${workspace}/cola`} class={getLinkClass(`/w/${workspace}/cola`)}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          class={isActive(`/w/${workspace}/cola`) ? "opacity-100" : "opacity-70"}>
+          <line x1="10" x2="21" y1="6" y2="6"/>
+          <line x1="10" x2="21" y1="12" y2="12"/>
+          <line x1="10" x2="21" y1="18" y2="18"/>
+          <path d="M4 6h1v4"/>
+          <path d="M4 10h2"/>
+          <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>
+        </svg>
+        <div class="flex items-center justify-between flex-1">
+          <span>Cola Taller</span>
+          <span class="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">TV</span>
+        </div>
+      </a>
+
       <!-- Calendario -->
       <a href={`/w/${workspace}/calendar`} class={getLinkClass(`/w/${workspace}/calendar`)}>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"

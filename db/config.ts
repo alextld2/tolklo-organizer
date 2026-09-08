@@ -30,7 +30,11 @@ export const Trabajo = defineTable({
     encuadernacionJson: column.text({ optional: true }),
     acabadosJson: column.text({ optional: true }),
     laminadoCara1Json: column.text({ optional: true }),
-    laminadoCara2Json: column.text({ optional: true })
+    laminadoCara2Json: column.text({ optional: true }),
+
+    // Gestión de prioridades y orden en cola de producción
+    prioridad: column.text({ optional: true, default: 'Normal' }),
+    ordenCola: column.number({ optional: true, default: 0 })
   }
 });
 

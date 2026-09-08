@@ -1,0 +1,82 @@
+---
+// src/pages/w/[workspace]/cola.astro
+import MainLayout from "../../../layouts/MainLayout.astro";
+import ColaProduccion from "../../../components/ColaProduccion.svelte";
+import { db, Trabajo, DesgloseTrabajo, eq, and, ne } from "astro:db";
+
+const { workspace = "produccion" } = Astro.params;
+
+if (!workspace) {
+  return Astro.redirect("/w/produccion");
+}
+
+// Consultamos los trabajos activos de este espacio (excluimos terminados por defecto para el taller)
+const filasBD = await db
+  .select()
+  .from(Trabajo)
+  .leftJoin(DesgloseTrabajo, eq(Trabajo.numParte, DesgloseTrabajo.numParte))
+  .where(
+    and(
+      eq(Trabajo.workspaceId, workspace),
+      ne(Trabajo.estado, "Terminado")
+    )
+  );
+
+const tareasAgrupadas = new Map<string, any>();
+
+filasBD.forEach((fila) => {
+  const t = fila.Trabajo;
+  const d = fila.DesgloseTrabajo;
+
+  if (!tareasAgrupadas.has(t.numParte)) {
+    tareasAgrupadas.set(t.numParte, {
+      numParte: t.numParte,
+      cliente: t.cliente,
+      descripcionGeneral: t.descripcionGeneral || "",
+      comercial: t.comercial || "",
+      diseñador: t.diseñador || "",
+      estado: t.estado || "Por hacer",
+      fechaSalida: t.fechaSalida,
+      area: t.area || "",
+      subcontrata: t.subcontrata || "",
+      prioridad: t.prioridad || "Normal",
+      ordenCola: t.ordenCola ?? 0,
+      grapadoTipo: t.grapadoTipo || "",
+      barnizUVTipo: t.barnizUVTipo || "",
+      laminadoTipo: t.laminadoTipo || "",
+      desgloses: [],
+    });
+  }
+
+  if (d && d.descripcionProducto) {
+    tareasAgrupadas.get(t.numParte).desgloses.push({
+      descripcionProducto: d.descripcionProducto,
+      cantidad: d.cantidad,
+    });
+  }
+});
+
+// Ordenamos la cola: primero por ordenCola ascendente (los menores van primero)
+const trabajosOrdenados = Array.from(tareasAgrupadas.values()).sort((a, b) => {
+  if (a.ordenCola > 0 && b.ordenCola > 0) return a.ordenCola - b.ordenCola;
+  if (a.ordenCola > 0 && (!b.ordenCola || b.ordenCola === 0)) return -1;
+  if (b.ordenCola > 0 && (!a.ordenCola || a.ordenCola === 0)) return 1;
+
+  if (a.prioridad === "Urgente" && b.prioridad !== "Urgente") return -1;
+  if (b.prioridad === "Urgente" && a.prioridad !== "Urgente") return 1;
+
+  if (a.fechaSalida && b.fechaSalida) return a.fechaSalida.localeCompare(b.fechaSalida);
+  return 0;
+});
+
+const nombresEspacios: Record<string, string> = {
+  produccion: "Imprenta",
+  escolar: "Agendas Escolares",
+  profesional: "Agendas Profesionales",
+};
+const tituloPagina = nombresEspacios[workspace] || "Taller";
+---
+
+<MainLayout title={`Cola de Producción y Prioridades - ${tituloPagina}`}>
+  <ColaProduccion tareas={trabajosOrdenados} workspace={workspace} client:load />
+</MainLayout>
