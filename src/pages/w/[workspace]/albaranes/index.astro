@@ -1,0 +1,21 @@
+---
+// src/pages/w/[workspace]/albaranes/index.astro
+import MainLayout from "../../../../layouts/MainLayout.astro";
+import AlbaranesList from "../../../../components/albaranes/AlbaranesList.svelte";
+import { getAlbaranesWorkspace } from "../../../../lib/db-utils";
+
+const { workspace } = Astro.params;
+if (!workspace) {
+  return Astro.redirect("/w/produccion");
+}
+
+const albaranes = await getAlbaranesWorkspace(workspace);
+---
+
+<MainLayout title={`Albaranes de Entrega // ${workspace.toUpperCase()}`}>
+  <AlbaranesList 
+    albaranesIniciales={albaranes} 
+    workspace={workspace} 
+    client:load 
+  />
+</MainLayout>

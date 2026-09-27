@@ -14,14 +14,22 @@ export default defineConfig({
   // ⚡ ACTIVAMOS EL MOTOR EN MODO SERVIDOR DINÁMICO REAL-TIME
   output: 'server', 
   
+  compressHTML: true,
+  
   // 2. Le decimos a Astro que use Node en modo standalone para el USB y el NAS
   adapter: node({
-    mode: 'standalone'
+    mode: 'standalone',
+    bodySizeLimit: 25 * 1024 * 1024 // 25 MB máximo por request
   }),
   
   integrations: [svelte(), db()],
   vite: {
     plugins: [tailwindVite()],
+    build: {
+      cssMinify: true,
+      minify: 'esbuild',
+      reportCompressedSize: false
+    },
     optimizeDeps: {
       include: ['lucide-svelte', 'bits-ui', 'clsx', 'tailwind-merge', '@internationalized/date']
     },

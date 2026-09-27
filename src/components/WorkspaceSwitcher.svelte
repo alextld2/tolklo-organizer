@@ -3,6 +3,7 @@
     Factory,
     GraduationCap,
     Briefcase,
+    Receipt,
     ChevronsUpDown,
     Plus,
   } from "lucide-svelte";
@@ -45,15 +46,27 @@
       icon: Briefcase,
       shortcut: "⌘3",
     },
+    {
+      id: "facturacion",
+      nombre: "Facturación",
+      plan: "Fiscal & Comercial",
+      icon: Receipt,
+      shortcut: "⌘4",
+    },
   ];
 
   const equipoActivo = $derived(
     equipos.find((e) => e.id === workspaceActivo) || equipos[0]
   );
+  const IconActivo = $derived(equipoActivo.icon);
 
   function seleccionarWorkspace(id: string) {
     if (id !== workspaceActivo) {
-      window.location.href = `/w/${id}`;
+      if (id === "facturacion") {
+        window.location.href = `/w/facturacion/facturacion`;
+      } else {
+        window.location.href = `/w/${id}`;
+      }
     }
   }
 
@@ -68,6 +81,9 @@
       } else if (e.key === "3") {
         e.preventDefault();
         seleccionarWorkspace("profesional");
+      } else if (e.key === "4") {
+        e.preventDefault();
+        seleccionarWorkspace("facturacion");
       }
     }
   }
@@ -83,7 +99,7 @@
       <div
         class="flex size-9 items-center justify-center rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xs flex-shrink-0"
       >
-        <svelte:component this={equipoActivo.icon} class="size-4" strokeWidth={2.2} />
+        <IconActivo class="size-4" strokeWidth={2.2} />
       </div>
 
       <div class="grid flex-1 text-left leading-tight min-w-0">
@@ -110,6 +126,7 @@
         </DropdownMenuLabel>
 
         {#each equipos as equipo}
+          {@const EquipoIcon = equipo.icon}
           <DropdownMenuItem
             onSelect={() => seleccionarWorkspace(equipo.id)}
             class="gap-2.5 p-2 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60 {workspaceActivo === equipo.id ? 'bg-gray-50 dark:bg-gray-800/60' : ''}"
@@ -117,7 +134,7 @@
             <div
               class="flex size-6 items-center justify-center rounded-lg border border-gray-200 dark:border-[#232830] bg-gray-50 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300 flex-shrink-0"
             >
-              <svelte:component this={equipo.icon} class="size-3.5" strokeWidth={2} />
+              <EquipoIcon class="size-3.5" strokeWidth={2} />
             </div>
 
             <span class="font-semibold text-xs text-[#1A1D21] dark:text-[#EDF0F3] flex-1 truncate">

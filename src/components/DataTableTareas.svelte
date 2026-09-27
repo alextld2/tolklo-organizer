@@ -507,9 +507,8 @@
                               estadoOpcion,
                             )}
                         >
-                          <svelte:component
-                            this={ICONOS_ESTADO_LUCIDE[estadoOpcion] ||
-                              Circle}
+                          {@const IconoOpcion = ICONOS_ESTADO_LUCIDE[estadoOpcion] || Circle}
+                          <IconoOpcion
                             size={14}
                             strokeWidth={2}
                             class="flex-shrink-0

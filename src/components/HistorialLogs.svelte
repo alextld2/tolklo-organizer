@@ -51,7 +51,7 @@
       <div class="relative animate-fade-in text-xs">
         <!-- Icono flotante en la línea del tiempo -->
         <span class="absolute -left-[35px] top-0.5 w-6 h-6 rounded-lg flex items-center justify-center border shadow-xs {estilos.bg} {estilos.texto} {estilos.borde}">
-          <svelte:component this={Icono} size={12} strokeWidth={2} />
+          <Icono size={12} strokeWidth={2} />
         </span>
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">

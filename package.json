@@ -8,6 +8,8 @@
     "build": "astro build --remote",
     "build:remote": "astro build --remote",
     "preview": "astro preview",
+    "db:push": "node scripts/db-push.mjs",
+    "db:dump": "node scripts/migrate-local-to-turso.mjs",
     "astro": "astro"
   },
   "dependencies": {
@@ -16,7 +18,7 @@
     "@astrojs/svelte": "^9.0.1",
     "@internationalized/date": "3.12.3",
     "@tailwindcss/vite": "^4.0.0",
-    "astro": "^7.2.6",
+    "astro": "^7.3.2",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
     "lucide-svelte": "^1.0.1",

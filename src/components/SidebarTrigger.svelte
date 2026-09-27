@@ -26,6 +26,7 @@
     produccion: "Imprenta",
     escolar: "Agendas Escolares",
     profesional: "Agendas Profesionales",
+    facturacion: "Facturación",
   };
 
   const nombresSecciones: Record<string, string> = {
@@ -35,6 +36,10 @@
     clients: "Directorio de Clientes",
     logs: "Historial de Registros",
     "nueva-tarea": "Nuevo Parte de Trabajo",
+    presupuestos: "Presupuestos",
+    albaranes: "Albaranes",
+    facturacion: "Facturación & Veri*factu",
+    escandallo: "Escandallo e Imposición",
   };
 
   $: workspaceNombre = nombresWorkspace[workspace] || "Workspace";

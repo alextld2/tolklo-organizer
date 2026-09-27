@@ -1,0 +1,21 @@
+---
+// src/pages/w/[workspace]/presupuestos/index.astro
+import MainLayout from "../../../../layouts/MainLayout.astro";
+import PresupuestosList from "../../../../components/presupuestos/PresupuestosList.svelte";
+import { getPresupuestosWorkspace } from "../../../../lib/db-utils";
+
+const { workspace } = Astro.params;
+if (!workspace) {
+  return Astro.redirect("/w/produccion");
+}
+
+const presupuestos = await getPresupuestosWorkspace(workspace);
+---
+
+<MainLayout title={`Presupuestos // ${workspace.toUpperCase()}`}>
+  <PresupuestosList 
+    presupuestosIniciales={presupuestos} 
+    workspace={workspace} 
+    client:load 
+  />
+</MainLayout>

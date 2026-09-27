@@ -1,0 +1,14 @@
+---
+// src/pages/w/[workspace]/escandallo/index.astro
+import MainLayout from "../../../../layouts/MainLayout.astro";
+import EscandalloPage from "../../../../components/presupuestos/EscandalloPage.svelte";
+
+const { workspace } = Astro.params;
+if (!workspace) {
+  return Astro.redirect("/w/produccion");
+}
+---
+
+<MainLayout title={`Escandallo Técnico & Imposición // ${workspace.toUpperCase()}`}>
+  <EscandalloPage {workspace} client:load />
+</MainLayout>

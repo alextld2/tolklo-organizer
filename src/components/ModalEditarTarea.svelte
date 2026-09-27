@@ -325,10 +325,10 @@
             </SelectTrigger>
             <SelectContent>
               {#each listaEstados as est}
+                {@const IconoEstado = ICONOS_ESTADO[est] || Circle}
                 <SelectItem value={est} label={est}>
                   <div class="flex items-center gap-2">
-                    <svelte:component
-                      this={ICONOS_ESTADO[est] || Circle}
+                    <IconoEstado
                       size={13}
                       class="flex-shrink-0"
                     />

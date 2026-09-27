@@ -152,7 +152,7 @@ export const GET: APIRoute = async ({ request, cookies }) => {
       JSON.stringify({
         status: "error",
         error_message: error.message || "Sin mensaje de error",
-        error_stack: error.stack || "Sin traza de pila",
+        error_stack: import.meta.env.DEV ? (error.stack || "Sin traza de pila") : undefined,
         diagnostico: {
           clientId_leido: clientId ? `SÍ (Inicia en: ${clientId.substring(0, 15)}...)` : "VACÍO",
           clientSecret_leido: clientSecret ? "SÍ (Oculto por seguridad)" : "VACÍO",

@@ -8,6 +8,7 @@ import { getTrabajosWorkspace } from "../../../lib/db-utils";
 const { workspace } = Astro.params;
 
 if (!workspace) return Astro.redirect("/w/produccion");
+if (workspace === "facturacion") return Astro.redirect("/w/facturacion/facturacion");
 const trabajosProximos = await getTrabajosWorkspace(workspace);
 ---
 

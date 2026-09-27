@@ -1,0 +1,23 @@
+---
+// src/pages/w/[workspace]/facturacion/index.astro
+import MainLayout from "../../../../layouts/MainLayout.astro";
+import FacturacionDashboard from "../../../../components/facturas/FacturacionDashboard.svelte";
+import { getFacturasWorkspace, getConfiguracionFiscalWorkspace } from "../../../../lib/db-utils";
+
+const { workspace } = Astro.params;
+if (!workspace) {
+  return Astro.redirect("/w/produccion");
+}
+
+const facturas = await getFacturasWorkspace(workspace);
+const configuracionFiscal = await getConfiguracionFiscalWorkspace(workspace);
+---
+
+<MainLayout title={`Facturación & Veri*factu // ${workspace.toUpperCase()}`}>
+  <FacturacionDashboard 
+    facturasIniciales={facturas} 
+    configuracionFiscal={configuracionFiscal} 
+    workspace={workspace} 
+    client:load 
+  />
+</MainLayout>
