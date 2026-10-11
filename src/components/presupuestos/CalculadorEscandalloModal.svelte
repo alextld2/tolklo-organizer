@@ -24,6 +24,7 @@
     type ParametrosCalculo,
     type DesgloseCosteMaquina
   } from "$lib/escandallo-imprenta";
+  import { escandalloConfig } from "$lib/escandallo-config";
 
   let {
     abierto = false,
@@ -43,6 +44,11 @@
     }) => void;
   } = $props();
 
+  // Catálogos dinámicos reactivos
+  let catalogoPresets = $derived($escandalloConfig?.presets || PRODUCTOS_PRESET);
+  let catalogoPapeles = $derived($escandalloConfig?.papeles || PAPELES_CATALOGO);
+  let catalogoAcabados = $derived($escandalloConfig?.acabados || CATALOGO_ACABADOS);
+
   // Estados del configurador
   let presetSeleccionadoId = $state("flyer-a5");
   let anchoMm = $state(148);
@@ -61,7 +67,7 @@
   // Al cambiar preset de producto
   function seleccionarPreset(presetId: string) {
     presetSeleccionadoId = presetId;
-    const preset = PRODUCTOS_PRESET.find(p => p.id === presetId);
+    const preset = catalogoPresets.find(p => p.id === presetId);
     if (preset) {
       anchoMm = preset.ancho;
       altoMm = preset.alto;
@@ -80,7 +86,7 @@
     }
   }
 
-  // Ejecución reactiva del motor de cálculo en tiempo real
+  // Ejecución reactiva del motor de cálculo en tiempo real con tarifas personalizadas
   let calculo = $derived(
     calcularEscandalloCompleto({
       cantidadTirada: Math.max(1, Number(cantidadTirada) || 100),
@@ -92,7 +98,7 @@
       colorImpresion,
       acabadosIds: acabadosSeleccionados,
       margenBeneficioPorcentaje: Number(margenBeneficio) || 35
-    })
+    }, $escandalloConfig || undefined)
   );
 
   // Máquina activa para visualizar imposición y desglose
@@ -105,11 +111,11 @@
   function aplicarAlPresupuesto() {
     const maq = maquinaActiva;
     const papelActual = calculo.papel;
-    const presetActual = PRODUCTOS_PRESET.find(p => p.id === presetSeleccionadoId);
+    const presetActual = catalogoPresets.find(p => p.id === presetSeleccionadoId);
     const nombreProd = presetActual ? presetActual.nombre.split("(")[0].trim() : "Trabajo Gráfico a Medida";
 
     const acabadosTxt = acabadosSeleccionados.length > 0
-      ? ` + ${acabadosSeleccionados.map(id => CATALOGO_ACABADOS[id]?.nombre).join(", ")}`
+      ? ` + ${acabadosSeleccionados.map(id => catalogoAcabados[id]?.nombre || CATALOGO_ACABADOS[id]?.nombre).join(", ")}`
       : "";
 
     const descripcion = `${nombreProd} — ${anchoMm}x${altoMm} mm, ${papelActual.nombre} ${gramaje}g, Impresión ${colorImpresion}${acabadosTxt}.`;
@@ -181,7 +187,7 @@
               Producto Gráfico
             </label>
             <div class="grid grid-cols-2 gap-1.5">
-              {#each PRODUCTOS_PRESET as preset}
+              {#each catalogoPresets as preset}
                 <button
                   type="button"
                   onclick={() => seleccionarPreset(preset.id)}
@@ -273,7 +279,7 @@
                 bind:value={papelId}
                 class="w-full bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs font-medium text-foreground focus:ring-1 focus:ring-primary outline-none"
               >
-                {#each PAPELES_CATALOGO as p}
+                {#each catalogoPapeles as p}
                   <option value={p.id}>{p.nombre} ({p.precioKg} €/kg)</option>
                 {/each}
               </select>
@@ -323,7 +329,7 @@
               Acabados Opcionales
             </label>
             <div class="space-y-1 max-h-32 overflow-y-auto pr-1">
-              {#each Object.values(CATALOGO_ACABADOS) as ac}
+              {#each Object.values(catalogoAcabados) as ac}
                 <label class="flex items-center justify-between p-1.5 rounded-lg border border-border/70 hover:bg-accent cursor-pointer text-xs">
                   <div class="flex items-center gap-2">
                     <input
@@ -402,7 +408,7 @@
                       {opcion.maquina.tecnologia.toUpperCase()}
                     </span>
                     <h4 class="text-xs font-bold text-foreground leading-tight mt-0.5">
-                      {opcion.maquina.id.includes("b1") ? "Offset 70x100" : opcion.maquina.id.includes("b2") ? "Offset 50x70" : "Digital SRA3"}
+                      {opcion.maquina.nombre}
                     </h4>
                     <p class="text-[10px] text-muted-foreground mt-1">
                       {opcion.imposicion.totalPosesPorPliego} poses/pliego • {opcion.imposicion.aprovechamientoPorcentaje}%

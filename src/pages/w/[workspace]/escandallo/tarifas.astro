@@ -1,0 +1,14 @@
+---
+// src/pages/w/[workspace]/escandallo/tarifas.astro
+import MainLayout from "../../../../layouts/MainLayout.astro";
+import EscandalloTarifasPage from "../../../../components/presupuestos/EscandalloTarifasPage.svelte";
+
+const { workspace } = Astro.params;
+if (!workspace) {
+  return Astro.redirect("/w/produccion");
+}
+---
+
+<MainLayout title={`Tarifas & Parámetros de Escandallo // ${workspace.toUpperCase()}`}>
+  <EscandalloTarifasPage {workspace} client:load />
+</MainLayout>

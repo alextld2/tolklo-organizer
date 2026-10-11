@@ -42,17 +42,31 @@
 
   $effect(() => {
     if (datosIniciales) {
-      lineas = [
-        {
-          descripcion: datosIniciales.descripcion,
-          cantidad: datosIniciales.cantidad,
-          precioUnitario: datosIniciales.precioUnitario,
+      if (Array.isArray(datosIniciales.articulos) && datosIniciales.articulos.length > 0) {
+        lineas = datosIniciales.articulos.map((art: any) => ({
+          descripcion: `${art.nombre}: ${art.detallesTecnicos || ''}`.trim(),
+          cantidad: art.cantidad,
+          precioUnitario: art.precioUnitario,
           descuentoPorcentaje: 0,
           tipoIva: tipoIvaDefecto
-        }
-      ];
-      descripcionGeneral = datosIniciales.descripcion;
-      notas = (notas ? notas + "\n\n" : "") + datosIniciales.detallesTecnicos;
+        }));
+        descripcionGeneral = `Presupuesto combinado (${datosIniciales.articulos.length} artículos): ${datosIniciales.articulos.map((a: any) => a.nombre).join(", ")}`;
+        notas = datosIniciales.articulos.map((a: any, idx: number) => 
+          `[Partida ${idx + 1}] ${a.nombre} (${a.cantidad} uds):\n${a.detallesTecnicos}\nProducción sugerida: ${a.maquinaOptimaNombre || a.maquinaNombre || ''} (${(a.tecnologia || '').toUpperCase()})`
+        ).join("\n\n");
+      } else {
+        lineas = [
+          {
+            descripcion: datosIniciales.descripcion || datosIniciales.nombre || "Impresión técnica",
+            cantidad: datosIniciales.cantidad,
+            precioUnitario: datosIniciales.precioUnitario,
+            descuentoPorcentaje: 0,
+            tipoIva: tipoIvaDefecto
+          }
+        ];
+        descripcionGeneral = datosIniciales.descripcion || datosIniciales.nombre || "";
+        notas = (notas ? notas + "\n\n" : "") + (datosIniciales.detallesTecnicos || "");
+      }
     }
   });
 
