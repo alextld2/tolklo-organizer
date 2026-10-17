@@ -62,43 +62,98 @@ export interface ProductoPreset {
 }
 
 export const PRODUCTOS_PRESET: ProductoPreset[] = [
-  // 1. Comerciales / Flyers / Carteles
+  // 1. Comerciales / Flyers / Carteles (Flyers & Hojas Planas)
+  {
+    id: "flyer-a7",
+    nombre: "A7 (7,4 x 10,5 cm)",
+    categoria: "comercial",
+    ancho: 74,
+    alto: 105,
+    sangre: 2,
+    tipo: "flyer",
+    gramajesSugeridos: [115, 135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+  },
   {
     id: "flyer-a6",
-    nombre: "Flyer A6 (105x148 mm)",
+    nombre: "A6 (10,5 x 14,8 cm)",
     categoria: "comercial",
     ancho: 105,
     alto: 148,
     sangre: 2,
     tipo: "flyer",
-    gramajesSugeridos: [135, 170, 250],
-    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_mate_2c", "barniz_offset_proteccion"]
+    gramajesSugeridos: [115, 135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
   },
   {
     id: "flyer-a5",
-    nombre: "Flyer A5 (148x210 mm)",
+    nombre: "A5 (14,8 x 21 cm)",
     categoria: "comercial",
     ancho: 148,
     alto: 210,
     sangre: 2,
     tipo: "flyer",
-    gramajesSugeridos: [115, 135, 170, 250],
-    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_mate_2c", "barniz_offset_proteccion"]
+    gramajesSugeridos: [115, 135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
   },
   {
     id: "flyer-a4",
-    nombre: "Flyer / Folleto A4 (210x297 mm)",
+    nombre: "A4 (21 x 29,7 cm)",
     categoria: "comercial",
     ancho: 210,
     alto: 297,
     sangre: 2,
     tipo: "flyer",
-    gramajesSugeridos: [115, 135, 170, 250],
-    acabadosCompatibles: ["plastificado_mate_1c", "plastificado_brillo_1c"]
+    gramajesSugeridos: [115, 135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+  },
+  {
+    id: "flyer-din-largo",
+    nombre: "DIN Largo (10 x 21 cm)",
+    categoria: "comercial",
+    ancho: 100,
+    alto: 210,
+    sangre: 2,
+    tipo: "flyer",
+    gramajesSugeridos: [115, 135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+  },
+  {
+    id: "flyer-cuadrado-xl",
+    nombre: "Cuadrado XL (21 x 21 cm)",
+    categoria: "comercial",
+    ancho: 210,
+    alto: 210,
+    sangre: 2,
+    tipo: "flyer",
+    gramajesSugeridos: [135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+  },
+  {
+    id: "flyer-cuadrado-grande",
+    nombre: "Cuadrado Grande (14,8 x 14,8 cm)",
+    categoria: "comercial",
+    ancho: 148,
+    alto: 148,
+    sangre: 2,
+    tipo: "flyer",
+    gramajesSugeridos: [135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+  },
+  {
+    id: "flyer-cuadrado-pequeno",
+    nombre: "Cuadrado Pequeño (9,8 x 9,8 cm)",
+    categoria: "comercial",
+    ancho: 98,
+    alto: 98,
+    sangre: 2,
+    tipo: "flyer",
+    gramajesSugeridos: [135, 170, 250, 300],
+    acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
   },
   {
     id: "cartel-a3",
-    nombre: "Cartel / Afiche A3 (297x420 mm)",
+    nombre: "Cartel / Afiche A3 (29,7 x 42 cm)",
     categoria: "comercial",
     ancho: 297,
     alto: 420,
@@ -109,7 +164,7 @@ export const PRODUCTOS_PRESET: ProductoPreset[] = [
   },
   {
     id: "cartel-50x70",
-    nombre: "Cartel B2 (500x700 mm)",
+    nombre: "Cartel B2 (50 x 70 cm)",
     categoria: "comercial",
     ancho: 500,
     alto: 700,
@@ -639,6 +694,14 @@ export const CATALOGO_ACABADOS: Record<string, AcabadoConfig> = {
     tarifaFijaArranque: 12.0,
     precioUnitario: 0.045
   },
+  plastificado_brillo_2c: {
+    id: "plastificado_brillo_2c",
+    nombre: "Plastificado Brillo 2 Caras",
+    categoria: "plastificado",
+    tipoCobro: "pliego",
+    tarifaFijaArranque: 18.0,
+    precioUnitario: 0.082
+  },
   plastificado_mate_1c: {
     id: "plastificado_mate_1c",
     nombre: "Plastificado Mate 1 Cara",
@@ -824,6 +887,124 @@ export const CATALOGO_ACABADOS: Record<string, AcabadoConfig> = {
     tipoCobro: "unidad",
     tarifaFijaArranque: 35.0,
     precioUnitario: 0.45
+  }
+};
+
+/**
+ * 🎯 Matriz de correlación lógica de acabados por familia de producto
+ * Evita opciones incompatibles (p.ej. encuadernaciones o plegados en flyers sueltos)
+ */
+export const ACABADOS_COMPATIBLES_CATEGORIA: Record<CategoriaProductoId, string[]> = {
+  comercial: [
+    "plastificado_brillo_1c",
+    "plastificado_brillo_2c",
+    "plastificado_mate_1c",
+    "plastificado_mate_2c",
+    "plastificado_softtouch_2c",
+    "barniz_offset_proteccion",
+    "perforado_trepado"
+  ],
+  tarjetas: [
+    "plastificado_brillo_1c",
+    "plastificado_brillo_2c",
+    "plastificado_mate_1c",
+    "plastificado_mate_2c",
+    "plastificado_softtouch_2c",
+    "barniz_offset_proteccion",
+    "esquinas_redondeadas",
+    "perforado_trepado",
+    "hendido"
+  ],
+  desplegable: [
+    "plastificado_brillo_1c",
+    "plastificado_brillo_2c",
+    "plastificado_mate_1c",
+    "plastificado_mate_2c",
+    "plastificado_softtouch_2c",
+    "hendido",
+    "plegado_diptico",
+    "plegado_triptico",
+    "barniz_offset_proteccion",
+    "perforado_trepado"
+  ],
+  publicacion: [
+    "grapado_2_puntos",
+    "encuadernacion_rustica_pur",
+    "encuadernacion_rustica_cosida",
+    "encuadernacion_wire_o",
+    "encuadernacion_espiral",
+    "confeccion_tapa_dura",
+    "plastificado_mate_1c",
+    "plastificado_brillo_1c",
+    "plastificado_softtouch_2c"
+  ],
+  calendario: [
+    "encuadernacion_wire_o",
+    "encuadernacion_espiral",
+    "confeccion_tapa_dura",
+    "plastificado_mate_1c",
+    "plastificado_brillo_1c",
+    "plastificado_softtouch_2c",
+    "esquinas_redondeadas"
+  ],
+  carpeta: [
+    "troquelado",
+    "hendido",
+    "plastificado_mate_1c",
+    "plastificado_mate_2c",
+    "plastificado_brillo_1c",
+    "plastificado_brillo_2c",
+    "plastificado_softtouch_2c",
+    "barniz_offset_proteccion"
+  ]
+};
+
+/**
+ * ⚡ Capacidades y procesos de alto valor por categoría (Pantones, UVI, Stamping, Golpe Seco)
+ */
+export const CAPACIDADES_CATEGORIA: Record<CategoriaProductoId, {
+  permitePantones: boolean;
+  permiteBarnizUV: boolean;
+  permiteStamping: boolean;
+  permiteGolpeSeco: boolean;
+  notaInformativa?: string;
+}> = {
+  comercial: {
+    permitePantones: false,
+    permiteBarnizUV: false,
+    permiteStamping: false,
+    permiteGolpeSeco: false,
+    notaInformativa: "Impresión estándar cuatricromía CMYK o B/N. Los Pantones directos, barnices UVI, stamping y encuadernaciones quedan deshabilitados en flyers para optimizar costes y evitar errores."
+  },
+  tarjetas: {
+    permitePantones: true,
+    permiteBarnizUV: true,
+    permiteStamping: true,
+    permiteGolpeSeco: true
+  },
+  desplegable: {
+    permitePantones: true,
+    permiteBarnizUV: true,
+    permiteStamping: true,
+    permiteGolpeSeco: false
+  },
+  publicacion: {
+    permitePantones: true,
+    permiteBarnizUV: true,
+    permiteStamping: true,
+    permiteGolpeSeco: true
+  },
+  calendario: {
+    permitePantones: true,
+    permiteBarnizUV: true,
+    permiteStamping: true,
+    permiteGolpeSeco: true
+  },
+  carpeta: {
+    permitePantones: true,
+    permiteBarnizUV: true,
+    permiteStamping: true,
+    permiteGolpeSeco: true
   }
 };
 

@@ -73,6 +73,19 @@
   let filtroCategoriaAcabado = $state<string>("todos");
   let busquedaAcabado = $state("");
   let filtroTecnologiaMaquina = $state<string>("todas");
+  let filtroCategoriaPreset = $state<string>("todos");
+  let busquedaPreset = $state("");
+
+  let presetsFiltradosTarifas = $derived(
+    ($escandalloConfig?.presets || []).filter(preset => {
+      const coincideCat = filtroCategoriaPreset === "todos" || preset.categoria === filtroCategoriaPreset;
+      const coincideBusqueda = !busquedaPreset || 
+        preset.nombre.toLowerCase().includes(busquedaPreset.toLowerCase()) ||
+        preset.id.toLowerCase().includes(busquedaPreset.toLowerCase()) ||
+        `${preset.ancho}x${preset.alto}`.includes(busquedaPreset.toLowerCase());
+      return coincideCat && coincideBusqueda;
+    })
+  );
 
   // Feedback y notificaciones
   let mensajeToast = $state<{ tipo: "exito" | "error" | "info"; texto: string } | null>(null);
@@ -1284,15 +1297,52 @@
 
           <button
             onclick={abrirModalNuevoPreset}
-            class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xs cursor-pointer"
           >
             <Plus class="w-4 h-4" />
             <span>Añadir Preset</span>
           </button>
         </div>
 
+        <!-- Filtros de categoría de preset y buscador -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border shadow-xs text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            {#each [
+              { id: "todos", label: "Todas las familias" },
+              { id: "comercial", label: "Flyers & Hojas Planas" },
+              { id: "tarjetas", label: "Tarjetas & Papelería" },
+              { id: "desplegable", label: "Dípticos & Desplegables" },
+              { id: "publicacion", label: "Libros & Revistas" },
+              { id: "calendario", label: "Agendas & Calendarios" },
+              { id: "carpeta", label: "Carpetas" }
+            ] as cat}
+              <button
+                type="button"
+                onclick={() => (filtroCategoriaPreset = cat.id)}
+                class={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer ${
+                  filtroCategoriaPreset === cat.id
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "bg-muted/50 text-muted-foreground hover:bg-accent hover:text-foreground"
+                }`}
+              >
+                {cat.label}
+              </button>
+            {/each}
+          </div>
+
+          <div class="relative w-full sm:w-64">
+            <Search class="w-3.5 h-3.5 absolute left-3 top-2.5 text-muted-foreground" />
+            <input
+              type="text"
+              bind:value={busquedaPreset}
+              placeholder="Buscar formato o medidas..."
+              class="w-full bg-background border border-border rounded-xl pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-primary outline-none"
+            />
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each ($escandalloConfig?.presets || []) as preset (preset.id)}
+          {#each presetsFiltradosTarifas as preset (preset.id)}
             <div class="bg-card border border-border rounded-2xl p-5 hover:border-primary/40 hover:shadow-md transition-all flex flex-col justify-between">
               <div>
                 <div class="flex items-start justify-between gap-2 mb-2">

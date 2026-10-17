@@ -20,6 +20,7 @@
     PRODUCTOS_PRESET, 
     PAPELES_CATALOGO, 
     CATALOGO_ACABADOS, 
+    ACABADOS_COMPATIBLES_CATEGORIA,
     calcularEscandalloCompleto,
     type ParametrosCalculo,
     type DesgloseCosteMaquina
@@ -51,6 +52,12 @@
 
   // Estados del configurador
   let presetSeleccionadoId = $state("flyer-a5");
+  let presetActual = $derived(catalogoPresets.find(p => p.id === presetSeleccionadoId));
+  let acabadosDisponibles = $derived.by(() => {
+    if (!presetActual) return Object.values(catalogoAcabados);
+    const permitidos = ACABADOS_COMPATIBLES_CATEGORIA[presetActual.categoria] || presetActual.acabadosCompatibles || Object.keys(catalogoAcabados);
+    return Object.values(catalogoAcabados).filter(ac => permitidos.includes(ac.id));
+  });
   let anchoMm = $state(148);
   let altoMm = $state(210);
   let sangreMm = $state(2);
@@ -329,7 +336,7 @@
               Acabados Opcionales
             </label>
             <div class="space-y-1 max-h-32 overflow-y-auto pr-1">
-              {#each Object.values(catalogoAcabados) as ac}
+              {#each acabadosDisponibles as ac}
                 <label class="flex items-center justify-between p-1.5 rounded-lg border border-border/70 hover:bg-accent cursor-pointer text-xs">
                   <div class="flex items-center gap-2">
                     <input

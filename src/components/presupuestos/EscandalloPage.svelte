@@ -33,7 +33,8 @@
     Copy,
     Check,
     Sliders,
-    BookMarked
+    BookMarked,
+    Edit3
   } from "lucide-svelte";
   import { formatEuro } from "$lib/fiscal-utils";
   import { 
@@ -43,6 +44,8 @@
     CATEGORIAS_PRODUCTO,
     PRODUCTOS_PRESET,
     PARQUE_MAQUINAS,
+    ACABADOS_COMPATIBLES_CATEGORIA,
+    CAPACIDADES_CATEGORIA,
     generarTramosIntervalo,
     calcularGeometriaDesplegable,
     calcularGeometriaPublicacion,
@@ -145,24 +148,189 @@
   let modalPresupuestoAbierto = $state(false);
   let datosParaPresupuesto = $state<any>(null);
 
+  // Modo edición de presupuesto existente
+  let editarPresupuestoId = $state<number | null>(null);
+  let presupuestoEnEdicion = $state<any>(null);
+  let cargandoPresupuestoEdicion = $state(false);
+
+  async function cargarPresupuestoParaEditar(id: number) {
+    cargandoPresupuestoEdicion = true;
+    try {
+      const res = await fetch(`/api/presupuestos?id=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.presupuesto) {
+          presupuestoEnEdicion = data.presupuesto;
+          editarPresupuestoId = id;
+
+          // Si guardó parametrosEscandalloJson, restaurarlos con precisión
+          if (presupuestoEnEdicion.parametrosEscandalloJson) {
+            try {
+              const p = JSON.parse(presupuestoEnEdicion.parametrosEscandalloJson);
+              if (p.categoriaActiva) categoriaActiva = p.categoriaActiva;
+              if (p.presetActivoId) presetActivoId = p.presetActivoId;
+              if (p.nombreTrabajo) nombreTrabajo = p.nombreTrabajo;
+              if (p.cantidadTirada) cantidadTirada = p.cantidadTirada;
+              if (p.anchoBaseMm) anchoBaseMm = p.anchoBaseMm;
+              if (p.altoBaseMm) altoBaseMm = p.altoBaseMm;
+              if (p.papelId) papelId = p.papelId;
+              if (p.gramaje) gramaje = p.gramaje;
+              if (p.colorImpresion) colorImpresion = p.colorImpresion;
+              if (p.acabadosSeleccionados) acabadosSeleccionados = p.acabadosSeleccionados;
+              if (p.numPantones !== undefined) numPantones = p.numPantones;
+              if (p.barnizUV) barnizUV = p.barnizUV;
+              if (p.stampingFoil) stampingFoil = p.stampingFoil;
+              if (p.golpeSeco !== undefined) golpeSeco = p.golpeSeco;
+              if (p.margenBeneficio !== undefined) margenBeneficio = p.margenBeneficio;
+            } catch (e) {
+              console.error("Error al parsear parametrosEscandalloJson:", e);
+            }
+          } else {
+            // Extracción inteligente a partir de las líneas o notas
+            if (presupuestoEnEdicion.descripcionGeneral) {
+              nombreTrabajo = presupuestoEnEdicion.descripcionGeneral;
+            }
+            if (presupuestoEnEdicion.lineas && presupuestoEnEdicion.lineas.length > 0) {
+              const l0 = presupuestoEnEdicion.lineas[0];
+              if (l0.cantidad) cantidadTirada = l0.cantidad;
+              if (l0.descripcion && !nombreTrabajo) nombreTrabajo = l0.descripcion;
+            }
+            if (presupuestoEnEdicion.notas) {
+              const matchMedidas = presupuestoEnEdicion.notas.match(/(\d+)\s*x\s*(\d+)\s*mm/i);
+              if (matchMedidas) {
+                anchoBaseMm = Number(matchMedidas[1]);
+                altoBaseMm = Number(matchMedidas[2]);
+              }
+              const matchGramaje = presupuestoEnEdicion.notas.match(/(\d+)\s*g/i);
+              if (matchGramaje) {
+                gramaje = Number(matchGramaje[1]);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error al cargar presupuesto para edición:", e);
+    } finally {
+      cargandoPresupuestoEdicion = false;
+    }
+  }
+
+  $effect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get("editarPresupuestoId");
+      if (editId && Number(editId) !== editarPresupuestoId) {
+        cargarPresupuestoParaEditar(Number(editId));
+      }
+    }
+  });
+
   // Presets filtrados por la categoría seleccionada
   let presetsFiltrados = $derived(
     catalogoPresets.filter(p => p.categoria === categoriaActiva)
   );
 
+  // Selector de Formato y Personalización
+  let formatoSeleccionado = $state<string>("flyer-a5");
+  let medidasPersonalizadasActivas = $state(false);
+  let mostrarOpcionesAvanzadasTaller = $state(false);
+
+  // Capacidades de proceso según categoría (Pantones, UV, Stamping, etc.)
+  let capacidadesActuales = $derived(
+    CAPACIDADES_CATEGORIA[categoriaActiva] || {
+      permitePantones: true,
+      permiteBarnizUV: true,
+      permiteStamping: true,
+      permiteGolpeSeco: true
+    }
+  );
+
+  // Acabados válidos y filtrados lógicamente para la familia activa
+  let acabadosCompatiblesActuales = $derived.by(() => {
+    const permitidos = ACABADOS_COMPATIBLES_CATEGORIA[categoriaActiva] || Object.keys(catalogoAcabados);
+    return Object.values(catalogoAcabados).filter(ac => permitidos.includes(ac.id));
+  });
+
   // Cambiar de categoría
   function seleccionarCategoria(catId: CategoriaProductoId) {
     categoriaActiva = catId;
+    mostrarOpcionesAvanzadasTaller = false;
     const primerPreset = catalogoPresets.find(p => p.categoria === catId);
     if (primerPreset) {
       aplicarPreset(primerPreset);
     }
   }
 
+  // Selector desplegable de Formato
+  function seleccionarFormato(valor: string) {
+    if (valor === "personalizado") {
+      formatoSeleccionado = "personalizado";
+      medidasPersonalizadasActivas = true;
+      return;
+    }
+    const preset = presetsFiltrados.find(p => p.id === valor) || catalogoPresets.find(p => p.id === valor);
+    if (preset) {
+      aplicarPreset(preset);
+    }
+  }
+
+  // Detectar si las medidas actuales coinciden con algún preset de la categoría activa
+  let presetCoincidente = $derived(
+    presetsFiltrados.find(p => p.ancho === Number(anchoBaseMm) && p.alto === Number(altoBaseMm))
+  );
+
+  // Sincronización reactiva del formato con las dimensiones manuales
+  $effect(() => {
+    if (categoriaActiva === "comercial" || categoriaActiva === "tarjetas" || categoriaActiva === "carpeta") {
+      if (presetCoincidente) {
+        formatoSeleccionado = presetCoincidente.id;
+        presetActivoId = presetCoincidente.id;
+        medidasPersonalizadasActivas = false;
+      } else {
+        formatoSeleccionado = "personalizado";
+        medidasPersonalizadasActivas = true;
+      }
+    }
+  });
+
+  // Limpieza reactiva de opciones no aplicables (Pantones, UV, Stamping, acabados incompatibles)
+  $effect(() => {
+    // Si la categoría desaconseja Pantones (ej. flyers) y no está en modo avanzado forzado
+    if (!capacidadesActuales.permitePantones && !mostrarOpcionesAvanzadasTaller) {
+      if (numPantones > 0) numPantones = 0;
+      if (nombresPantone !== "") nombresPantone = "";
+    }
+
+    // Si la categoría no permite UV, Stamping o Golpe Seco (ej. flyers) y no está en modo avanzado
+    if (!capacidadesActuales.permiteBarnizUV && !mostrarOpcionesAvanzadasTaller) {
+      if (barnizUV !== "ninguno" && barnizUV !== "offset_proteccion") barnizUV = "ninguno";
+    }
+    if (!capacidadesActuales.permiteStamping && !mostrarOpcionesAvanzadasTaller) {
+      if (stampingFoil !== "ninguno") stampingFoil = "ninguno";
+    }
+    if (!capacidadesActuales.permiteGolpeSeco && !mostrarOpcionesAvanzadasTaller) {
+      if (golpeSeco) golpeSeco = false;
+    }
+
+    // Limpieza de acabados incompatibles (ej. encuadernaciones o plegados en flyers sueltos)
+    const permitidos = ACABADOS_COMPATIBLES_CATEGORIA[categoriaActiva];
+    if (permitidos && permitidos.length > 0 && !mostrarOpcionesAvanzadasTaller) {
+      const filtrados = acabadosSeleccionados.filter(id => permitidos.includes(id));
+      if (filtrados.length !== acabadosSeleccionados.length) {
+        acabadosSeleccionados = filtrados;
+      }
+    }
+  });
+
   // Aplicar un Preset de Producto
   function aplicarPreset(preset: ProductoPreset) {
     presetActivoId = preset.id;
-    nombreTrabajo = preset.nombre;
+    formatoSeleccionado = preset.id;
+    medidasPersonalizadasActivas = false;
+    nombreTrabajo = preset.categoria === "comercial" && (preset.nombre.startsWith("A") || preset.nombre.startsWith("DIN") || preset.nombre.startsWith("Cuadrado"))
+      ? `Flyer ${preset.nombre}`
+      : preset.nombre;
     anchoBaseMm = preset.ancho;
     altoBaseMm = preset.alto;
     sangreMm = preset.sangre;
@@ -439,11 +607,52 @@
   // Transferir al presupuesto oficial
   function cotizarSoloEsteArticulo(opcion?: any) {
     const info = construirDetalleTecnico(opcion);
+    let descComercial = `${info.nombre} (${info.cant.toLocaleString()} uds)`;
+    if (esPublicacion && geometriaPublicacion) {
+      descComercial += ` — ${geometriaPublicacion.totalPaginas} págs, ${anchoBaseMm}x${altoBaseMm} mm`;
+    } else if (categoriaActiva === "desplegable") {
+      descComercial += ` — ${anchoBaseMm}x${altoBaseMm} mm, ${calculo.papel.nombre} ${gramaje}g`;
+    } else {
+      descComercial += ` — ${anchoBaseMm}x${altoBaseMm} mm, ${calculo.papel.nombre} ${gramaje}g, Tintas ${colorImpresion}`;
+    }
+
+    const parametrosEscandallo = {
+      categoriaActiva,
+      presetActivoId,
+      nombreTrabajo,
+      cantidadTirada: info.cant,
+      anchoBaseMm,
+      altoBaseMm,
+      papelId,
+      gramaje,
+      colorImpresion,
+      acabadosSeleccionados,
+      numPantones,
+      barnizUV,
+      stampingFoil,
+      golpeSeco,
+      margenBeneficio
+    };
+
     datosParaPresupuesto = {
-      descripcion: `${info.nombre} — ${info.detalles}`,
+      id: editarPresupuestoId || undefined,
+      esEdicion: !!editarPresupuestoId,
+      codigo: presupuestoEnEdicion?.codigo,
+      cliente: presupuestoEnEdicion?.cliente,
+      clienteNif: presupuestoEnEdicion?.clienteNif,
+      clienteEmail: presupuestoEnEdicion?.clienteEmail,
+      clienteTelefono: presupuestoEnEdicion?.clienteTelefono,
+      clienteDireccion: presupuestoEnEdicion?.clienteDireccion,
+      serie: presupuestoEnEdicion?.serie,
+      fechaEmision: presupuestoEnEdicion?.fechaEmision,
+      fechaValidez: presupuestoEnEdicion?.fechaValidez,
+      condiciones: presupuestoEnEdicion?.condiciones,
+      nombre: info.nombre,
+      descripcion: descComercial,
       cantidad: info.cant,
       precioUnitario: info.pvpUnit,
-      detallesTecnicos: info.detalles
+      detallesTecnicos: info.detalles,
+      parametrosEscandallo
     };
     modalPresupuestoAbierto = true;
   }
@@ -451,13 +660,70 @@
   function emitirPresupuestoDesdeCesta() {
     if (cestaArticulos.length === 0) return;
     datosParaPresupuesto = {
-      articulos: cestaArticulos
+      id: editarPresupuestoId || undefined,
+      esEdicion: !!editarPresupuestoId,
+      codigo: presupuestoEnEdicion?.codigo,
+      cliente: presupuestoEnEdicion?.cliente,
+      clienteNif: presupuestoEnEdicion?.clienteNif,
+      clienteEmail: presupuestoEnEdicion?.clienteEmail,
+      clienteTelefono: presupuestoEnEdicion?.clienteTelefono,
+      clienteDireccion: presupuestoEnEdicion?.clienteDireccion,
+      serie: presupuestoEnEdicion?.serie,
+      fechaEmision: presupuestoEnEdicion?.fechaEmision,
+      fechaValidez: presupuestoEnEdicion?.fechaValidez,
+      condiciones: presupuestoEnEdicion?.condiciones,
+      articulos: cestaArticulos,
+      parametrosEscandallo: {
+        categoriaActiva,
+        margenBeneficio
+      }
     };
     modalPresupuestoAbierto = true;
   }
 </script>
 
 <div class="space-y-6 pb-20 font-sans">
+  <!-- Banner Activo de Modo Edición de Presupuesto -->
+  {#if editarPresupuestoId && presupuestoEnEdicion}
+    <div class="bg-amber-500/10 border-2 border-amber-500/35 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+          <Edit3 class="w-5 h-5" />
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">Modo Edición de Presupuesto</span>
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-900 dark:text-amber-200 font-mono text-xs font-bold">
+              {presupuestoEnEdicion.codigo}
+            </span>
+            <span class="text-xs font-medium text-muted-foreground">— Cliente: <strong>{presupuestoEnEdicion.cliente}</strong></span>
+          </div>
+          <p class="text-[11px] text-muted-foreground mt-0.5">
+            Estás recalculando los parámetros industriales de esta cotización. Al transferir o cotizar, se actualizarán los datos de este presupuesto.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 self-end sm:self-center">
+        <button
+          type="button"
+          onclick={() => {
+            editarPresupuestoId = null;
+            presupuestoEnEdicion = null;
+            if (typeof window !== "undefined") {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("editarPresupuestoId");
+              window.history.replaceState({}, "", url.toString());
+            }
+          }}
+          class="px-3 py-1.5 bg-card hover:bg-accent border border-border text-foreground rounded-xl text-xs font-semibold cursor-pointer transition-all"
+        >
+          Descartar Edición
+        </button>
+      </div>
+    </div>
+  {/if}
+
   <!-- Cabecera Principal y Barra de Cesta Flotante -->
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border/60 pb-5">
     <div>
@@ -520,7 +786,7 @@
           class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
         >
           <Sparkles class="w-4 h-4" />
-          <span>Emitir Presupuesto ({cestaArticulos.length})</span>
+          <span>{editarPresupuestoId ? `Actualizar ${presupuestoEnEdicion?.codigo || 'Presupuesto'}` : `Emitir Presupuesto (${cestaArticulos.length})`}</span>
         </button>
       {/if}
     </div>
@@ -691,7 +957,7 @@
           class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-bold text-xs rounded-xl hover:bg-primary/90 transition-all shadow-sm cursor-pointer"
         >
           <Sparkles class="w-4 h-4" />
-          <span>Generar Presupuesto con {cestaArticulos.length} Partidas</span>
+          <span>{editarPresupuestoId ? `Actualizar Presupuesto ${presupuestoEnEdicion?.codigo || ''} (${cestaArticulos.length} Partidas)` : `Generar Presupuesto con ${cestaArticulos.length} Partidas`}</span>
         </button>
       </div>
     </div>
@@ -1041,33 +1307,93 @@
         <!-- CONDICIONAL C: FORMATO PLANO ESTÁNDAR (Flyers, Tarjetas, Carpetas) -->
         {:else}
           <div class="border-t border-border/60 pt-3 space-y-3">
-            <span class="text-xs font-bold text-foreground block">Dimensiones de Corte Final:</span>
-            <div class="grid grid-cols-3 gap-2.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-foreground block">Formato y Dimensiones de Corte:</span>
+              {#if medidasPersonalizadasActivas}
+                <span class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                  Medidas Especiales
+                </span>
+              {/if}
+            </div>
+
+            <!-- Selector desplegable de Formato (como en la imagen del usuario) -->
+            <div>
+              <label class="block text-xs font-bold text-primary mb-1.5 flex items-center gap-1.5">
+                <span>Formato</span>
+              </label>
+              <select
+                value={formatoSeleccionado}
+                onchange={(e) => seleccionarFormato(e.currentTarget.value)}
+                class="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground text-xs font-semibold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer shadow-2xs"
+              >
+                <optgroup label="Tamaños Predeterminados ({categoriaActiva === 'comercial' ? 'Flyers & Hojas Planas' : 'Estándar'})">
+                  {#each presetsFiltrados as p}
+                    <option value={p.id}>
+                      {p.nombre}
+                    </option>
+                  {/each}
+                </optgroup>
+                <optgroup label="Medidas Especiales">
+                  <option value="personalizado">Personalizar tamaño (medidas a medida)...</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Cotas de corte y sangre -->
+            <div class="grid grid-cols-3 gap-2.5 text-xs pt-1">
               <div>
-                <label class="block text-[10px] text-muted-foreground mb-1">Ancho (mm):</label>
-                <input
-                  type="number"
-                  bind:value={anchoBaseMm}
-                  class="w-full px-2.5 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-bold text-center"
-                />
+                <label class="block text-[10px] text-muted-foreground mb-1 font-medium">Ancho (mm):</label>
+                <div class="relative">
+                  <input
+                    type="number"
+                    bind:value={anchoBaseMm}
+                    min="30"
+                    max="1500"
+                    class="w-full px-2.5 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-bold text-center focus:ring-1 focus:ring-primary focus:border-primary"
+                  />
+                  <span class="absolute right-2 top-1.5 text-[9px] text-muted-foreground pointer-events-none">mm</span>
+                </div>
               </div>
               <div>
-                <label class="block text-[10px] text-muted-foreground mb-1">Alto (mm):</label>
-                <input
-                  type="number"
-                  bind:value={altoBaseMm}
-                  class="w-full px-2.5 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-bold text-center"
-                />
+                <label class="block text-[10px] text-muted-foreground mb-1 font-medium">Alto (mm):</label>
+                <div class="relative">
+                  <input
+                    type="number"
+                    bind:value={altoBaseMm}
+                    min="30"
+                    max="1500"
+                    class="w-full px-2.5 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-bold text-center focus:ring-1 focus:ring-primary focus:border-primary"
+                  />
+                  <span class="absolute right-2 top-1.5 text-[9px] text-muted-foreground pointer-events-none">mm</span>
+                </div>
               </div>
               <div>
-                <label class="block text-[10px] text-muted-foreground mb-1">Sangre (mm):</label>
-                <input
-                  type="number"
-                  bind:value={sangreMm}
-                  class="w-full px-2.5 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-bold text-center"
-                />
+                <label class="block text-[10px] text-muted-foreground mb-1 font-medium">Sangre perimetral:</label>
+                <div class="relative">
+                  <input
+                    type="number"
+                    bind:value={sangreMm}
+                    min="0"
+                    max="10"
+                    class="w-full px-2.5 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs font-bold text-center focus:ring-1 focus:ring-primary focus:border-primary"
+                  />
+                  <span class="absolute right-2 top-1.5 text-[9px] text-muted-foreground pointer-events-none">mm</span>
+                </div>
               </div>
             </div>
+
+            {#if medidasPersonalizadasActivas}
+              <div class="text-[11px] text-muted-foreground bg-muted/40 p-2 rounded-lg flex items-center justify-between border border-border/50">
+                <span>📐 Dimensiones a medida: <strong class="text-foreground">{anchoBaseMm} x {altoBaseMm} mm</strong> (+{sangreMm}mm sangre)</span>
+                <button
+                  type="button"
+                  onclick={() => seleccionarFormato("flyer-a5")}
+                  class="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
+                >
+                  Restablecer a A5 estándar
+                </button>
+              </div>
+            {/if}
           </div>
         {/if}
 
@@ -1119,97 +1445,157 @@
             <Palette class="w-4 h-4 text-purple-500" />
             <span>3. Tintas Especiales & Procesos de Valor</span>
           </span>
-          <span class="text-[11px] text-muted-foreground">Pantones, UVI, Stamping y Relieve</span>
+          <span class="text-[11px] text-muted-foreground">
+            {#if categoriaActiva === "comercial" && !mostrarOpcionesAvanzadasTaller}
+              Optimizado para Flyers y Hojas Planas
+            {:else}
+              Pantones, UVI, Stamping y Relieve
+            {/if}
+          </span>
         </div>
 
-        <!-- Pantones -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div>
-            <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Colores Pantone Directos:</label>
-            <select
-              bind:value={numPantones}
-              class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
-            >
-              <option value={0}>Sin Pantone (Solo cuatricromía)</option>
-              <option value={1}>1 Pantone Directo (+ lavado tintero + CTP)</option>
-              <option value={2}>2 Pantones Directos (+ 2 CTPs)</option>
-            </select>
-          </div>
-          {#if numPantones > 0}
-            <div>
-              <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Ref. Pantone (ej. 871 C Oro):</label>
-              <input
-                type="text"
-                bind:value={nombresPantone}
-                placeholder="ej. Pantone 286 C / 871 C"
-                class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
-              />
-            </div>
-          {/if}
-        </div>
-
-        <!-- Barniz UV & Stamping -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2">
-          <div>
-            <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Barniz UV / Acrílico:</label>
-            <select
-              bind:value={barnizUV}
-              class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
-            >
-              <option value="ninguno">Ninguno</option>
-              <option value="offset_proteccion">Barniz Máquina Offset Protección</option>
-              <option value="uvi_brillo_total">Barniz UVI Brillo Pliego Total</option>
-              <option value="uvi_selectivo">Barniz UVI Brillo Selectivo (Reserva)</option>
-              <option value="uvi_3d_relieve">Barniz Digital con Relieve 3D</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Stamping / Hot Foil Térmico:</label>
-            <select
-              bind:value={stampingFoil}
-              class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
-            >
-              <option value="ninguno">Sin Stamping</option>
-              <option value="oro">Foil Oro Metálico (+ cliché magnesio)</option>
-              <option value="plata">Foil Plata Espejo</option>
-              <option value="cobre">Foil Cobre / Bronce</option>
-              <option value="holografico">Foil Holográfico</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Golpe en seco y acabados tradicionales -->
-        <div class="pt-2 border-t border-border/50">
-          <label class="flex items-center gap-2 cursor-pointer text-xs mb-3">
-            <input
-              type="checkbox"
-              bind:checked={golpeSeco}
-              class="rounded text-primary focus:ring-primary w-4 h-4"
-            />
-            <span class="font-medium text-foreground">Añadir Golpe en Seco / Relieve sin tinta (Embossing)</span>
-            <span class="text-[10px] text-muted-foreground">(Incluye molde macho/hembra)</span>
-          </label>
-
-          <span class="text-[11px] font-semibold text-muted-foreground block mb-2">Acabados Adicionales de Catálogo:</span>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {#each Object.values(catalogoAcabados) as ac}
+        {#if categoriaActiva === "comercial" && !mostrarOpcionesAvanzadasTaller}
+          <!-- Banner Informativo para Flyers / Hojas Planas -->
+          <div class="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-foreground text-xs flex items-center gap-1.5">
+                <CheckCircle2 class="w-4 h-4 text-primary" />
+                <span>Opciones Optimizadas para Flyers & Hojas Planas</span>
+              </span>
               <button
                 type="button"
-                onclick={() => toggleAcabado(ac.id)}
-                class={`px-2.5 py-1.5 rounded-lg border text-left text-[11px] flex items-center justify-between transition-all cursor-pointer ${
-                  acabadosSeleccionados.includes(ac.id)
-                    ? "bg-primary/10 border-primary text-primary font-bold shadow-2xs"
-                    : "bg-background border-border text-muted-foreground hover:text-foreground"
-                }`}
+                onclick={() => (mostrarOpcionesAvanzadasTaller = true)}
+                class="text-[10px] text-muted-foreground hover:text-foreground underline flex items-center gap-1 cursor-pointer"
+                title="Habilitar Pantones directos, stamping térmico o UVI selectivo si es un pedido especial"
               >
-                <span class="truncate">{ac.nombre}</span>
-                {#if acabadosSeleccionados.includes(ac.id)}
-                  <CheckCircle2 class="w-3.5 h-3.5 text-primary flex-shrink-0 ml-1" />
-                {/if}
+                <Sliders class="w-3 h-3" />
+                <span>Opciones especiales avanzadas</span>
               </button>
-            {/each}
+            </div>
+            <p class="text-[11px] text-muted-foreground leading-relaxed">
+              En flyers comerciales la producción se realiza en prensa digital o cuatricromía estándar (Offset). Se deshabilitan tintas Pantone directas, barnices UVI, stamping y encuadernaciones para evitar errores en el presupuesto.
+            </p>
           </div>
+        {:else}
+          {#if categoriaActiva === "comercial" && mostrarOpcionesAvanzadasTaller}
+            <div class="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg text-[11px]">
+              <span class="text-amber-700 dark:text-amber-400 font-semibold">⚠️ Modo Avanzado Activo: Opciones especiales habilitadas para flyer.</span>
+              <button
+                type="button"
+                onclick={() => (mostrarOpcionesAvanzadasTaller = false)}
+                class="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+              >
+                Volver a modo optimizado
+              </button>
+            </div>
+          {/if}
+
+          <!-- Pantones -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Colores Pantone Directos:</label>
+              <select
+                bind:value={numPantones}
+                class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
+              >
+                <option value={0}>Sin Pantone (Solo cuatricromía)</option>
+                <option value={1}>1 Pantone Directo (+ lavado tintero + CTP)</option>
+                <option value={2}>2 Pantones Directos (+ 2 CTPs)</option>
+              </select>
+            </div>
+            {#if numPantones > 0}
+              <div>
+                <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Ref. Pantone (ej. 871 C Oro):</label>
+                <input
+                  type="text"
+                  bind:value={nombresPantone}
+                  placeholder="ej. Pantone 286 C / 871 C"
+                  class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
+                />
+              </div>
+            {/if}
+          </div>
+
+          <!-- Barniz UV & Stamping -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2">
+            <div>
+              <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Barniz UV / Acrílico:</label>
+              <select
+                bind:value={barnizUV}
+                class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
+              >
+                <option value="ninguno">Ninguno</option>
+                <option value="offset_proteccion">Barniz Máquina Offset Protección</option>
+                <option value="uvi_brillo_total">Barniz UVI Brillo Pliego Total</option>
+                <option value="uvi_selectivo">Barniz UVI Brillo Selectivo (Reserva)</option>
+                <option value="uvi_3d_relieve">Barniz Digital con Relieve 3D</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-semibold text-muted-foreground mb-1">Stamping / Hot Foil Térmico:</label>
+              <select
+                bind:value={stampingFoil}
+                class="w-full px-3 py-1.5 rounded-xl border border-border bg-background text-foreground text-xs"
+              >
+                <option value="ninguno">Sin Stamping</option>
+                <option value="oro">Foil Oro Metálico (+ cliché magnesio)</option>
+                <option value="plata">Foil Plata Espejo</option>
+                <option value="cobre">Foil Cobre / Bronce</option>
+                <option value="holografico">Foil Holográfico</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Golpe en seco y acabados tradicionales -->
+          <div class="pt-2 border-t border-border/50">
+            <label class="flex items-center gap-2 cursor-pointer text-xs mb-3">
+              <input
+                type="checkbox"
+                bind:checked={golpeSeco}
+                class="rounded text-primary focus:ring-primary w-4 h-4"
+              />
+              <span class="font-medium text-foreground">Añadir Golpe en Seco / Relieve sin tinta (Embossing)</span>
+              <span class="text-[10px] text-muted-foreground">(Incluye molde macho/hembra)</span>
+            </label>
+          </div>
+        {/if}
+
+        <!-- Acabados Adicionales Filtrados y Compatibles -->
+        <div class="pt-2 border-t border-border/50">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold text-muted-foreground block">
+              Acabados Disponibles para {categoriaActiva === "comercial" ? "Flyers & Hojas Planas" : "este Producto"}:
+            </span>
+            <span class="text-[10px] text-muted-foreground font-mono">
+              {acabadosCompatiblesActuales.length} disponibles
+            </span>
+          </div>
+
+          {#if acabadosCompatiblesActuales.length === 0}
+            <p class="text-xs text-muted-foreground italic py-2">
+              No hay acabados adicionales aplicables para esta tipología.
+            </p>
+          {:else}
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {#each acabadosCompatiblesActuales as ac}
+                <button
+                  type="button"
+                  onclick={() => toggleAcabado(ac.id)}
+                  class={`px-2.5 py-1.5 rounded-lg border text-left text-[11px] flex items-center justify-between transition-all cursor-pointer ${
+                    acabadosSeleccionados.includes(ac.id)
+                      ? "bg-primary/10 border-primary text-primary font-bold shadow-2xs"
+                      : "bg-background border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span class="truncate">{ac.nombre}</span>
+                  {#if acabadosSeleccionados.includes(ac.id)}
+                    <CheckCircle2 class="w-3.5 h-3.5 text-primary flex-shrink-0 ml-1" />
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
         </div>
       </div>
     </div>
@@ -1730,10 +2116,10 @@
                     type="button"
                     onclick={() => cotizarSoloEsteArticulo(tramo)}
                     class="inline-flex items-center gap-1 px-2.5 py-1 bg-muted hover:bg-accent text-foreground border border-border rounded-lg text-xs font-medium cursor-pointer transition-all"
-                    title="Emitir presupuesto oficial directo para esta tirada"
+                    title={editarPresupuestoId ? `Actualizar presupuesto ${presupuestoEnEdicion?.codigo || ''} con esta tirada` : "Emitir presupuesto oficial directo para esta tirada"}
                   >
                     <FileText class="w-3.5 h-3.5" />
-                    <span>Cotizar</span>
+                    <span>{editarPresupuestoId ? "Actualizar" : "Cotizar"}</span>
                   </button>
                 </div>
               </td>
@@ -1758,5 +2144,8 @@
     modalPresupuestoAbierto = false;
     datosParaPresupuesto = null;
     vaciarCesta();
+    if (editarPresupuestoId) {
+      window.location.href = `/w/${workspace}/presupuestos`;
+    }
   }}
 />

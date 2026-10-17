@@ -81,7 +81,7 @@ export interface ConfiguracionEscandalloCompleta {
 }
 
 export const DEFAULT_CONFIGURACION_ESCANDALLO: ConfiguracionEscandalloCompleta = {
-  version: 1,
+  version: 2,
   actualizadoEn: new Date().toISOString(),
   papeles: [
     {
@@ -134,6 +134,14 @@ export const DEFAULT_CONFIGURACION_ESCANDALLO: ConfiguracionEscandalloCompleta =
       tipoCobro: "pliego",
       tarifaFijaArranque: 12.0,
       precioUnitario: 0.045
+    },
+    plastificado_brillo_2c: {
+      id: "plastificado_brillo_2c",
+      nombre: "Plastificado Brillo 2 Caras",
+      categoria: "plastificado",
+      tipoCobro: "pliego",
+      tarifaFijaArranque: 18.0,
+      precioUnitario: 0.082
     },
     plastificado_mate_1c: {
       id: "plastificado_mate_1c",
@@ -472,41 +480,96 @@ export const DEFAULT_CONFIGURACION_ESCANDALLO: ConfiguracionEscandalloCompleta =
   },
   presets: [
     {
+      id: "flyer-a7",
+      nombre: "A7 (7,4 x 10,5 cm)",
+      categoria: "comercial",
+      ancho: 74,
+      alto: 105,
+      sangre: 2,
+      tipo: "flyer",
+      gramajesSugeridos: [115, 135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+    },
+    {
       id: "flyer-a6",
-      nombre: "Flyer A6 (105x148 mm)",
+      nombre: "A6 (10,5 x 14,8 cm)",
       categoria: "comercial",
       ancho: 105,
       alto: 148,
       sangre: 2,
       tipo: "flyer",
-      gramajesSugeridos: [135, 170, 250],
-      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_mate_2c", "barniz_offset_proteccion"]
+      gramajesSugeridos: [115, 135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
     },
     {
       id: "flyer-a5",
-      nombre: "Flyer A5 (148x210 mm)",
+      nombre: "A5 (14,8 x 21 cm)",
       categoria: "comercial",
       ancho: 148,
       alto: 210,
       sangre: 2,
       tipo: "flyer",
-      gramajesSugeridos: [115, 135, 170, 250],
-      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_mate_2c", "barniz_offset_proteccion"]
+      gramajesSugeridos: [115, 135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
     },
     {
       id: "flyer-a4",
-      nombre: "Flyer / Folleto A4 (210x297 mm)",
+      nombre: "A4 (21 x 29,7 cm)",
       categoria: "comercial",
       ancho: 210,
       alto: 297,
       sangre: 2,
       tipo: "flyer",
-      gramajesSugeridos: [115, 135, 170, 250],
-      acabadosCompatibles: ["plastificado_mate_1c", "plastificado_brillo_1c"]
+      gramajesSugeridos: [115, 135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+    },
+    {
+      id: "flyer-din-largo",
+      nombre: "DIN Largo (10 x 21 cm)",
+      categoria: "comercial",
+      ancho: 100,
+      alto: 210,
+      sangre: 2,
+      tipo: "flyer",
+      gramajesSugeridos: [115, 135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+    },
+    {
+      id: "flyer-cuadrado-xl",
+      nombre: "Cuadrado XL (21 x 21 cm)",
+      categoria: "comercial",
+      ancho: 210,
+      alto: 210,
+      sangre: 2,
+      tipo: "flyer",
+      gramajesSugeridos: [135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+    },
+    {
+      id: "flyer-cuadrado-grande",
+      nombre: "Cuadrado Grande (14,8 x 14,8 cm)",
+      categoria: "comercial",
+      ancho: 148,
+      alto: 148,
+      sangre: 2,
+      tipo: "flyer",
+      gramajesSugeridos: [135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
+    },
+    {
+      id: "flyer-cuadrado-pequeno",
+      nombre: "Cuadrado Pequeño (9,8 x 9,8 cm)",
+      categoria: "comercial",
+      ancho: 98,
+      alto: 98,
+      sangre: 2,
+      tipo: "flyer",
+      gramajesSugeridos: [135, 170, 250, 300],
+      acabadosCompatibles: ["plastificado_brillo_1c", "plastificado_brillo_2c", "plastificado_mate_1c", "plastificado_mate_2c", "plastificado_softtouch_2c", "barniz_offset_proteccion", "perforado_trepado"]
     },
     {
       id: "cartel-a3",
-      nombre: "Cartel / Afiche A3 (297x420 mm)",
+      nombre: "Cartel / Afiche A3 (29,7 x 42 cm)",
       categoria: "comercial",
       ancho: 297,
       alto: 420,
@@ -517,7 +580,7 @@ export const DEFAULT_CONFIGURACION_ESCANDALLO: ConfiguracionEscandalloCompleta =
     },
     {
       id: "cartel-50x70",
-      nombre: "Cartel B2 (500x700 mm)",
+      nombre: "Cartel B2 (50 x 70 cm)",
       categoria: "comercial",
       ancho: 500,
       alto: 700,
@@ -781,6 +844,17 @@ function obtenerConfigInicial(): ConfiguracionEscandalloCompleta {
       if (local) {
         const parsed = JSON.parse(local);
         if (parsed && Array.isArray(parsed.papeles) && parsed.acabados && Array.isArray(parsed.maquinas)) {
+          // Migración automática si faltan los nuevos formatos de flyer o acabados
+          if (!parsed.presets?.some((p: any) => p.id === "flyer-a7") || !parsed.acabados?.plastificado_brillo_2c) {
+            const comercialPresets = DEFAULT_CONFIGURACION_ESCANDALLO.presets.filter(p => p.categoria === "comercial");
+            const otrosPresets = (parsed.presets || []).filter((p: any) => p.categoria !== "comercial");
+            parsed.presets = [...comercialPresets, ...otrosPresets];
+            parsed.acabados = { ...DEFAULT_CONFIGURACION_ESCANDALLO.acabados, ...parsed.acabados };
+            parsed.version = 2;
+            try {
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+            } catch (_) {}
+          }
           return parsed;
         }
       }

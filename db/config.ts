@@ -101,6 +101,7 @@ export const Presupuesto = defineTable({
     cuotaRetencionIrpf: column.number({ optional: true, default: 0 }),
     total: column.number({ default: 0 }),
     numParteTrabajoVinculado: column.text({ optional: true }),
+    parametrosEscandalloJson: column.text({ optional: true }),
     creadoEn: column.date({ default: NOW })
   }
 });
