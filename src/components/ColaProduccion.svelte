@@ -725,6 +725,7 @@
               : ''}
 
             <div
+              role="listitem"
               draggable="true"
               ondragstart={(e) => handleDragStart(e, item.numParte)}
               ondragover={(e) => handleDragOver(e, item.numParte)}
@@ -917,6 +918,7 @@
               : ''}
 
             <div
+              role="listitem"
               draggable="true"
               ondragstart={(e) => handleDragStart(e, item.numParte)}
               ondragover={(e) => handleDragOver(e, item.numParte)}

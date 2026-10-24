@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Trash2, X, Receipt, ShieldCheck, FileText, AlertCircle } from "lucide-svelte";
+  import { Plus, Trash2, X, Receipt, ShieldCheck, FileText, AlertCircle, Sparkles } from "lucide-svelte";
   import { formatEuro, validarNifCifNie } from "$lib/fiscal-utils";
 
   let {
@@ -37,6 +37,88 @@
   let lineas = $state([
     { descripcion: "Servicios de impresión gráfica y artes finales", cantidad: 1, precioUnitario: 150, descuentoPorcentaje: 0, tipoIva: 21 }
   ]);
+
+  const CLAVE_BORRADOR_FAC = `tolklo_draft_factura_${workspace}`;
+  let borradorModal = $state<any>(null);
+
+  // Al abrir el modal, comprobar si existe un borrador previo guardado
+  $effect(() => {
+    if (abierto) {
+      try {
+        const guardado = localStorage.getItem(CLAVE_BORRADOR_FAC);
+        if (guardado) {
+          const parsed = JSON.parse(guardado);
+          if (parsed && (parsed.cliente || (parsed.lineas && parsed.lineas[0]?.descripcion))) {
+            borradorModal = parsed;
+          }
+        }
+      } catch {}
+    } else {
+      borradorModal = null;
+    }
+  });
+
+  function restaurarBorradorModal() {
+    if (!borradorModal) return;
+    cliente = borradorModal.cliente || "";
+    clienteNif = borradorModal.clienteNif || "";
+    clienteDireccion = borradorModal.clienteDireccion || "";
+    clienteCodigoPostal = borradorModal.clienteCodigoPostal || "";
+    clienteCiudad = borradorModal.clienteCiudad || "";
+    clienteEmail = borradorModal.clienteEmail || "";
+    serie = borradorModal.serie || "F26";
+    tipoFactura = borradorModal.tipoFactura || "F1";
+    fechaExpedicion = borradorModal.fechaExpedicion || new Date().toISOString().split("T")[0];
+    fechaVencimiento = borradorModal.fechaVencimiento || "";
+    formaPago = borradorModal.formaPago || "Transferencia bancaria";
+    notas = borradorModal.notas || "";
+    tipoIvaDefecto = borradorModal.tipoIvaDefecto ?? 21;
+    tipoRetencionIrpf = borradorModal.tipoRetencionIrpf ?? 0;
+    emitirDirectamente = borradorModal.emitirDirectamente ?? true;
+    if (Array.isArray(borradorModal.lineas) && borradorModal.lineas.length > 0) {
+      lineas = borradorModal.lineas;
+    }
+    borradorModal = null;
+  }
+
+  function descartarBorradorModal() {
+    try {
+      localStorage.removeItem(CLAVE_BORRADOR_FAC);
+    } catch {}
+    borradorModal = null;
+  }
+
+  function guardarBorradorFactura() {
+    if (!cliente && !clienteNif && lineas.every(l => !l.descripcion)) return;
+    try {
+      localStorage.setItem(CLAVE_BORRADOR_FAC, JSON.stringify({
+        timestamp: Date.now(),
+        fechaHora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        cliente,
+        clienteNif,
+        clienteDireccion,
+        clienteCodigoPostal,
+        clienteCiudad,
+        clienteEmail,
+        serie,
+        tipoFactura,
+        fechaExpedicion,
+        fechaVencimiento,
+        formaPago,
+        notas,
+        tipoIvaDefecto,
+        tipoRetencionIrpf,
+        emitirDirectamente,
+        lineas
+      }));
+    } catch {}
+  }
+
+  $effect(() => {
+    if (abierto && (cliente || clienteNif || lineas.length > 0)) {
+      guardarBorradorFactura();
+    }
+  });
 
   let guardando = $state(false);
   let errorMsg = $state("");
@@ -111,13 +193,23 @@
 
       const data = await res.json();
       if (res.ok) {
+        try {
+          localStorage.removeItem(CLAVE_BORRADOR_FAC);
+          borradorModal = null;
+        } catch {}
         onCreated();
         onClose();
       } else {
         errorMsg = data.error || "Ocurrió un error al generar la factura.";
       }
     } catch (e: any) {
-      errorMsg = e.message || "Error de conexión con el servidor.";
+      guardarBorradorFactura();
+      const esOffline = typeof navigator !== 'undefined' && (!navigator.onLine || e.name === 'TypeError' || String(e.message).includes('fetch'));
+      if (esOffline) {
+        errorMsg = "⚠️ Sin conexión a internet: Los datos de tu factura y sus líneas están guardados a salvo en este navegador. Espera a recuperar la conexión y vuelve a pulsar Guardar.";
+      } else {
+        errorMsg = e.message || "Error de conexión con el servidor.";
+      }
     } finally {
       guardando = false;
     }
@@ -147,6 +239,21 @@
         </button>
       </div>
 
+      {#if borradorModal}
+        <div class="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0 text-amber-600 dark:text-amber-400">
+              <Sparkles class="w-4 h-4" />
+            </div>
+            <span>Hay un borrador guardado a las {borradorModal.fechaHora || 'recientemente'}{borradorModal.cliente ? ` para ${borradorModal.cliente}` : ''}.</span>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-auto">
+            <button type="button" class="underline hover:text-foreground text-xs cursor-pointer px-2 py-1" onclick={descartarBorradorModal}>Descartar</button>
+            <button type="button" class="font-bold bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1 rounded-lg cursor-pointer" onclick={restaurarBorradorModal}>Recuperar</button>
+          </div>
+        </div>
+      {/if}
+
       {#if errorMsg}
         <div class="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-xl font-medium">
           {errorMsg}
@@ -156,16 +263,16 @@
       <div class="space-y-4 text-xs">
         <!-- Parámetros fiscales de la factura -->
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-muted/40 p-3.5 rounded-xl border border-border/60">
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Serie</label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Serie</span>
             <input
               type="text"
               bind:value={serie}
               class="w-full bg-card border border-border rounded-lg px-3 py-1.5 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tipo Factura</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tipo Factura</span>
             <select
               bind:value={tipoFactura}
               class="w-full bg-card border border-border rounded-lg px-3 py-1.5 font-medium text-foreground outline-none focus:border-primary"
@@ -175,63 +282,64 @@
               <option value="R1">R1 - Rectificativa (Art. 80 LIVA)</option>
               <option value="R4">R4 - Otras Rectificativas</option>
             </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Fecha Expedición</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Fecha Expedición</span>
             <input
               type="date"
               bind:value={fechaExpedicion}
               class="w-full bg-card border border-border rounded-lg px-3 py-1.5 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Vencimiento</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Vencimiento</span>
             <input
               type="date"
               bind:value={fechaVencimiento}
               class="w-full bg-card border border-border rounded-lg px-3 py-1.5 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
+          </label>
         </div>
 
         <!-- Cliente / Receptor -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Cliente / Razón Social *</label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Cliente / Razón Social *</span>
             <input
               type="text"
               placeholder="Nombre fiscal o empresa"
               bind:value={cliente}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">NIF / CIF Receptor *</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">NIF / CIF Receptor *</span>
             <input
               type="text"
               placeholder="B12345678 / 12345678Z"
               bind:value={clienteNif}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary uppercase"
             />
-          </div>
+          </label>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="sm:col-span-2">
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Dirección Receptor</label>
+          <label class="block sm:col-span-2">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Dirección Receptor</span>
             <input
               type="text"
               placeholder="Calle, plaza, número"
               bind:value={clienteDireccion}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
+          </label>
           <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">C.P. / Población</label>
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">C.P. / Población</span>
             <div class="flex gap-1.5">
               <input
                 type="text"
                 placeholder="C.P."
+                aria-label="Código Postal"
                 bind:value={clienteCodigoPostal}
                 class="w-20 bg-card border border-border rounded-xl px-2.5 py-2 font-medium text-foreground outline-none focus:border-primary text-center"
               />

@@ -56,18 +56,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(JSON.stringify({ error: 'El nombre del cliente es obligatorio' }), { status: 400 });
     }
 
-    // 1. Obtener correlativo
-    const existentes = await db
-      .select()
-      .from(Albaran)
-      .where(eq(Albaran.serie, serie))
-      .orderBy(desc(Albaran.numero));
-
-    const ultimoNumero = existentes.length > 0 ? (existentes[0].numero || 0) : 0;
-    const nuevoNumero = ultimoNumero + 1;
-    const codigo = generarCodigoDocumento(serie, nuevoNumero);
-
-    // 2. Calcular totales si las líneas tienen precio
+    // 1. Calcular totales si las líneas tienen precio
     let baseImponible = 0;
     lineas.forEach((l: any) => {
       const cant = Number(l.cantidad) || 0;
@@ -77,30 +66,70 @@ export const POST: APIRoute = async ({ request, locals }) => {
     baseImponible = Math.round(baseImponible * 100) / 100;
     const total = Math.round(baseImponible * 1.21 * 100) / 100;
 
-    // 3. Insertar Albarán
-    const resAlbaran = await db.insert(Albaran).values({
-      workspaceId,
-      serie,
-      numero: nuevoNumero,
-      codigo,
-      cliente: cliente.trim(),
-      clienteNif: clienteNif ? clienteNif.trim() : null,
-      clienteDireccion: clienteDireccion ? clienteDireccion.trim() : null,
-      fecha,
-      estado,
-      transportista: transportista || null,
-      numeroSeguimiento: numeroSeguimiento || null,
-      bultos: Number(bultos) || 1,
-      personaContacto: personaContacto || null,
-      notas: notas || null,
-      presupuestoIdVinculado: presupuestoIdVinculado ? Number(presupuestoIdVinculado) : null,
-      numParteTrabajoVinculado: numParteTrabajoVinculado || null,
-      facturaIdVinculada: null,
-      baseImponible,
-      total
-    }).returning();
+    // 2. Obtener correlativo de forma atómica con reintento ante concurrencia
+    let intentos = 0;
+    const maxIntentos = 10;
+    let nuevoAlbaran: any = null;
+    let nuevoNumero = 1;
+    let codigo = '';
 
-    const nuevoAlbaran = resAlbaran[0];
+    while (!nuevoAlbaran && intentos < maxIntentos) {
+      intentos++;
+
+      const existentes = await db
+        .select({ numero: Albaran.numero })
+        .from(Albaran)
+        .where(eq(Albaran.serie, serie))
+        .orderBy(desc(Albaran.numero))
+        .limit(1);
+
+      const ultimoNumero = existentes.length > 0 ? (existentes[0].numero || 0) : 0;
+      nuevoNumero = ultimoNumero + 1;
+      codigo = generarCodigoDocumento(serie, nuevoNumero);
+
+      try {
+        // 3. Insertar Albarán
+        const resAlbaran = await db.insert(Albaran).values({
+          workspaceId,
+          serie,
+          numero: nuevoNumero,
+          codigo,
+          cliente: cliente.trim(),
+          clienteNif: clienteNif ? clienteNif.trim() : null,
+          clienteDireccion: clienteDireccion ? clienteDireccion.trim() : null,
+          fecha,
+          estado,
+          transportista: transportista || null,
+          numeroSeguimiento: numeroSeguimiento || null,
+          bultos: Number(bultos) || 1,
+          personaContacto: personaContacto || null,
+          notas: notas || null,
+          presupuestoIdVinculado: presupuestoIdVinculado ? Number(presupuestoIdVinculado) : null,
+          numParteTrabajoVinculado: numParteTrabajoVinculado || null,
+          facturaIdVinculada: null,
+          baseImponible,
+          total
+        }).returning();
+
+        nuevoAlbaran = resAlbaran[0];
+      } catch (insertErr: any) {
+        const errorMsg = String(insertErr.message || insertErr);
+        if (
+          errorMsg.includes('UNIQUE') || 
+          errorMsg.includes('constraint') || 
+          insertErr.code === 'SQLITE_CONSTRAINT'
+        ) {
+          // Conflicto de colisión concurrente: reintentamos
+          continue;
+        }
+        throw insertErr;
+      }
+    }
+
+    if (!nuevoAlbaran) {
+      throw new Error('No se pudo asignar un código de albarán único tras varios intentos concurrentes.');
+    }
+
     const albaranId = nuevoAlbaran?.id;
 
     // 4. Insertar Líneas

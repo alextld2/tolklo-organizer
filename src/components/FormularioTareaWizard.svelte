@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { slide, fade } from "svelte/transition";
   import { LISTA_COMERCIALES } from "../utils/constants";
   import {
@@ -48,6 +49,25 @@
   export let workspace: string = "";
   export let clientesExistentes: string[] = [];
   export let proximoNumParte: string = "";
+
+  // --- GESTIÓN DE BORRADOR LOCAL Y MODO OFFLINE ---
+  $: claveBorrador = `tolklo_draft_tarea_${workspace || 'produccion'}`;
+  let borradorExistente: any = null;
+  let timerAutoGuardado: any = null;
+
+  onMount(() => {
+    try {
+      const guardado = localStorage.getItem(`tolklo_draft_tarea_${workspace || 'produccion'}`);
+      if (guardado) {
+        const parsed = JSON.parse(guardado);
+        if (parsed && (parsed.cliente || parsed.descripcionGeneral || (parsed.desgloses && parsed.desgloses[0]?.descripcionProducto))) {
+          borradorExistente = parsed;
+        }
+      }
+    } catch (e) {
+      console.error("Error al cargar borrador local:", e);
+    }
+  });
 
   // --- ESTADO INTERNO DEL WIZARD Y NOTIFICACIONES ---
   let pasoActual = 1;
@@ -330,6 +350,107 @@
     }
   }
 
+  function restaurarBorrador() {
+    if (!borradorExistente) return;
+    cliente = borradorExistente.cliente || "";
+    comercial = borradorExistente.comercial || "Marcos";
+    fechaSalida = borradorExistente.fechaSalida || "";
+    tipoEntrega = borradorExistente.tipoEntrega || "taller";
+    direccionEntrega = borradorExistente.direccionEntrega || "";
+    albaranAnonimo = !!borradorExistente.albaranAnonimo;
+    area = borradorExistente.area || "DIGITAL";
+    areasSeleccionadas = borradorExistente.areasSeleccionadas || [area];
+    empresaSubcontrata = borradorExistente.empresaSubcontrata || "Subcontrata 1";
+    descripcionGeneral = borradorExistente.descripcionGeneral || "";
+    if (Array.isArray(borradorExistente.desgloses) && borradorExistente.desgloses.length > 0) {
+      desgloses = borradorExistente.desgloses;
+    }
+    papelPortada = borradorExistente.papelPortada || "";
+    colorPortada = borradorExistente.colorPortada || "";
+    papelInterior = borradorExistente.papelInterior || "";
+    colorInterior = borradorExistente.colorInterior || "";
+    tipoTintaPortada = borradorExistente.tipoTintaPortada || "estandar";
+    listaPantonesPortada = borradorExistente.listaPantonesPortada || [];
+    tipoTintaInterior = borradorExistente.tipoTintaInterior || "estandar";
+    listaPantonesInterior = borradorExistente.listaPantonesInterior || [];
+    if (borradorExistente.encuadernacion) encuadernacion = borradorExistente.encuadernacion;
+    espiralColor = borradorExistente.espiralColor || "";
+    wireOColor = borradorExistente.wireOColor || "";
+    if (borradorExistente.acabados) acabados = borradorExistente.acabados;
+    grapadoTipo = borradorExistente.grapadoTipo || "Seleccionar opción";
+    barnizUVTipo = borradorExistente.barnizUVTipo || "No";
+    estampingTipo = borradorExistente.estampingTipo || "No requiere";
+    laminadoTipo = borradorExistente.laminadoTipo || "1 cara";
+    if (borradorExistente.tipoLaminadoCara1) tipoLaminadoCara1 = borradorExistente.tipoLaminadoCara1;
+    if (borradorExistente.tipoLaminadoCara2) tipoLaminadoCara2 = borradorExistente.tipoLaminadoCara2;
+    if (borradorExistente.pasoActual && borradorExistente.pasoActual > 1) {
+      pasoActual = borradorExistente.pasoActual;
+    }
+    mensajeNotificacion = "¡Borrador recuperado con éxito! Puedes continuar donde lo dejaste.";
+    tipoNotificacion = "success";
+    borradorExistente = null;
+  }
+
+  function descartarBorrador() {
+    try {
+      localStorage.removeItem(claveBorrador);
+    } catch {}
+    borradorExistente = null;
+  }
+
+  function autoguardarBorrador() {
+    if (!cliente && !descripcionGeneral && (!desgloses || desgloses.every(d => !d.descripcionProducto))) {
+      return;
+    }
+    if (timerAutoGuardado) clearTimeout(timerAutoGuardado);
+    timerAutoGuardado = setTimeout(() => {
+      try {
+        const datos = {
+          timestamp: Date.now(),
+          fechaHora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          pasoActual,
+          cliente,
+          comercial,
+          fechaSalida,
+          tipoEntrega,
+          direccionEntrega,
+          albaranAnonimo,
+          area,
+          areasSeleccionadas,
+          tieneSubcontrata,
+          empresaSubcontrata,
+          descripcionGeneral,
+          desgloses,
+          papelPortada,
+          colorPortada,
+          papelInterior,
+          colorInterior,
+          tipoTintaPortada,
+          listaPantonesPortada,
+          tipoTintaInterior,
+          listaPantonesInterior,
+          encuadernacion,
+          espiralColor,
+          wireOColor,
+          acabados,
+          grapadoTipo,
+          barnizUVTipo,
+          estampingTipo,
+          laminadoTipo,
+          tipoLaminadoCara1,
+          tipoLaminadoCara2
+        };
+        localStorage.setItem(claveBorrador, JSON.stringify(datos));
+      } catch (err) {
+        console.error("Error al persistir borrador:", err);
+      }
+    }, 400);
+  }
+
+  $: if (cliente || descripcionGeneral || fechaSalida || desgloses || papelPortada || colorPortada || pasoActual) {
+    autoguardarBorrador();
+  }
+
   // PROCESAR ENVÍO CON INCREMENTO REACTIVO AUTOMÁTICO (RUTA EXACTA /api/tarea/create)
   async function procesarEnvio() {
     if (!cliente.trim() || !fechaSalida) {
@@ -382,21 +503,35 @@
         );
       }
 
-      // 2. 🔥 EL NUEVO FLUJO MÁSTER: Abrimos la ruta del PDF real dinámico
-      window.open(`/w/${workspace}/parte/${numParte}/print`, "_blank");
+      const resData = await response.json().catch(() => ({}));
+      const numParteAsignado = resData.numParte || numParte;
+      const fueReasignado = !!resData.reasignado;
 
-      mensajeNotificacion = `¡Parte #${numParte} guardado con éxito en Turso!`;
+      // 2. 🔥 EL NUEVO FLUJO MÁSTER: Abrimos la ruta del PDF real dinámico con el número definitivo
+      window.open(`/w/${workspace}/parte/${numParteAsignado}/print`, "_blank");
+
+      // 3. Limpiamos el borrador local ya guardado en servidor
+      try {
+        localStorage.removeItem(claveBorrador);
+        borradorExistente = null;
+      } catch {}
+
+      if (fueReasignado) {
+        mensajeNotificacion = `¡Parte guardado con éxito! Se ha asignado el #${numParteAsignado} (el #${numParte} fue ocupado simultáneamente por otro usuario).`;
+      } else {
+        mensajeNotificacion = `¡Parte #${numParteAsignado} guardado con éxito en Turso!`;
+      }
       tipoNotificacion = "success";
 
-      // 3. Incrementamos el contador reactivo en caliente
-      const fragmentos = numParte.split("-");
+      // 4. Incrementamos el contador reactivo en caliente
+      const fragmentos = numParteAsignado.split("-");
       if (fragmentos[1]) {
         const numeroActual = parseInt(fragmentos[1], 10);
         const proximoNumero = numeroActual + 1;
         proximoNumParte = `${fragmentos[0]}-${proximoNumero.toString().padStart(4, "0")}`;
       }
 
-      // 4. Reseteamos el formulario a virgen
+      // 5. Reseteamos el formulario a virgen
       cliente = "";
       descripcionGeneral = "";
       fechaSalida = "";
@@ -440,19 +575,92 @@
 
       pasoActual = 1;
     } catch (err: any) {
-      mensajeNotificacion = `${err.message}`;
+      // Guardado inmediato de seguridad en localStorage para evitar cualquier pérdida de datos
+      try {
+        const datos = {
+          timestamp: Date.now(),
+          fechaHora: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          pasoActual,
+          cliente,
+          comercial,
+          fechaSalida,
+          tipoEntrega,
+          direccionEntrega,
+          albaranAnonimo,
+          area,
+          areasSeleccionadas,
+          tieneSubcontrata,
+          empresaSubcontrata,
+          descripcionGeneral,
+          desgloses,
+          papelPortada,
+          colorPortada,
+          papelInterior,
+          colorInterior,
+          tipoTintaPortada,
+          listaPantonesPortada,
+          tipoTintaInterior,
+          listaPantonesInterior,
+          encuadernacion,
+          espiralColor,
+          wireOColor,
+          acabados,
+          grapadoTipo,
+          barnizUVTipo,
+          estampingTipo,
+          laminadoTipo,
+          tipoLaminadoCara1,
+          tipoLaminadoCara2
+        };
+        localStorage.setItem(claveBorrador, JSON.stringify(datos));
+      } catch {}
+
+      const esErrorDeRed = typeof navigator !== "undefined" && (!navigator.onLine || err.name === "TypeError" || String(err.message).includes("fetch"));
+      if (esErrorDeRed) {
+        mensajeNotificacion = "⚠️ Error de red o sin conexión: Tu parte de trabajo se ha guardado íntegro en este navegador. No has perdido ningún dato. En cuanto vuelva la conexión, pulsa de nuevo en 'Guardar Parte'.";
+      } else {
+        mensajeNotificacion = `${err.message}`;
+      }
       tipoNotificacion = "error";
     } finally {
       guardandoDato = false;
       setTimeout(() => {
         mensajeNotificacion = "";
-      }, 5000);
+      }, 6000);
     }
   }
 </script>
 
 <!-- CONTENEDOR PRINCIPAL DEL WIZARD -->
 <div class="w-full max-w-5xl mx-auto flex flex-col space-y-6 text-foreground font-sans pb-10">
+
+  <!-- AVISO DE BORRADOR LOCAL PENDIENTE -->
+  {#if borradorExistente}
+    <div 
+      transition:slide={{ duration: 200 }}
+      class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-950 dark:text-amber-200 shadow-sm"
+    >
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 text-amber-600 dark:text-amber-400">
+          <Sparkles class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="font-bold text-sm text-foreground">Borrador pendiente encontrado</p>
+          <p class="text-xs text-muted-foreground">
+            Guardado localmente a las {borradorExistente.fechaHora || 'recientemente'}{borradorExistente.cliente ? ` para ${borradorExistente.cliente}` : ''}.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        <Button size="sm" variant="outline" class="text-xs h-8" onclick={descartarBorrador}>
+          Descartar
+        </Button>
+        <Button size="sm" class="text-xs h-8 bg-amber-600 hover:bg-amber-700 text-white" onclick={restaurarBorrador}>
+          Recuperar borrador
+        </Button>
+      </div>
+    </div>
+  {/if}
 
   <!-- 🧭 STEPPER INDICATOR (ESTILO SHADCN / ZINC) -->
   <div class="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-2xs">

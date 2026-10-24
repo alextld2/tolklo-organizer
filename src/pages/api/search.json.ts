@@ -66,7 +66,10 @@ export const GET: APIRoute = async ({ request }) => {
       tareas: tareasCoincidentes
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'private, max-age=10, stale-while-revalidate=20'
+      }
     });
 
   } catch (error) {

@@ -12,7 +12,8 @@
     MapPin,
     AlertTriangle,
     Check,
-    Loader2
+    Loader2,
+    Sparkles
   } from "lucide-svelte";
   import { formatEuro } from "$lib/fiscal-utils";
   import CalculadorEscandalloModal from "./CalculadorEscandalloModal.svelte";
@@ -230,6 +231,77 @@
     notas = datos.detallesTecnicos || "";
   }
 
+  const CLAVE_BORRADOR_PRE = `tolklo_draft_presupuesto_${workspace}`;
+  let borradorModal = $state<any>(null);
+
+  // Al abrir el modal en modo nuevo (no edición), comprobar si hay borrador previo
+  $effect(() => {
+    if (abierto && !idEdicion && !datosIniciales) {
+      try {
+        const guardado = localStorage.getItem(CLAVE_BORRADOR_PRE);
+        if (guardado) {
+          const parsed = JSON.parse(guardado);
+          if (parsed && (parsed.cliente || (parsed.lineas && parsed.lineas[0]?.descripcion))) {
+            borradorModal = parsed;
+          }
+        }
+      } catch {}
+    } else if (!abierto) {
+      borradorModal = null;
+    }
+  });
+
+  function restaurarBorradorModal() {
+    if (!borradorModal) return;
+    cliente = borradorModal.cliente || "";
+    clienteNif = borradorModal.clienteNif || "";
+    clienteEmail = borradorModal.clienteEmail || "";
+    clienteTelefono = borradorModal.clienteTelefono || "";
+    clienteDireccion = borradorModal.clienteDireccion || "";
+    serie = borradorModal.serie || "PRE26";
+    descripcionGeneral = borradorModal.descripcionGeneral || "";
+    notas = borradorModal.notas || "";
+    condiciones = borradorModal.condiciones || "";
+    if (Array.isArray(borradorModal.lineas) && borradorModal.lineas.length > 0) {
+      lineas = borradorModal.lineas;
+    }
+    borradorModal = null;
+  }
+
+  function descartarBorradorModal() {
+    try {
+      localStorage.removeItem(CLAVE_BORRADOR_PRE);
+    } catch {}
+    borradorModal = null;
+  }
+
+  function guardarBorradorPresupuesto() {
+    if (idEdicion || (!cliente && !descripcionGeneral && lineas.every(l => !l.descripcion))) return;
+    try {
+      localStorage.setItem(CLAVE_BORRADOR_PRE, JSON.stringify({
+        timestamp: Date.now(),
+        fechaHora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        cliente,
+        clienteNif,
+        clienteEmail,
+        clienteTelefono,
+        clienteDireccion,
+        serie,
+        descripcionGeneral,
+        notas,
+        condiciones,
+        lineas
+      }));
+    } catch {}
+  }
+
+  // Auto-guardado reactivo de borrador mientras se redacta
+  $effect(() => {
+    if (abierto && !idEdicion && (cliente || descripcionGeneral || lineas.length > 0)) {
+      guardarBorradorPresupuesto();
+    }
+  });
+
   let guardando = $state(false);
   let errorMsg = $state("");
 
@@ -306,13 +378,23 @@
 
       const data = await res.json();
       if (res.ok) {
+        try {
+          localStorage.removeItem(CLAVE_BORRADOR_PRE);
+          borradorModal = null;
+        } catch {}
         onCreated();
         onClose();
       } else {
         errorMsg = data.error || "Ocurrió un error al guardar el presupuesto.";
       }
     } catch (e: any) {
-      errorMsg = e.message || "Error de conexión con el servidor.";
+      guardarBorradorPresupuesto();
+      const esOffline = typeof navigator !== 'undefined' && (!navigator.onLine || e.name === 'TypeError' || String(e.message).includes('fetch'));
+      if (esOffline) {
+        errorMsg = "⚠️ Sin conexión a internet: Tu presupuesto y sus líneas están guardados a salvo en este navegador. Espera a recuperar la conexión y vuelve a pulsar Guardar.";
+      } else {
+        errorMsg = e.message || "Error de conexión con el servidor.";
+      }
     } finally {
       guardando = false;
     }
@@ -367,6 +449,21 @@
           </button>
         </div>
       </div>
+
+      {#if borradorModal}
+        <div class="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 shadow-xs">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0 text-amber-600 dark:text-amber-400">
+              <Sparkles class="w-4 h-4" />
+            </div>
+            <span>Hay un borrador guardado a las {borradorModal.fechaHora || 'recientemente'}{borradorModal.cliente ? ` para ${borradorModal.cliente}` : ''}.</span>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-auto">
+            <button type="button" class="underline hover:text-foreground text-xs cursor-pointer px-2 py-1" onclick={descartarBorradorModal}>Descartar</button>
+            <button type="button" class="font-bold bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1 rounded-lg cursor-pointer" onclick={restaurarBorradorModal}>Recuperar</button>
+          </div>
+        </div>
+      {/if}
 
       {#if errorMsg}
         <div class="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-xl font-medium">

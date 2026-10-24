@@ -77,109 +77,136 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(JSON.stringify({ error: 'El NIF/CIF del cliente es obligatorio según normativa fiscal' }), { status: 400 });
     }
 
-    // 1. Obtener correlativo de número dentro de la serie
-    const existentes = await db
-      .select()
-      .from(Factura)
-      .where(eq(Factura.serie, serie))
-      .orderBy(desc(Factura.numero));
-
-    const ultimoNumero = existentes.length > 0 ? (existentes[0].numero || 0) : 0;
-    const nuevoNumero = ultimoNumero + 1;
-    const numeroFacturaCompleto = generarCodigoDocumento(serie, nuevoNumero);
-
-    // 2. Calcular desglose impositivo
+    // 1. Calcular desglose impositivo
     const totales = calcularTotalesDocumento(lineas, tipoIvaDefecto, tipoRetencionIrpf, tipoRecargoEquivalencia);
 
-    // 3. Obtener configuración fiscal del emisor
+    // 2. Obtener configuración fiscal del emisor
     const configFiscal = await getConfiguracionFiscalWorkspace(workspaceId);
     const emisorNif = configFiscal?.nif || 'B18928374';
 
-    // 4. Si se emite directamente, calcular huella SHA-256 Veri*factu encadenada
-    let huellaHash: string | null = null;
-    let huellaHashAnterior: string | null = null;
-    let primerRegistro = false;
-    let qrPayload: string | null = null;
-    let verifactuEstado = 'Borrador';
-    let bloqueada = false;
+    // 3. Asignación correlativa atómica con protección ante concurrencia
+    let intentos = 0;
+    const maxIntentos = 10;
+    let nuevaFactura: any = null;
+    let nuevoNumero = 1;
+    let numeroFacturaCompleto = '';
 
-    if (emitirDirectamente) {
-      // Buscar la última factura formal emitida en la misma serie
-      const facturasEmitidasPrevias = existentes.filter(f => f.bloqueada && f.huellaHash);
-      if (facturasEmitidasPrevias.length === 0) {
-        primerRegistro = true;
-        huellaHashAnterior = null;
-      } else {
-        primerRegistro = false;
-        huellaHashAnterior = facturasEmitidasPrevias[0].huellaHash;
+    while (!nuevaFactura && intentos < maxIntentos) {
+      intentos++;
+
+      const existentes = await db
+        .select()
+        .from(Factura)
+        .where(eq(Factura.serie, serie))
+        .orderBy(desc(Factura.numero));
+
+      const ultimoNumero = existentes.length > 0 ? (existentes[0].numero || 0) : 0;
+      nuevoNumero = ultimoNumero + 1;
+      numeroFacturaCompleto = generarCodigoDocumento(serie, nuevoNumero);
+
+      // Si se emite directamente, calcular huella SHA-256 Veri*factu encadenada
+      let huellaHash: string | null = null;
+      let huellaHashAnterior: string | null = null;
+      let primerRegistro = false;
+      let qrPayload: string | null = null;
+      let verifactuEstado = 'Borrador';
+      let bloqueada = false;
+
+      if (emitirDirectamente) {
+        // Buscar la última factura formal emitida en la misma serie
+        const facturasEmitidasPrevias = existentes.filter(f => f.bloqueada && f.huellaHash);
+        if (facturasEmitidasPrevias.length === 0) {
+          primerRegistro = true;
+          huellaHashAnterior = null;
+        } else {
+          primerRegistro = false;
+          huellaHashAnterior = facturasEmitidasPrevias[0].huellaHash;
+        }
+
+        huellaHash = calcularHuellaVerifactu({
+          emisorNif,
+          numeroFacturaCompleto,
+          fechaExpedicion,
+          horaExpedicion,
+          tipoFactura,
+          cuotaIva: totales.cuotaIva,
+          totalFactura: totales.total,
+          huellaHashAnterior
+        });
+
+        qrPayload = generarQrPayloadVerifactu({
+          emisorNif,
+          numeroFacturaCompleto,
+          fechaExpedicion,
+          totalFactura: totales.total,
+          huellaHash
+        });
+
+        verifactuEstado = 'Sellada_ConHuella';
+        bloqueada = true; // Inalterabilidad
       }
 
-      huellaHash = calcularHuellaVerifactu({
-        emisorNif,
-        numeroFacturaCompleto,
-        fechaExpedicion,
-        horaExpedicion,
-        tipoFactura,
-        cuotaIva: totales.cuotaIva,
-        totalFactura: totales.total,
-        huellaHashAnterior
-      });
+      try {
+        const resFactura = await db.insert(Factura).values({
+          workspaceId,
+          serie,
+          numero: nuevoNumero,
+          numeroFacturaCompleto,
+          tipoFactura,
+          cliente: cliente.trim(),
+          clienteNif: clienteNif.trim().toUpperCase(),
+          clienteDireccion: clienteDireccion || null,
+          clienteCodigoPostal: clienteCodigoPostal || null,
+          clienteCiudad: clienteCiudad || null,
+          clienteProvincia: clienteProvincia || null,
+          clientePais: clientePais || 'ES',
+          clienteEmail: clienteEmail || null,
+          fechaExpedicion,
+          horaExpedicion,
+          fechaVencimiento: fechaVencimiento || null,
+          formaPago,
+          cuentaBancaria: cuentaBancaria || configFiscal?.iban || null,
+          estado: emitirDirectamente ? 'Emitida' : 'Borrador',
+          baseImponible: totales.baseImponible,
+          tipoIva: totales.tipoIva,
+          cuotaIva: totales.cuotaIva,
+          tipoRecargoEquivalencia: totales.tipoRecargoEquivalencia,
+          cuotaRecargoEquivalencia: totales.cuotaRecargoEquivalencia,
+          tipoRetencionIrpf: totales.tipoRetencionIrpf,
+          cuotaRetencionIrpf: totales.cuotaRetencionIrpf,
+          totalFactura: totales.total,
+          notas: notas || null,
+          presupuestoIdVinculado: presupuestoIdVinculado ? Number(presupuestoIdVinculado) : null,
+          albaranIdVinculado: albaranIdVinculado ? Number(albaranIdVinculado) : null,
+          numParteTrabajoVinculado: numParteTrabajoVinculado || null,
+          huellaHash,
+          huellaHashAnterior,
+          primerRegistro,
+          sistemaInformatico: 'Tolklo Organizer v1.0',
+          verifactuEstado,
+          qrPayload,
+          bloqueada
+        }).returning();
 
-      qrPayload = generarQrPayloadVerifactu({
-        emisorNif,
-        numeroFacturaCompleto,
-        fechaExpedicion,
-        totalFactura: totales.total,
-        huellaHash
-      });
-
-      verifactuEstado = 'Sellada_ConHuella';
-      bloqueada = true; // Inalterabilidad
+        nuevaFactura = resFactura[0];
+      } catch (insertErr: any) {
+        const errorMsg = String(insertErr.message || insertErr);
+        if (
+          errorMsg.includes('UNIQUE') || 
+          errorMsg.includes('constraint') || 
+          insertErr.code === 'SQLITE_CONSTRAINT'
+        ) {
+          // Conflicto de colisión concurrente: reintentamos
+          continue;
+        }
+        throw insertErr;
+      }
     }
 
-    // 5. Insertar Factura
-    const resFactura = await db.insert(Factura).values({
-      workspaceId,
-      serie,
-      numero: nuevoNumero,
-      numeroFacturaCompleto,
-      tipoFactura,
-      cliente: cliente.trim(),
-      clienteNif: clienteNif.trim().toUpperCase(),
-      clienteDireccion: clienteDireccion || null,
-      clienteCodigoPostal: clienteCodigoPostal || null,
-      clienteCiudad: clienteCiudad || null,
-      clienteProvincia: clienteProvincia || null,
-      clientePais: clientePais || 'ES',
-      clienteEmail: clienteEmail || null,
-      fechaExpedicion,
-      horaExpedicion,
-      fechaVencimiento: fechaVencimiento || null,
-      formaPago,
-      cuentaBancaria: cuentaBancaria || configFiscal?.iban || null,
-      estado: emitirDirectamente ? 'Emitida' : 'Borrador',
-      baseImponible: totales.baseImponible,
-      tipoIva: totales.tipoIva,
-      cuotaIva: totales.cuotaIva,
-      tipoRecargoEquivalencia: totales.tipoRecargoEquivalencia,
-      cuotaRecargoEquivalencia: totales.cuotaRecargoEquivalencia,
-      tipoRetencionIrpf: totales.tipoRetencionIrpf,
-      cuotaRetencionIrpf: totales.cuotaRetencionIrpf,
-      totalFactura: totales.total,
-      notas: notas || null,
-      presupuestoIdVinculado: presupuestoIdVinculado ? Number(presupuestoIdVinculado) : null,
-      albaranIdVinculado: albaranIdVinculado ? Number(albaranIdVinculado) : null,
-      numParteTrabajoVinculado: numParteTrabajoVinculado || null,
-      huellaHash,
-      huellaHashAnterior,
-      primerRegistro,
-      sistemaInformatico: 'Tolklo Organizer v1.0',
-      verifactuEstado,
-      qrPayload,
-      bloqueada
-    }).returning();
+    if (!nuevaFactura) {
+      throw new Error('No se pudo asignar un número de factura único tras varios intentos concurrentes.');
+    }
 
-    const nuevaFactura = resFactura[0];
     const facturaId = nuevaFactura?.id;
 
     // 6. Insertar Líneas de Factura

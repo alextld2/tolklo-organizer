@@ -1117,8 +1117,8 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Puesta a punto guillotina fija (€):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Puesta a punto guillotina fija (€):</span>
               <input
                 type="number"
                 step="0.5"
@@ -1127,11 +1127,11 @@
                 onchange={(e) => actualizarCampoTaller("costeGuillotinaFijo", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Setup base por trabajo (programación, pruebas de corte).</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Setup base por trabajo (programación, pruebas de corte).</span>
+            </label>
 
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Coste por golpe de taco (€):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Coste por golpe de taco (€):</span>
               <input
                 type="number"
                 step="0.05"
@@ -1140,8 +1140,8 @@
                 onchange={(e) => actualizarCampoTaller("costeGuillotinaPorGolpeTaco", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Coste de cada corte por cada bloque de 500 hojas.</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Coste de cada corte por cada bloque de 500 hojas.</span>
+            </label>
           </div>
         </div>
 
@@ -1157,8 +1157,8 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Lavado tintero Offset (€/cuerpo):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Lavado tintero Offset (€/cuerpo):</span>
               <input
                 type="number"
                 step="1"
@@ -1167,11 +1167,11 @@
                 onchange={(e) => actualizarCampoTaller("costeLavadoTinteroPantone", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Limpieza mecánica y disolventes de rodillos.</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Limpieza mecánica y disolventes de rodillos.</span>
+            </label>
 
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Tinta Pantone Offset (€/pliego):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Tinta Pantone Offset (€/pliego):</span>
               <input
                 type="number"
                 step="0.001"
@@ -1180,11 +1180,11 @@
                 onchange={(e) => actualizarCampoTaller("costeTintaPantoneOffsetPliego", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Consumo de tinta directa por pliego.</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Consumo de tinta directa por pliego.</span>
+            </label>
 
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Tinta Pantone Digital (€/pliego):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Tinta Pantone Digital (€/pliego):</span>
               <input
                 type="number"
                 step="0.005"
@@ -1193,8 +1193,8 @@
                 onchange={(e) => actualizarCampoTaller("costeTintaPantoneDigitalPliego", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">5ª estación tóner oro/plata/blanco.</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">5ª estación tóner oro/plata/blanco.</span>
+            </label>
           </div>
         </div>
 
@@ -1210,8 +1210,8 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Precio Cartón Compacto (€/kg):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Precio Cartón Compacto (€/kg):</span>
               <input
                 type="number"
                 step="0.05"
@@ -1220,11 +1220,11 @@
                 onchange={(e) => actualizarCampoTaller("precioKgCartonCompacto", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Cartón contracolado de 1.5 a 3.0 mm de espesor.</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Cartón contracolado de 1.5 a 3.0 mm de espesor.</span>
+            </label>
 
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Densidad cartón (kg/m² por mm):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Densidad cartón (kg/m² por mm):</span>
               <input
                 type="number"
                 step="0.05"
@@ -1233,8 +1233,8 @@
                 onchange={(e) => actualizarCampoTaller("densidadCartonCompacto", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Normalmente ~0.75 kg por m² por cada milímetro.</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Normalmente ~0.75 kg por m² por cada milímetro.</span>
+            </label>
           </div>
         </div>
 
@@ -1250,8 +1250,8 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Gastos Generales / Estructura por defecto (%):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Gastos Generales / Estructura por defecto (%):</span>
               <input
                 type="number"
                 step="1"
@@ -1261,11 +1261,11 @@
                 onchange={(e) => actualizarCampoTaller("gastosGeneralesPorcentajeDefecto", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Amortizaciones, naves, electricidad y administración (ej. 12%).</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Amortizaciones, naves, electricidad y administración (ej. 12%).</span>
+            </label>
 
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-foreground">Margen de Beneficio Objetivo por defecto (%):</label>
+            <label class="block space-y-1.5">
+              <span class="text-xs font-semibold text-foreground">Margen de Beneficio Objetivo por defecto (%):</span>
               <input
                 type="number"
                 step="1"
@@ -1275,8 +1275,8 @@
                 onchange={(e) => actualizarCampoTaller("margenBeneficioPorcentajeDefecto", parseFloat(e.currentTarget.value))}
                 class="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-primary/20 outline-none"
               />
-              <span class="text-[10px] text-muted-foreground">Margen comercial de venta sugerido (ej. 35%).</span>
-            </div>
+              <span class="text-[10px] text-muted-foreground block">Margen comercial de venta sugerido (ej. 35%).</span>
+            </label>
           </div>
         </div>
 

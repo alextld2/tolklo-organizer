@@ -29,8 +29,17 @@
     workspace: string;
   } = $props();
 
-  let facturas = $state(facturasIniciales);
-  let config = $state(configuracionFiscal);
+  let facturas = $state<any[]>([]);
+  let config = $state<any>(null);
+
+  $effect(() => {
+    facturas = facturasIniciales;
+  });
+
+  $effect(() => {
+    config = configuracionFiscal;
+  });
+
   let modalNuevaAbierto = $state(false);
   let modalConfigAbierto = $state(false);
   let facturaSeleccionada = $state<any>(null);
@@ -72,12 +81,14 @@
 
   async function recargarFacturas() {
     try {
-      const res = await fetch(`/api/facturas?workspace=${workspace}`);
-      if (res.ok) {
-        const data = await res.json();
+      const [resFacturas, resCfg] = await Promise.all([
+        fetch(`/api/facturas?workspace=${workspace}`),
+        fetch(`/api/facturas/configuracion?workspace=${workspace}`)
+      ]);
+      if (resFacturas.ok) {
+        const data = await resFacturas.json();
         facturas = data.facturas || [];
       }
-      const resCfg = await fetch(`/api/facturas/configuracion?workspace=${workspace}`);
       if (resCfg.ok) {
         const dataCfg = await resCfg.json();
         config = dataCfg.configuracion || null;

@@ -161,32 +161,37 @@
     { id: "mimaki", label: "Mimaki", areaId: "Mimaki" },
   ];
 
+  const conteosPorArea = $derived.by(() => {
+    const counts: Record<string, number> = { todas: tareasPorAño.length };
+    for (const t of tareasPorAño) {
+      const a = (t.area || "").toLowerCase();
+      counts[a] = (counts[a] || 0) + 1;
+    }
+    return counts;
+  });
+
   function contarTareasPorVista(vista: (typeof vistasArea)[number]): number {
     if (vista.id === "todas") return tareasPorAño.length;
-    return tareasPorAño.filter(
-      (t) => t.area.toLowerCase() === (vista.areaId || "").toLowerCase(),
-    ).length;
+    return conteosPorArea[(vista.areaId || "").toLowerCase()] || 0;
   }
 
   // ─── Filtrado ──────────────────────────────────────────────────────────────
   const tareasFiltradas = $derived.by(() => {
+    const vistaObj = vistaActual !== "todas" ? vistasArea.find((v) => v.id === vistaActual) : null;
+    const targetArea = vistaObj?.areaId ? vistaObj.areaId.toLowerCase() : null;
+    const query = (busquedaGlobal || "").toLowerCase().trim();
+
     return tareasPorAño.filter((t) => {
-      if (vistaActual !== "todas") {
-        const vistaObj = vistasArea.find((v) => v.id === vistaActual);
-        if (vistaObj?.areaId) {
-          if (t.area.toLowerCase() !== vistaObj.areaId.toLowerCase())
-            return false;
-        }
+      if (targetArea && (t.area || "").toLowerCase() !== targetArea) {
+        return false;
       }
-      const query = (busquedaGlobal || "").toLowerCase().trim();
       if (!query) return true;
       return (
         t.numParte.toString().includes(query) ||
-        t.cliente.toLowerCase().includes(query) ||
-        (t.descripcionGeneral &&
-          t.descripcionGeneral.toLowerCase().includes(query)) ||
-        t.area.toLowerCase().includes(query) ||
-        t.estado.toLowerCase().includes(query)
+        (t.cliente && t.cliente.toLowerCase().includes(query)) ||
+        (t.descripcionGeneral && t.descripcionGeneral.toLowerCase().includes(query)) ||
+        (t.area && t.area.toLowerCase().includes(query)) ||
+        (t.estado && t.estado.toLowerCase().includes(query))
       );
     });
   });

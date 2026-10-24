@@ -50,6 +50,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const response = await next();
 
+  // 🚀 OPTIMIZACIÓN CACHÉ: Archivos con hash de contenido en /_astro/ son inmutables
+  if (pathname.startsWith('/_astro/')) {
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  }
+
   // 🛡️ CABECERAS DE SEGURIDAD HTTP (Protección contra Clickjacking, XSS, MIME sniffing)
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
   response.headers.set('X-Content-Type-Options', 'nosniff');

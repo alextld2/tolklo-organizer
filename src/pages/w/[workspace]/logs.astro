@@ -13,12 +13,13 @@ if (!workspace) {
   return Astro.redirect('/w/produccion/logs');
 }
 
-// 2. Consultamos Turso filtrando por entorno y ordenando de más nuevo a más viejo
+// 2. Consultamos Turso filtrando por entorno y ordenando de más nuevo a más viejo (con límite de seguridad)
 const logsCrudos = await db
   .select()
   .from(RegistroActividad)
   .where(eq(RegistroActividad.workspaceId, workspace))
-  .orderBy(desc(RegistroActividad.fecha));
+  .orderBy(desc(RegistroActividad.fecha))
+  .limit(250);
 
 // 3. Convertimos los objetos Date nativos a cadenas legibles para que Svelte los procese sin errores de tipos
 const logsFiltrados = logsCrudos.map(log => ({

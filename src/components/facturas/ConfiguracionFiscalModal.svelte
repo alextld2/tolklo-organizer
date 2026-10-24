@@ -15,21 +15,41 @@
     onSaved: () => void;
   } = $props();
 
-  let razonSocial = $state(configuracionInicial?.razonSocial || "Gráficas Tolklo S.L.");
-  let nif = $state(configuracionInicial?.nif || "B18928374");
-  let direccion = $state(configuracionInicial?.direccion || "C/ Impresores, 14 - Pol. Ind. Juncaril");
-  let codigoPostal = $state(configuracionInicial?.codigoPostal || "18220");
-  let ciudad = $state(configuracionInicial?.ciudad || "Albolote");
-  let provincia = $state(configuracionInicial?.provincia || "Granada");
-  let pais = $state(configuracionInicial?.pais || "España");
-  let telefono = $state(configuracionInicial?.telefono || "+34 958 123 456");
-  let email = $state(configuracionInicial?.email || "administracion@tolklo.es");
-  let iban = $state(configuracionInicial?.iban || "ES76 2100 0418 4502 0005 1234");
-  let serieFacturaDefecto = $state(configuracionInicial?.serieFacturaDefecto || "F26");
-  let seriePresupuestoDefecto = $state(configuracionInicial?.seriePresupuestoDefecto || "PRE26");
-  let serieAlbaranDefecto = $state(configuracionInicial?.serieAlbaranDefecto || "ALB26");
-  let ivaDefecto = $state(configuracionInicial?.ivaDefecto || 21);
-  let modoVerifactu = $state(configuracionInicial?.modoVerifactu || "SIF_ENCADENAMIENTO");
+  let razonSocial = $state("Gráficas Tolklo S.L.");
+  let nif = $state("B18928374");
+  let direccion = $state("C/ Impresores, 14 - Pol. Ind. Juncaril");
+  let codigoPostal = $state("18220");
+  let ciudad = $state("Albolote");
+  let provincia = $state("Granada");
+  let pais = $state("España");
+  let telefono = $state("+34 958 123 456");
+  let email = $state("administracion@tolklo.es");
+  let iban = $state("ES76 2100 0418 4502 0005 1234");
+  let serieFacturaDefecto = $state("F26");
+  let seriePresupuestoDefecto = $state("PRE26");
+  let serieAlbaranDefecto = $state("ALB26");
+  let ivaDefecto = $state(21);
+  let modoVerifactu = $state("SIF_ENCADENAMIENTO");
+
+  $effect(() => {
+    if (configuracionInicial) {
+      razonSocial = configuracionInicial.razonSocial || "Gráficas Tolklo S.L.";
+      nif = configuracionInicial.nif || "B18928374";
+      direccion = configuracionInicial.direccion || "C/ Impresores, 14 - Pol. Ind. Juncaril";
+      codigoPostal = configuracionInicial.codigoPostal || "18220";
+      ciudad = configuracionInicial.ciudad || "Albolote";
+      provincia = configuracionInicial.provincia || "Granada";
+      pais = configuracionInicial.pais || "España";
+      telefono = configuracionInicial.telefono || "+34 958 123 456";
+      email = configuracionInicial.email || "administracion@tolklo.es";
+      iban = configuracionInicial.iban || "ES76 2100 0418 4502 0005 1234";
+      serieFacturaDefecto = configuracionInicial.serieFacturaDefecto || "F26";
+      seriePresupuestoDefecto = configuracionInicial.seriePresupuestoDefecto || "PRE26";
+      serieAlbaranDefecto = configuracionInicial.serieAlbaranDefecto || "ALB26";
+      ivaDefecto = configuracionInicial.ivaDefecto ?? 21;
+      modoVerifactu = configuracionInicial.modoVerifactu || "SIF_ENCADENAMIENTO";
+    }
+  });
 
   let guardando = $state(false);
   let mensaje = $state("");
@@ -113,101 +133,101 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Razón Social *</label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Razón Social *</span>
             <input
               type="text"
               bind:value={razonSocial}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">NIF / CIF Emisor *</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">NIF / CIF Emisor *</span>
             <input
               type="text"
               bind:value={nif}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
+          </label>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="sm:col-span-2">
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Dirección Fiscal</label>
+          <label class="block sm:col-span-2">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Dirección Fiscal</span>
             <input
               type="text"
               bind:value={direccion}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Código Postal</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Código Postal</span>
             <input
               type="text"
               bind:value={codigoPostal}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
+          </label>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Ciudad / Población</label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Ciudad / Población</span>
             <input
               type="text"
               bind:value={ciudad}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Provincia</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Provincia</span>
             <input
               type="text"
               bind:value={provincia}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">País</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">País</span>
             <input
               type="text"
               bind:value={pais}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
+          </label>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">IBAN de Cobro Bancario</label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">IBAN de Cobro Bancario</span>
             <input
               type="text"
               bind:value={iban}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-mono font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Email Facturación</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Email Facturación</span>
             <input
               type="email"
               bind:value={email}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
+          </label>
         </div>
 
         <!-- Series y Sistema Verifactu -->
         <div class="border-t border-border pt-4 mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Serie Facturas</label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Serie Facturas</span>
             <input
               type="text"
               bind:value={serieFacturaDefecto}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Modo Veri*factu</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Modo Veri*factu</span>
             <select
               bind:value={modoVerifactu}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
@@ -215,15 +235,15 @@
               <option value="SIF_ENCADENAMIENTO">SIF con Hash Encriptado (Inalterable)</option>
               <option value="VERIFACTU_REMISIÓN">Veri*factu Remisión AEAT</option>
             </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">IVA por Defecto (%)</label>
+          </label>
+          <label class="block">
+            <span class="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">IVA por Defecto (%)</span>
             <input
               type="number"
               bind:value={ivaDefecto}
               class="w-full bg-card border border-border rounded-xl px-3.5 py-2 font-medium text-foreground outline-none focus:border-primary"
             />
-          </div>
+          </label>
         </div>
       </div>
 

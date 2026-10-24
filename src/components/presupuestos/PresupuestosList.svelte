@@ -34,7 +34,12 @@
     workspace: string;
   } = $props();
 
-  let presupuestos = $state(presupuestosIniciales);
+  let presupuestos = $state<any[]>([]);
+
+  $effect(() => {
+    presupuestos = presupuestosIniciales;
+  });
+
   let modalNuevoAbierto = $state(false);
   let modalEscandalloAbierto = $state(false);
   let datosEscandallo = $state<any>(null);

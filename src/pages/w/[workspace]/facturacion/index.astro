@@ -9,8 +9,10 @@ if (!workspace) {
   return Astro.redirect("/w/produccion");
 }
 
-const facturas = await getFacturasWorkspace(workspace);
-const configuracionFiscal = await getConfiguracionFiscalWorkspace(workspace);
+const [facturas, configuracionFiscal] = await Promise.all([
+  getFacturasWorkspace(workspace),
+  getConfiguracionFiscalWorkspace(workspace)
+]);
 ---
 
 <MainLayout title={`Facturación & Veri*factu // ${workspace.toUpperCase()}`}>

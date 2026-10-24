@@ -35,7 +35,14 @@ export const Trabajo = defineTable({
     // Gestión de prioridades y orden en cola de producción
     prioridad: column.text({ optional: true, default: 'Normal' }),
     ordenCola: column.number({ optional: true, default: 0 })
-  }
+  },
+  indexes: [
+    { on: 'workspaceId' },
+    { on: 'cliente' },
+    { on: 'estado' },
+    { on: 'fechaSalida' },
+    { on: ['workspaceId', 'estado'] }
+  ]
 });
 
 export const DesgloseTrabajo = defineTable({
@@ -44,7 +51,10 @@ export const DesgloseTrabajo = defineTable({
     numParte: column.text({ references: () => Trabajo.columns.numParte }),
     descripcionProducto: column.text(),
     cantidad: column.number(),
-  }
+  },
+  indexes: [
+    { on: 'numParte' }
+  ]
 });
 
 export const RegistroActividad = defineTable({
@@ -56,7 +66,12 @@ export const RegistroActividad = defineTable({
     tipo: column.text(),
     accion: column.text(),
     detalles: column.text(),
-  }
+  },
+  indexes: [
+    { on: 'workspaceId' },
+    { on: 'fecha' },
+    { on: ['workspaceId', 'fecha'] }
+  ]
 });
 
 export const DireccionCliente = defineTable({
@@ -70,7 +85,10 @@ export const DireccionCliente = defineTable({
     pais: column.text({ default: 'España' }),
     telefono: column.text({ optional: true }),
     notas: column.text({ optional: true }),
-  }
+  },
+  indexes: [
+    { on: 'cliente' }
+  ]
 });
 
 // =============================================
@@ -103,7 +121,13 @@ export const Presupuesto = defineTable({
     numParteTrabajoVinculado: column.text({ optional: true }),
     parametrosEscandalloJson: column.text({ optional: true }),
     creadoEn: column.date({ default: NOW })
-  }
+  },
+  indexes: [
+    { on: 'workspaceId' },
+    { on: 'cliente' },
+    { on: 'estado' },
+    { on: 'codigo', unique: true }
+  ]
 });
 
 export const LineaPresupuesto = defineTable({
@@ -117,7 +141,10 @@ export const LineaPresupuesto = defineTable({
     tipoIva: column.number({ default: 21 }),
     totalLinea: column.number({ default: 0 }),
     orden: column.number({ optional: true, default: 0 })
-  }
+  },
+  indexes: [
+    { on: 'presupuestoId' }
+  ]
 });
 
 // =============================================
@@ -146,7 +173,13 @@ export const Albaran = defineTable({
     baseImponible: column.number({ default: 0 }),
     total: column.number({ default: 0 }),
     creadoEn: column.date({ default: NOW })
-  }
+  },
+  indexes: [
+    { on: 'workspaceId' },
+    { on: 'cliente' },
+    { on: 'estado' },
+    { on: 'codigo', unique: true }
+  ]
 });
 
 export const LineaAlbaran = defineTable({
@@ -158,7 +191,10 @@ export const LineaAlbaran = defineTable({
     precioUnitario: column.number({ optional: true, default: 0 }),
     totalLinea: column.number({ optional: true, default: 0 }),
     orden: column.number({ optional: true, default: 0 })
-  }
+  },
+  indexes: [
+    { on: 'albaranId' }
+  ]
 });
 
 // =============================================
@@ -170,7 +206,7 @@ export const Factura = defineTable({
     workspaceId: column.text(),
     serie: column.text({ default: 'F26' }),
     numero: column.number(),
-    numeroFacturaCompleto: column.text(), // ej. F26-0001, R26-0001
+    numeroFacturaCompleto: column.text(), // ej. F26-0001, R26-0001 (Inalterable y único)
     tipoFactura: column.text({ default: 'F1' }), // F1 (Ordinaria), F2 (Simplificada), R1..R5 (Rectificativas)
     facturaRectificadaId: column.number({ optional: true }),
     motivoRectificacion: column.text({ optional: true }),
@@ -220,7 +256,13 @@ export const Factura = defineTable({
     bloqueada: column.boolean({ default: false }), // Inalterabilidad: una vez emitida queda bloqueada contra edición
     
     creadoEn: column.date({ default: NOW })
-  }
+  },
+  indexes: [
+    { on: 'workspaceId' },
+    { on: 'cliente' },
+    { on: 'estado' },
+    { on: 'numeroFacturaCompleto', unique: true }
+  ]
 });
 
 export const LineaFactura = defineTable({
@@ -234,7 +276,10 @@ export const LineaFactura = defineTable({
     tipoIva: column.number({ default: 21 }),
     totalLinea: column.number({ default: 0 }),
     orden: column.number({ optional: true, default: 0 })
-  }
+  },
+  indexes: [
+    { on: 'facturaId' }
+  ]
 });
 
 // =============================================

@@ -7,17 +7,20 @@ export const GET: APIRoute = async ({ params }) => {
   if (!numParte) return new Response(null, { status: 400 });
 
   try {
-    // Obtenemos la tarea
-    const tarea = await db.select().from(Trabajo).where(eq(Trabajo.numParte, numParte)).get();
+    // Obtenemos la tarea y sus productos desglosados en paralelo
+    const [tarea, desgloses] = await Promise.all([
+      db.select().from(Trabajo).where(eq(Trabajo.numParte, numParte)).get(),
+      db.select().from(DesgloseTrabajo).where(eq(DesgloseTrabajo.numParte, numParte))
+    ]);
     
     if (!tarea) return new Response(null, { status: 404 });
 
-    // Obtenemos sus productos desglosados
-    const desgloses = await db.select().from(DesgloseTrabajo).where(eq(DesgloseTrabajo.numParte, numParte));
-
     return new Response(JSON.stringify({ ...tarea, desgloses }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=30'
+      }
     });
   } catch (e) {
     return new Response(null, { status: 500 });

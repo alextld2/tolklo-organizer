@@ -21,7 +21,12 @@
     workspace: string;
   } = $props();
 
-  let albaranes = $state(albaranesIniciales);
+  let albaranes = $state<any[]>([]);
+
+  $effect(() => {
+    albaranes = albaranesIniciales;
+  });
+
   let modalNuevoAbierto = $state(false);
   let filtroEstado = $state("TODOS");
   let textoBusqueda = $state("");

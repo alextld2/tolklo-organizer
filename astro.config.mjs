@@ -14,7 +14,8 @@ export default defineConfig({
   // ⚡ ACTIVAMOS EL MOTOR EN MODO SERVIDOR DINÁMICO REAL-TIME
   output: 'server', 
   
-  compressHTML: false,
+  compressHTML: true,
+  prefetch: true,
   
   // 2. Le decimos a Astro que use Node en modo standalone para el USB y el NAS
   adapter: node({

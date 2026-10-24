@@ -869,16 +869,19 @@ export const escandalloConfig = writable<ConfiguracionEscandalloCompleta>(obtene
 export const guardandoConfig = writable<boolean>(false);
 export const estadoSincronizacion = writable<"guardado" | "modificado" | "cargando" | "error">("guardado");
 
-// Inicialización de sincronización con servidor si estamos en cliente
+let localSaveTimer: any;
 if (typeof window !== "undefined") {
   escandalloConfig.subscribe(val => {
-    try {
-      if (val) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(val));
+    clearTimeout(localSaveTimer);
+    localSaveTimer = setTimeout(() => {
+      try {
+        if (val) {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(val));
+        }
+      } catch (err) {
+        console.warn("No se pudo guardar en localStorage:", err);
       }
-    } catch (err) {
-      console.warn("No se pudo guardar en localStorage:", err);
-    }
+    }, 200);
   });
 
   // Carga asíncrona desde API

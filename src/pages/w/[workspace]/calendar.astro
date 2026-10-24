@@ -12,9 +12,11 @@ if (!workspace) {
   return Astro.redirect("/w/produccion");
 }
 
-// 3. EXTRAEMOS LOS REGISTROS REALES FILTRADOS POR WORKSPACE
-const trabajosDB = await getTrabajosWorkspace(workspace);
-const desglosesDB = await getDesglosesWorkspace(workspace);
+// 3. EXTRAEMOS LOS REGISTROS REALES FILTRADOS POR WORKSPACE (EN PARALELO)
+const [trabajosDB, desglosesDB] = await Promise.all([
+  getTrabajosWorkspace(workspace),
+  getDesglosesWorkspace(workspace)
+]);
 
 // Título dinámico adaptado para la pestaña del navegador
 const nombresEspacios: Record<string, string> = {

@@ -201,7 +201,7 @@ const isActive = (p: string, strict = false) => isPathActive(p, strict);
     )}
 
     <div class="border-t border-border pt-3 space-y-0.5">
-      <ThemeSelector client:load />
+      <ThemeSelector client:idle />
 
       {workspace !== "facturacion" && (
         <a

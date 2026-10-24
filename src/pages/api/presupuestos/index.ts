@@ -85,48 +85,77 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(JSON.stringify({ error: 'El nombre del cliente es obligatorio' }), { status: 400 });
     }
 
-    // 1. Obtener correlativo para la serie
-    const existentes = await db
-      .select()
-      .from(Presupuesto)
-      .where(eq(Presupuesto.serie, serie))
-      .orderBy(desc(Presupuesto.numero));
-
-    const ultimoNumero = existentes.length > 0 ? (existentes[0].numero || 0) : 0;
-    const nuevoNumero = ultimoNumero + 1;
-    const codigo = generarCodigoDocumento(serie, nuevoNumero);
-
-    // 2. Calcular importes con precisión fiscal
+    // 1. Calcular importes con precisión fiscal
     const totales = calcularTotalesDocumento(lineas, tipoIvaDefecto, tipoRetencionIrpf);
 
-    // 3. Insertar cabecera de presupuesto
-    const resPresupuesto = await db.insert(Presupuesto).values({
-      workspaceId,
-      serie,
-      numero: nuevoNumero,
-      codigo,
-      cliente: cliente.trim(),
-      clienteNif: clienteNif ? clienteNif.trim() : null,
-      clienteEmail: clienteEmail ? clienteEmail.trim() : null,
-      clienteTelefono: clienteTelefono ? clienteTelefono.trim() : null,
-      clienteDireccion: clienteDireccion ? clienteDireccion.trim() : null,
-      fechaEmision,
-      fechaValidez: fechaValidez || null,
-      estado,
-      descripcionGeneral: descripcionGeneral || null,
-      notas: notas || null,
-      condiciones: condiciones || null,
-      baseImponible: totales.baseImponible,
-      tipoIva: totales.tipoIva,
-      cuotaIva: totales.cuotaIva,
-      tipoRetencionIrpf: totales.tipoRetencionIrpf,
-      cuotaRetencionIrpf: totales.cuotaRetencionIrpf,
-      total: totales.total,
-      numParteTrabajoVinculado: numParteTrabajoVinculado || null,
-      parametrosEscandalloJson: parametrosEscandalloJson || null
-    }).returning();
+    // 2. Obtener correlativo para la serie de forma atómica con reintento ante concurrencia
+    let intentos = 0;
+    const maxIntentos = 10;
+    let nuevoPresupuesto: any = null;
+    let nuevoNumero = 1;
+    let codigo = '';
 
-    const nuevoPresupuesto = resPresupuesto[0];
+    while (!nuevoPresupuesto && intentos < maxIntentos) {
+      intentos++;
+
+      const existentes = await db
+        .select({ numero: Presupuesto.numero })
+        .from(Presupuesto)
+        .where(eq(Presupuesto.serie, serie))
+        .orderBy(desc(Presupuesto.numero))
+        .limit(1);
+
+      const ultimoNumero = existentes.length > 0 ? (existentes[0].numero || 0) : 0;
+      nuevoNumero = ultimoNumero + 1;
+      codigo = generarCodigoDocumento(serie, nuevoNumero);
+
+      try {
+        // 3. Insertar cabecera de presupuesto
+        const resPresupuesto = await db.insert(Presupuesto).values({
+          workspaceId,
+          serie,
+          numero: nuevoNumero,
+          codigo,
+          cliente: cliente.trim(),
+          clienteNif: clienteNif ? clienteNif.trim() : null,
+          clienteEmail: clienteEmail ? clienteEmail.trim() : null,
+          clienteTelefono: clienteTelefono ? clienteTelefono.trim() : null,
+          clienteDireccion: clienteDireccion ? clienteDireccion.trim() : null,
+          fechaEmision,
+          fechaValidez: fechaValidez || null,
+          estado,
+          descripcionGeneral: descripcionGeneral || null,
+          notas: notas || null,
+          condiciones: condiciones || null,
+          baseImponible: totales.baseImponible,
+          tipoIva: totales.tipoIva,
+          cuotaIva: totales.cuotaIva,
+          tipoRetencionIrpf: totales.tipoRetencionIrpf,
+          cuotaRetencionIrpf: totales.cuotaRetencionIrpf,
+          total: totales.total,
+          numParteTrabajoVinculado: numParteTrabajoVinculado || null,
+          parametrosEscandalloJson: parametrosEscandalloJson || null
+        }).returning();
+
+        nuevoPresupuesto = resPresupuesto[0];
+      } catch (insertErr: any) {
+        const errorMsg = String(insertErr.message || insertErr);
+        if (
+          errorMsg.includes('UNIQUE') || 
+          errorMsg.includes('constraint') || 
+          insertErr.code === 'SQLITE_CONSTRAINT'
+        ) {
+          // Conflicto por inserción concurrente de otro usuario: reintentamos
+          continue;
+        }
+        throw insertErr;
+      }
+    }
+
+    if (!nuevoPresupuesto) {
+      throw new Error('No se pudo asignar un código de presupuesto único tras varios intentos concurrentes.');
+    }
+
     const presupuestoId = nuevoPresupuesto?.id;
 
     // 4. Insertar líneas de presupuesto si existen

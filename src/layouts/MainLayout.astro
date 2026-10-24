@@ -8,6 +8,7 @@ import Header from "../components/Header.svelte"; // Tu buscador inteligente
 import { ClientRouter } from "astro:transitions";
 
 import SidebarWrapper from "../components/SidebarWrapper.svelte";
+import NetworkStatus from "../components/NetworkStatus.svelte";
 
 interface Props {
   title: string;
@@ -50,9 +51,11 @@ const enlacesNav = workspace === "facturacion"
 
     <ClientRouter />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
     />
 
     <script is:inline>
@@ -75,6 +78,9 @@ const enlacesNav = workspace === "facturacion"
   <body
     class="bg-background text-foreground transition-colors duration-200 min-h-screen overflow-hidden font-sans p-2 sm:p-2.5 lg:p-3"
   >
+    <!-- 🌐 Monitor de conectividad y modo sin conexión -->
+    <NetworkStatus client:load />
+
     <div class="flex h-[calc(100vh-1rem)] sm:h-[calc(100vh-1.25rem)] w-full overflow-hidden">
       <!-- 🔄 Sidebar con contenedor reactivo colapsable -->
       <SidebarWrapper client:load>
